@@ -1,0 +1,65 @@
+## Beelzebub SSH Honeypot – Docker Compose
+##
+## Usage (from repo root):
+##   docker compose -f docker/beelzebub.compose.yaml up --build
+##
+## Secrets are loaded from ../.env (relative to this file), which must contain:
+##   OPENAI_API_KEY=<your Fireworks API key>
+##   OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
+##
+## The SSH listener is bound to 127.0.0.1 only.  No other services are started.
+
+services:
+  beelzebub-ssh:
+    build:
+      context: ../beelzebub        # build from local source clone
+      dockerfile: Dockerfile        # use upstream Dockerfile unchanged
+
+    restart: "no"
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+    # Load OPENAI_API_KEY and OPENAI_BASE_URL from ../.env
+    # (path is relative to this compose file's directory = docker/)
+    env_file:
+      - ../.env
+
+    # The upstream image is based on scratch; the binary runs as uid 0.
+    # No user override is possible with a scratch image.
+    # UNVERIFIED: whether a future multi-stage base could run non-root.
+
+    # Expose only on loopback to prevent accidental external exposure.
+    ports:
+      - "127.0.0.1:2222:2222"
+
+    # Mount the core config and service config read-only.
+    # The binary defaults to:
+    #   --conf-core      ./configurations/beelzebub.yaml
+    #   --conf-services  ./configurations/services/
+    # Both paths are resolved relative to / (the binary's WORKDIR inside scratch).
+    volumes:
+      # Core config: disables Prometheus, RabbitMQ, and Platform reporting;
+      # enables file-based logging to /logs inside the container.
+      - type: bind
+        source: ./beelzebub-core.yaml
+        target: /configurations/beelzebub.yaml
+        read_only: true
+    
+
+      # Single service config for the LLM SSH honeypot.
+      - type: bind
+        source: ./beelzebub-ssh.yaml
+        target: /configurations/services/beelzebub-ssh.yaml
+        read_only: true
+
+      # Log output directory (host path: docker/logs/beelzebub/).
+      # The core config sets logsPath: /logs/beelzebub.log inside the container.
+      - type: bind
+        source: ./logs/beelzebub
+        target: /logs
+
+  

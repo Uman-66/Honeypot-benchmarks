@@ -1,0 +1,73 @@
+## Ground-Truth SSH – Docker Compose
+##
+## Real Ubuntu 20.04 sshd; used as the fidelity baseline for SSH honeypot
+## comparisons.  No LLM, no fake filesystem.
+##
+## Usage (from repo root):
+##   docker compose -f docker/groundtruth_ssh.compose.yaml up --build
+##
+## No API key required; no env_file.
+## Credentials: guest / guest
+## Host port: 2225 → container port 22
+##
+## UNVERIFIED: The minimal set of Linux capabilities required for OpenSSH 8.2p1.
+## The list below (CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID, SYS_CHROOT, KILL)
+## covers:
+##   CHOWN       – sshd chowns the pty device to the connecting user
+##   DAC_OVERRIDE – sshd may open /etc/shadow and similar during PAM auth
+##   FOWNER      – file-ownership checks during PAM / privilege-separation
+##   SETUID      – sshd drops privileges after the auth handshake (privsep)
+##   SETGID      – same as SETUID for group changes
+##   SYS_CHROOT  – privilege-separation sandbox uses chroot(2)
+##   KILL        – sshd sends SIGTERM/SIGHUP to child processes on logout
+##   FSETID      – preserves file group ownership during pty setup
+##   SETPCAP     – permits sshd capability handling during privilege separation
+##   AUDIT_WRITE – supports OpenSSH/PAM login accounting when audit support is built in
+## Omitting any of these may cause sshd to refuse connections or crash the
+## privsep child.  UNVERIFIED – test with: ssh -v guest@127.0.0.1 -p 2225
+##
+## no-new-privileges note:
+##   OpenSSH's privilege-separation child does NOT exec a setuid binary; it
+##   uses the inherited fd and capabilities.  The monitor process itself is
+##   already privileged before the priv-sep fork.  Setting no-new-privileges
+##   on the whole container should therefore be safe in theory, but it can
+##   break PAM modules that exec helper binaries.  UNVERIFIED whether Ubuntu
+##   20.04's pam_unix works under no-new-privileges with privsep enabled.
+##   Omitting it here to avoid silent auth failures.
+
+name: gt-ssh
+
+services:
+  gt-ssh:
+    build:
+      context: ..
+      dockerfile: docker/groundtruth_ssh.Dockerfile
+
+    restart: "no"
+
+    # Drop all capabilities then re-add only those sshd actually needs.
+    # UNVERIFIED – see header comment for rationale.
+    cap_drop:
+      - ALL
+
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
+      - SYS_CHROOT
+      - KILL
+      - FSETID
+      - SETPCAP
+      - AUDIT_WRITE
+
+    # no-new-privileges intentionally omitted: see header comment.
+
+    # Bind to loopback only.
+    ports:
+      - "127.0.0.1:2225:22"
+
+    # hostname is set so 'hostname' inside the container returns "ubuntu",
+    # matching the Cowrie-family honeypot hostname for fair comparison.
+    hostname: ubuntu

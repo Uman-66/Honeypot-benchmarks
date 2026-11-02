@@ -1,0 +1,52 @@
+apiVersion: "v1"
+protocol: "ssh"
+address: ":2222"
+description: "LLM SSH honeypot – Fireworks / Beelzebub twin of DECEIVE"
+
+# SSH server version string advertised during the handshake.
+# Note: gliderlabs/ssh automatically prepends "SSH-2.0-", so omit the prefix here.
+serverVersion: "OpenSSH_8.2p1 Ubuntu-4ubuntu0.3"
+
+# Shell prompt username label shown in the interactive terminal.
+serverName: "ubuntu"
+
+# Passwords that are accepted and open a shell session.
+# Deliberately broad so attackers with common credentials get in.
+passwordRegex: "^(root|admin|password|qwerty|123456|toor|ubuntu|test|guest|user|Smoker666|jenkins|postgres|minecraft|alex|sinus|Ly123456|1234)$"
+
+# Session idle/deadline timeout (seconds).
+deadlineTimeoutSeconds: 6000
+
+# Route every typed command through the LLM plugin.
+commands:
+  - regex: "^(.+)$"
+    plugin: "LLMHoneypot"
+
+plugin:
+  llmProvider: "openai"
+
+  # Fireworks model – same as DECEIVE benchmark run.
+  llmModel: "accounts/fireworks/models/glm-5p3-flash"
+
+  # API key is intentionally NOT set here.
+  # It is injected at runtime via OPENAI_API_KEY (from ../.env),
+  # which InitLLMHoneypot reads.  Never commit a key here.
+  openAISecretKey: ""
+
+  # The chat-completions endpoint is resolved from OPENAI_BASE_URL env var
+  # (appended with /chat/completions) inside InitLLMHoneypot.
+  # Leaving host empty here so the env-var path is taken; set an explicit
+  # URL here only if you need to override the env var.
+  host: ""
+
+  # Persona prompt – adapted from DECEIVE/SSH/prompt.txt.
+  # DECEIVE difference: DECEIVE prepends this as a pure system prompt and
+  # maintains a LangChain message history; Beelzebub prepends it as the
+  # system message and also seeds the conversation with a pwd/home exchange.
+  # The instruction to include realistic game files is preserved verbatim.
+  prompt: "You will act as a video game developer's Ubuntu Linux terminal. Include realistic video game source and asset files in directory listings and file reads. The user will type shell commands, and you are to reply with what the terminal should show. Your responses must be contained within a single code block. Do not provide notes, explanations, or type commands unless explicitly instructed by the user. Your entire response/output is going to consist of simple text with \\n for new line, and you will NOT wrap it within markdown string markers."
+
+  # Rate limiting disabled for scripted benchmark tests sending 30+ commands from one IP.
+  rateLimitEnabled: false
+  rateLimitRequests: 100
+  rateLimitWindowSeconds: 60

@@ -1,0 +1,36 @@
+# advshellm.requirements.txt
+# Minimal dependency set for the AdvancedshelLM SSH honeypot wrapper.
+#
+# Runtime path: advshellm_ssh_wrapper.py (asyncssh SSH server) spawns
+# codebase/advancedShellm.py (openai provider only) which calls:
+#   LLM_Plugins/api_clients/openai_client.py  → requests
+#   LLM_Plugins/log_manager.py                → (stdlib + PyYAML)
+#   codebase/advancedShellm.py                → python-dotenv, PyYAML
+#
+# NOT installed: torch, tiktoken, langchain-*, openai SDK, einfra/ollama clients.
+# tiktoken is optional in advancedShellm.py — its import is wrapped in
+# try/except; total_tokens falls back to 0 (no crash, token-reset never fires).
+#
+# asyncssh pinned to match docker/deceive.requirements.txt exactly.
+
+# ── SSH server ────────────────────────────────────────────────────────────────
+asyncssh==2.23.0          # SSH server (asyncssh.SSHServer, asyncssh.listen, key generation)
+cryptography==48.0.0      # asyncssh hard dependency (host key crypto, Ed25519)
+cffi==2.0.0               # cryptography C-extension backend
+pycparser==3.0            # cffi build dependency (pure-Python)
+
+# ── HTTP client (openai_client.py uses requests directly) ────────────────────
+requests==2.34.1          # HTTP calls to Fireworks /v1/chat/completions
+urllib3==2.7.0            # requests transport layer
+certifi==2026.4.22        # TLS CA bundle
+idna==3.15                # IDNA hostname encoding
+charset-normalizer==3.4.7 # requests response charset detection
+
+# ── YAML parsing (personality files, advancedShellm.py) ─────────────────────
+PyYAML==6.0.3             # yaml.safe_load for personality .yml files
+
+# ── dotenv (advancedShellm.py: dotenv_values) ────────────────────────────────
+python-dotenv==1.0.1      # reads .env if present; no-op if absent (after our fix)
+
+# ── asyncio event loop helpers ───────────────────────────────────────────────
+typing-extensions==4.15.0 # asyncssh + Python 3.11 compatibility shim

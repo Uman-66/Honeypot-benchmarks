@@ -1,0 +1,21 @@
+## Minimal core config for the Beelzebub SSH honeypot container.
+## Prometheus, RabbitMQ, and beelzebub-cloud are all disabled.
+## Logs are written to /logs/beelzebub.log (bind-mounted from docker/logs/beelzebub/ on the host).
+core:
+  logging:
+    debug: false
+    debugReportCaller: false
+    logDisableTimestamp: false
+    logsPath: /logs/beelzebub.log
+  tracings:
+    rabbit-mq:
+      enabled: false
+      uri: ""
+  prometheus:
+    enabled: false
+    path: "/metrics"
+    port: ":2112"
+  beelzebub-cloud:
+    enabled: false
+    uri: ""
+    auth-token: ""

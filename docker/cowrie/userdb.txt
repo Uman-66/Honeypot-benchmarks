@@ -1,0 +1,42 @@
+# userdb.txt — Cowrie accepted-login database
+#
+# Format (one entry per line):
+#   username:uid:password
+#
+# Special password tokens:
+#   *        accept ANY password for this username
+#   !        reject this username/password combination
+#   !*       reject ALL passwords for this username
+#
+# VERIFIED from Cowrie source (cowrie/core/checkers.py):
+#   - Field separator is colon (:).
+#   - uid field is present but largely ignored by the checker; use 0 for root, 1000 for others.
+#   - Lines starting with # are comments.
+#   - Blank lines are ignored.
+#
+# These credentials mirror the passwordRegex accepted by Beelzebub and DECEIVE
+# so that the same scripted attacker sessions can be replayed against all three honeypots.
+
+# root — accept several common passwords
+root:0:root
+root:0:toor
+root:0:password
+root:0:123456
+root:0:admin
+root:0:qwerty
+root:0:ubuntu
+
+# guest — the primary benchmark account (used in scripted sessions)
+guest:1000:guest
+
+# Additional common attacker credentials
+admin:1000:admin
+admin:1000:password
+admin:1000:123456
+ubuntu:1000:ubuntu
+test:1000:test
+user:1000:user
+pi:1000:raspberry
+postgres:1000:postgres
+jenkins:1000:jenkins
+minecraft:1000:minecraft

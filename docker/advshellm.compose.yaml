@@ -1,0 +1,82 @@
+## AdvancedshelLM SSH Honeypot – Docker Compose
+##
+## Usage (from repo root):
+##   docker compose -f docker/advshellm.compose.yaml up --build
+##
+## Secrets are loaded from ../.env (relative to this file = docker/), which must contain:
+##   OPENAI_API_KEY=<your Fireworks key>
+##   OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
+##
+## The SSH listener is bound to 127.0.0.1:2224 only.
+##
+## Logs are stored in a named Docker volume 'advshellm_logs'.
+## To copy logs out after a session:
+##   docker cp $(docker compose -f docker/advshellm.compose.yaml ps -q advshellm):/app/codebase/logs/. ./docker/logs/advshellm/
+##
+## Named volume rationale (Docker Desktop for Windows):
+##   The container runs as user 'honey' (UID 1000, not root).
+##   Bind mounts on Docker Desktop (NTFS/WSL2) are owned by the Windows user;
+##   UID 1000 cannot write to them without a chmod that doesn't work reliably
+##   from Windows.  A named volume lives inside the WSL2 VM's Linux FS, so
+##   UID 1000 has native write access without host permission changes.
+
+name: advshellm
+
+services:
+  advshellm:
+    build:
+      context: ..
+      dockerfile: docker/advshellm.Dockerfile
+
+    restart: "no"
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+    # Bind to loopback only — no external exposure.
+    # Host port 2224 avoids conflict with DECEIVE (8022), Beelzebub (2222), Cowrie (2223).
+    ports:
+      - "127.0.0.1:2224:2222"
+
+    # Fireworks API key and base URL — loaded from ../.env (relative to docker/).
+    # NEVER bake secrets into the image; only pass them at runtime via env_file.
+    env_file:
+      - ../.env
+
+    environment:
+      # Fireworks model for the worker; override here to switch models without rebuilding.
+      MODEL: "accounts/fireworks/models/glm-5p3-flash"
+      # Set SUPERVISE=1 to enable Manager draft-review loop (slower; double LLM cost).
+      SUPERVISE: "0"
+      # Manager model (used only when SUPERVISE=1); defaults to MODEL in the wrapper.
+      MANAGER_MODEL: "accounts/fireworks/models/glm-5p3-flash"
+      # Timeout (seconds) for exec-mode prompt detection (banner + reply).
+      # 90 s covers Fireworks cold-start latency.
+      EXEC_TIMEOUT: "90"
+      # max_tokens cap sent to Fireworks.  GLM models reject 16384; 4096 is safe.
+      # Read by openai_client.py via os.environ.get("MAX_TOKENS", "4096").
+      MAX_TOKENS: "4096"
+      # OPENAI_BASE_URL and OPENAI_API_KEY come from env_file above and are forwarded
+      # automatically to the child process (advancedShellm.py) via os.environ.copy()
+      # in the wrapper.  Do not duplicate them here.
+
+    volumes:
+      # Named volume for advancedShellm.py log output.
+      # Each session creates a new datetime-stamped subdirectory inside:
+      #   /app/codebase/logs/<YYYY-MM-DD_HH-MM-SS>/
+      # Files: history.txt, history_ts.txt, trace_log.txt (if --trace),
+      #        command_history.txt, error.log.
+      - type: volume
+        source: advshellm_logs
+        target: /app/codebase/logs
+
+volumes:
+  advshellm_logs:
+    # Docker-managed named volume.  Persists until:
+    #   docker volume rm advshellm_logs
+    # Copy logs out with:
+    #   docker cp <container_id>:/app/codebase/logs/. ./docker/logs/advshellm/
+    driver: local

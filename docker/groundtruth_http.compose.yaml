@@ -1,0 +1,65 @@
+## Ground-Truth HTTP – Docker Compose
+##
+## Real nginx 1.18.0 from ubuntu:20.04 (apt package); used as the fidelity
+## baseline for HTTP honeypot comparisons.
+##
+## Why ubuntu:20.04 + apt rather than a tagged nginx Docker Hub image:
+##   The official nginx:1.18.0 tag DOES exist on Docker Hub but the image
+##   is based on Debian and uses a mainline/stable nginx build that may differ
+##   slightly from Ubuntu's package.  Using the Ubuntu 20.04 apt package
+##   (nginx 1.18.0-0ubuntu1.4) matches the "distro nginx 1.18.0" described in
+##   the benchmark spec and avoids a Docker Hub pull of a potentially large image.
+##   UNVERIFIED: exact minor-version string emitted in the Server header from
+##   ubuntu:20.04 apt nginx.  The apt package version is 1.18.0.
+##
+## Usage (from repo root):
+##   docker compose -f docker/groundtruth_http.compose.yaml up --build
+##
+## No API key required.
+## Host port: 2226 → container port 80
+##
+## Filesystem: writable (no read_only / tmpfs).  The Ubuntu 20.04 nginx package
+## writes to /var/lib/nginx/body, /var/lib/nginx/fastcgi, /var/lib/nginx/proxy,
+## /var/lib/nginx/scgi, /var/lib/nginx/uwsgi, /var/cache/nginx, /var/log/nginx,
+## and /run — all of which must be writable at startup.  A read-only root with
+## selective tmpfs mounts was attempted but failed (exit code 1, mkdir /var/lib/nginx/body
+## read-only file system); a plain writable container is used instead.
+##
+## Capability rationale (UNVERIFIED — not tested against Ubuntu 20.04 nginx 1.18.0
+## with cap_drop ALL):
+##   NET_BIND_SERVICE  – master process binds port 80 (privileged port)
+##   CHOWN             – master chowns log files and temp dirs to www-data
+##   SETUID / SETGID   – master drops to www-data after binding the socket
+##   DAC_OVERRIDE      – needed to open/create files in directories not owned
+##                       by root when DAC checks would otherwise block access
+##   FOWNER            – file-permission operations on files not owned by root
+##                       (e.g. chown of /var/log/nginx/* at startup)
+
+name: gt-http
+
+services:
+  gt-http:
+    build:
+      context: ..
+      dockerfile: docker/groundtruth_http.Dockerfile
+
+    restart: "no"
+
+    cap_drop:
+      - ALL
+
+    # See capability rationale in header comment above.  UNVERIFIED.
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - FOWNER
+
+    security_opt:
+      - no-new-privileges:true
+
+    # Bind to loopback only.
+    ports:
+      - "127.0.0.1:2226:80"

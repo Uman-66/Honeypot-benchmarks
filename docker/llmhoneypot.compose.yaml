@@ -1,0 +1,86 @@
+## llm-honeypot SSH Honeypot – Docker Compose
+##
+## Usage (from repo root):
+##   docker compose -f docker/llmhoneypot.compose.yaml up --build
+##
+## This honeypot does NOT require any API key. It is a modified Cowrie fork
+## that detects LLM-driven hacking agents using ANSI-hidden prompt injections.
+##
+## The SSH listener is bound to 127.0.0.1:2227 only.
+##
+## Logs (JSON lines) are stored in named Docker volume 'llmhoneypot_logs'.
+## To copy logs out after a session:
+##   docker cp $(docker compose -f docker/llmhoneypot.compose.yaml ps -q llmhoneypot):/home/cowrie/cowrie/var/log/cowrie/. ./docker/logs/llmhoneypot/
+##
+## Named volume rationale (Docker Desktop for Windows):
+##   The container runs as user 'cowrie' (UID 1001, non-root).
+##   Bind mounts on Docker Desktop (NTFS/WSL2) are owned by the Windows user;
+##   UID 1001 cannot write to them reliably.  Named volumes live inside the
+##   WSL2 VM's Linux filesystem where UID 1001 has native write access.
+##
+## Network isolation:
+##   No env_file needed (no API keys).
+##   dns: ["127.0.0.1"] prevents hostname resolution inside the container
+##   so that the fake wget/curl commands cannot reach real hosts by name.
+##   Raw-IP URLs would still reach the network; the benchmark command list
+##   must not contain URLs or IP addresses.
+
+name: llmhoneypot
+
+services:
+  llmhoneypot:
+    build:
+      # Build context is the repo root so both llm-honeypot/ and docker/ are reachable.
+      context: ..
+      dockerfile: docker/llmhoneypot.Dockerfile
+
+    restart: "no"
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+    # Bind to loopback only — no external exposure.
+    # Host port 2227: avoids conflict with DECEIVE (8022), Beelzebub (2222),
+    # Cowrie (2223), AdvancedshelLM (2224).
+    ports:
+      - "127.0.0.1:2227:2222"
+
+    # No env_file: this honeypot needs no API key.
+
+    # Block hostname resolution inside the container.
+    # This prevents the Cowrie wget/curl emulation from resolving real hostnames.
+    # NOTE: raw IP addresses would still route out; the benchmark harness must
+    # never send commands containing URLs or IP addresses to this honeypot.
+    dns:
+      - "127.0.0.1"
+
+    volumes:
+      # Named volume for Cowrie JSON log output and TTY recordings.
+      # Cowrie writes to var/log/cowrie/cowrie.json (inside WORKDIR).
+      # The Dockerfile pre-creates this directory owned by cowrie (uid 1001)
+      # so the named volume initialises with the correct owner.
+      - type: volume
+        source: llmhoneypot_logs
+        target: /home/cowrie/cowrie/var/log/cowrie
+
+      # Named volume for state files: SSH host keys, downloads, TTY logs.
+      # Keys are generated automatically by Cowrie on first start.
+      - type: volume
+        source: llmhoneypot_state
+        target: /home/cowrie/cowrie/var/lib/cowrie
+
+volumes:
+  llmhoneypot_logs:
+    # Docker-managed named volume.  Persists until:
+    #   docker volume rm llmhoneypot_logs
+    # Copy logs out with:
+    #   docker cp <container_id>:/home/cowrie/cowrie/var/log/cowrie/. ./docker/logs/llmhoneypot/
+    driver: local
+
+  llmhoneypot_state:
+    # Holds SSH host keys (generated on first run) and downloaded files.
+    # Persists across container restarts so host keys stay stable.
+    driver: local

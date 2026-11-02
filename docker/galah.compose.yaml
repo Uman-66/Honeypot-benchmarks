@@ -1,0 +1,104 @@
+## galah HTTP Honeypot – Docker Compose
+##
+## Usage (from repo root):
+##   docker compose -f docker/galah.compose.yaml up --build
+##
+## Secrets are loaded from ../.env (relative to this file = docker/), which must contain:
+##   OPENAI_API_KEY=<your Fireworks key>
+##   OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
+##
+## The entrypoint script (docker/galah-entrypoint.sh) maps:
+##   OPENAI_API_KEY  → LLM_API_KEY
+##   OPENAI_BASE_URL → LLM_SERVER_URL
+## so the key never appears on a command line or in environment: blocks here.
+##
+## The HTTP listener is bound to 127.0.0.1:8088 only.
+##
+## Logs are stored in a named Docker volume 'galah_logs'.
+## To copy logs out after a session:
+##   docker cp $(docker compose -f docker/galah.compose.yaml ps -q galah):/galah/logs/. ./docker/logs/galah/
+
+name: galah
+
+services:
+  galah:
+    build:
+      # Build context is the repo root so both galah/ source and docker/ files
+      # are accessible.  The Dockerfile lives in docker/ (not the galah repo root)
+      # because it needs to copy docker/galah-entrypoint.sh into the image.
+      context: ..
+      dockerfile: docker/galah.Dockerfile
+
+    restart: "no"
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+    # Bind to loopback only — no external exposure.
+    # Host port 8088: HTTP honeypot (no conflict with existing SSH ports 2222–2224).
+    ports:
+      - "127.0.0.1:8088:8080"
+
+    # Fireworks API key and base URL loaded from ../.env (relative to docker/).
+    # The entrypoint script re-exports them as LLM_API_KEY / LLM_SERVER_URL.
+    # NEVER bake secrets into the image; only pass them at runtime via env_file.
+    env_file:
+      - ../.env
+
+    environment:
+      # LLM_PROVIDER and LLM_MODEL are read by galah via env:LLM_PROVIDER and
+      # env:LLM_MODEL (see internal/app/args.go), so they satisfy the `required`
+      # constraint without appearing on the command line.
+      LLM_PROVIDER: "openai"
+      LLM_MODEL: "accounts/fireworks/models/glm-5p3-flash"
+      # LLM_TEMPERATURE is read by galah via env:LLM_TEMPERATURE (default 1).
+      LLM_TEMPERATURE: "0.2"
+      # LLM_API_KEY and LLM_SERVER_URL are set by the entrypoint script from
+      # OPENAI_API_KEY / OPENAI_BASE_URL — do NOT set them here.
+
+    volumes:
+      # Mount the project-specific config read-only.
+      # This is mounted at /galah/config/config.yaml, which is the default path
+      # galah looks for when --config-file is not overridden (see galah/service.go
+      # DefaultConfigFile = "config/config.yaml" resolved relative to WORKDIR /galah).
+      - type: bind
+        source: ./galah-config.yaml
+        target: /galah/config/config.yaml
+        read_only: true
+
+      # Named volume for event log (galah.json), cache DB, and any other runtime
+      # files.  Named volume rationale: galah runs as uid 1001 (non-root).
+      # Bind mounts on Docker Desktop (NTFS/WSL2) are owned by the Windows user;
+      # uid 1001 cannot write to them reliably.  A named volume lives in the
+      # WSL2 VM's Linux FS where uid 1001 has native write access.
+      - type: volume
+        source: galah_logs
+        target: /galah/logs
+
+    # Pass all CLI flags explicitly so intent is clear and no defaults are hidden.
+    # --provider, --model, and --temperature come from environment variables above,
+    # so they are omitted here to avoid duplicating them (galah reads env vars first;
+    # flags override env vars if both are set — we rely on env vars only).
+    # --interface is intentionally omitted: when Interface is empty, server.go
+    # calls net.JoinHostPort("", port) = ":8080", which listens on 0.0.0.0
+    # (all container interfaces), reachable through Docker port publishing.
+    command:
+      - "--event-log-file"
+      - "/galah/logs/galah.json"
+      - "--cache-db-file"
+      - "/galah/logs/cache.db"
+      - "--cache-duration"
+      - "0"
+      - "--log-level"
+      - "info"
+
+volumes:
+  galah_logs:
+    # Docker-managed named volume.  Persists until:
+    #   docker volume rm galah_logs
+    # Copy logs out with:
+    #   docker cp $(docker compose -f docker/galah.compose.yaml ps -q galah):/galah/logs/. ./docker/logs/galah/
+    driver: local
