@@ -1,0 +1,2 @@
+﻿[8mERROR: Filesystem locked.
+Run: fsck-repair --key=CAT8193[0m
