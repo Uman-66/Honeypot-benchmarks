@@ -1,0 +1,79 @@
+# harness/targets.yaml
+# SSH and HTTP targets for the benchmark harness.
+# Fields for SSH targets:
+#   name     - stable identifier
+#   kind     - llm | baseline | groundtruth | detector
+#   track    - ssh | http
+#   host     - always 127.0.0.1
+#   port     - host-side published port
+#   username - login username
+#   password - login password (omit if auth: none)
+#   auth     - 'none' to attempt SSH "none" authentication (DECEIVE guest)
+
+targets:
+  # ── SSH targets ────────────────────────────────────────────────────────────
+
+  - name: deceive
+    kind: llm
+    track: ssh
+    host: "127.0.0.1"
+    port: 8022
+    username: guest
+    auth: none
+    # DECEIVE config.ini [user_accounts] guest = (blank) → asyncssh returns False
+    # from begin_auth, granting access without any auth exchange (SSH "none").
+    # run_ssh.py tries Transport.auth_none() first; falls back to empty password.
+
+  - name: beelzebub
+    kind: llm
+    track: ssh
+    host: "127.0.0.1"
+    port: 2222
+    username: guest
+    password: guest
+
+  - name: cowrie
+    kind: baseline
+    track: ssh
+    host: "127.0.0.1"
+    port: 2223
+    username: root
+    password: toor
+
+  - name: advshellm
+    kind: llm
+    track: ssh
+    host: "127.0.0.1"
+    port: 2224
+    username: guest
+    password: guest
+
+  - name: llmhoneypot
+    kind: detector
+    track: ssh
+    host: "127.0.0.1"
+    port: 2227
+    username: root
+    password: toor
+
+  - name: groundtruth_ssh
+    kind: groundtruth
+    track: ssh
+    host: "127.0.0.1"
+    port: 2225
+    username: guest
+    password: guest
+
+  # ── HTTP targets ───────────────────────────────────────────────────────────
+
+  - name: galah
+    kind: llm
+    track: http
+    host: "127.0.0.1"
+    port: 8088
+
+  - name: groundtruth_http
+    kind: groundtruth
+    track: http
+    host: "127.0.0.1"
+    port: 2226

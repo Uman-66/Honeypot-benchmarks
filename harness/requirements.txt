@@ -1,0 +1,21 @@
+# harness/requirements.txt
+# Python dependencies for the benchmark harness.
+# Install with:
+#   pip install -r harness/requirements.txt
+
+# Paramiko: SSH client library used by run_ssh.py
+# 3.4.1 is the latest stable release as of early 2025 — UNVERIFIED exact patch version.
+paramiko==3.4.1
+
+# PyYAML: YAML parser used by run_ssh.py, run_http.py, and analyze.py
+# 6.0.1 is a stable release — UNVERIFIED exact patch version.
+PyYAML==6.0.1
+
+# bcrypt: required by paramiko for host-key operations
+# (paramiko declares it as optional but it is needed for Ed25519 key generation)
+# UNVERIFIED whether strictly required for client-only use; listed defensively.
+bcrypt==4.1.3
+
+# cryptography: required by paramiko for transport encryption
+# UNVERIFIED exact patch version; paramiko 3.4 requires cryptography>=38.0.
+cryptography==42.0.8

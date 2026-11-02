@@ -1,0 +1,197 @@
+# harness/commands.yaml
+# Ordered list of ~30 benign commands sent to every SSH target.
+# Fields:
+#   id            - stable identifier used in output CSV/JSONL
+#   text          - exact string sent to the shell
+#   category      - one of: recon, files, process, network_info, errors, state, permissions
+#   host_specific - true  → output varies with real host (hostname, uptime, date…);
+#                           compared to ground truth for REFERENCE only
+#                 - false → output should be consistent across an honest shell;
+#                           used for fidelity comparison with the ground truth
+# The final 'exit' command is handled specially by run_ssh.py (no prompt wait).
+
+commands:
+  - id: whoami
+    text: "whoami"
+    category: recon
+    host_specific: false
+
+  - id: id
+    text: "id"
+    category: recon
+    host_specific: false
+
+  - id: pwd
+    text: "pwd"
+    category: recon
+    host_specific: false
+
+  - id: hostname
+    text: "hostname"
+    category: recon
+    host_specific: true
+
+  - id: uname_a
+    text: "uname -a"
+    category: recon
+    host_specific: true
+
+  - id: os_release
+    text: "cat /etc/os-release"
+    category: recon
+    host_specific: false
+
+  - id: passwd
+    text: "cat /etc/passwd"
+    category: files
+    host_specific: false
+
+  - id: ls
+    text: "ls"
+    category: files
+    host_specific: false
+
+  - id: ls_la
+    text: "ls -la"
+    category: files
+    host_specific: false
+
+  - id: ls_etc
+    text: "ls /etc"
+    category: files
+    host_specific: false
+
+  - id: ls_home
+    text: "ls /home"
+    category: files
+    host_specific: false
+
+  - id: date
+    text: "date"
+    category: recon
+    host_specific: true
+
+  - id: uptime
+    text: "uptime"
+    category: recon
+    host_specific: true
+
+  - id: free_m
+    text: "free -m"
+    category: recon
+    host_specific: true
+
+  - id: df_h
+    text: "df -h"
+    category: recon
+    host_specific: true
+
+  - id: ps_aux
+    text: "ps aux"
+    category: process
+    host_specific: true
+
+  - id: cpuinfo
+    text: "cat /proc/cpuinfo | head -5"
+    category: recon
+    host_specific: true
+
+  - id: w
+    text: "w"
+    category: process
+    host_specific: true
+
+  - id: env
+    text: "env"
+    category: recon
+    host_specific: true
+
+  - id: which_python3_gcc
+    text: "which python3 gcc"
+    category: recon
+    host_specific: false
+
+  - id: find_etc_conf
+    text: "find /etc -name '*.conf' | head -5"
+    category: files
+    host_specific: false
+
+  - id: err_foobarbaz
+    text: "foobarbaz"
+    category: errors
+    host_specific: false
+
+  - id: err_cat_nonexistent
+    text: "cat /nonexistent"
+    category: errors
+    host_specific: false
+
+  - id: err_ls_root
+    text: "ls /root"
+    category: errors
+    host_specific: false
+
+  - id: perm_shadow
+    text: "cat /etc/shadow"
+    category: permissions
+    host_specific: false
+
+  - id: perm_sudo_l
+    text: "sudo -l"
+    category: permissions
+    host_specific: false
+
+  - id: state_cd_tmp
+    text: "cd /tmp"
+    category: state
+    host_specific: false
+
+  - id: state_pwd_after_cd
+    text: "pwd"
+    category: state
+    host_specific: false
+
+  - id: state_echo_marker
+    text: "echo benchmark_marker > /tmp/bm.txt"
+    category: state
+    host_specific: false
+
+  - id: state_cat_marker
+    text: "cat /tmp/bm.txt"
+    category: state
+    host_specific: false
+
+  - id: state_ls_tmp_1
+    text: "ls /tmp"
+    category: state
+    host_specific: false
+
+  - id: state_mkdir_bm_dir
+    text: "mkdir /tmp/bm_dir"
+    category: state
+    host_specific: false
+
+  - id: state_ls_tmp_2
+    text: "ls /tmp"
+    category: state
+    host_specific: false
+
+  - id: state_rm_marker
+    text: "rm /tmp/bm.txt"
+    category: state
+    host_specific: false
+
+  - id: state_ls_tmp_3
+    text: "ls /tmp"
+    category: state
+    host_specific: false
+
+  - id: state_rmdir_bm_dir
+    text: "rmdir /tmp/bm_dir"
+    category: state
+    host_specific: false
+
+  - id: exit
+    text: "exit"
+    category: state
+    host_specific: false

@@ -1,0 +1,113 @@
+# harness/http_requests.yaml
+# Ordered list of ~20 HTTP requests sent to every HTTP target.
+# Fields:
+#   id       - stable identifier
+#   method   - GET | HEAD | OPTIONS | POST
+#   path     - URL path (host is always 127.0.0.1, injected at runtime)
+#   body     - optional request body (for POST)
+#   headers  - optional extra request headers (mapping)
+#   note     - human-readable description
+
+requests:
+  - id: get_root
+    method: GET
+    path: "/"
+    note: "Homepage / default response"
+
+  - id: get_admin
+    method: GET
+    path: "/admin"
+    note: "Common admin path probe"
+
+  - id: get_env
+    method: GET
+    path: "/.env"
+    note: "Credential file leak probe"
+
+  - id: get_login
+    method: GET
+    path: "/login"
+    note: "Login page probe"
+
+  - id: get_api_status
+    method: GET
+    path: "/api/status"
+    note: "REST API status probe"
+
+  - id: get_api_v1_users
+    method: GET
+    path: "/api/v1/users"
+    note: "REST API user list probe"
+
+  - id: get_robots
+    method: GET
+    path: "/robots.txt"
+    note: "Robots.txt disclosure probe"
+
+  - id: get_favicon
+    method: GET
+    path: "/favicon.ico"
+    note: "Favicon probe"
+
+  - id: get_wp_login
+    method: GET
+    path: "/wp-login.php"
+    note: "WordPress login probe"
+
+  - id: get_phpmyadmin
+    method: GET
+    path: "/phpmyadmin/"
+    note: "phpMyAdmin probe"
+
+  - id: get_server_status
+    method: GET
+    path: "/server-status"
+    note: "Apache server-status probe"
+
+  - id: get_nonexistent
+    method: GET
+    path: "/nonexistent-page-xyz"
+    note: "Expected 404 — tests error response consistency"
+
+  - id: head_root
+    method: HEAD
+    path: "/"
+    note: "HEAD / — checks header presence without body"
+
+  - id: options_root
+    method: OPTIONS
+    path: "/"
+    note: "OPTIONS / — checks Allow header"
+
+  - id: post_login
+    method: POST
+    path: "/login"
+    body: "username=admin&password=test"
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+    note: "POST login with fake credentials"
+
+  - id: get_long_qs
+    method: GET
+    path: "/?q=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    note: "500-character query string"
+
+  - id: get_path_traversal
+    method: GET
+    path: "/../../etc/passwd"
+    note: "Raw path traversal probe"
+
+  - id: get_root_repeat1
+    method: GET
+    path: "/"
+    note: "GET / repeated #1 — determinism check"
+
+  - id: get_root_repeat2
+    method: GET
+    path: "/"
+    note: "GET / repeated #2 — determinism check"
+
+  - id: get_root_repeat3
+    method: GET
+    path: "/"
+    note: "GET / repeated #3 — determinism check"
