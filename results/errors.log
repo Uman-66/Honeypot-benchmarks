@@ -1,0 +1,16 @@
+[2026-11-02T07:04:15.991866+00:00] target=advshellm run=1 stage=run type=OSError message=OSError('Socket is closed')
+Traceback (most recent call last):
+  File "E:\Test\honeypot-benchmark\harness\run_ssh.py", line 752, in main
+    cmd_results, fp, run_meta = _run_once(
+                                ^^^^^^^^^^
+  File "E:\Test\honeypot-benchmark\harness\run_ssh.py", line 489, in _run_once
+    chan.sendall((cmd_text + "\n").encode(ENCODING))
+  File "E:\Test\honeypot-benchmark\harness\.venv\Lib\site-packages\paramiko\channel.py", line 844, in sendall
+    sent = self.send(s)
+           ^^^^^^^^^^^^
+  File "E:\Test\honeypot-benchmark\harness\.venv\Lib\site-packages\paramiko\channel.py", line 799, in send
+    return self._send(s, m)
+           ^^^^^^^^^^^^^^^^
+  File "E:\Test\honeypot-benchmark\harness\.venv\Lib\site-packages\paramiko\channel.py", line 1196, in _send
+    raise socket.error("Socket is closed")
+OSError: Socket is closed

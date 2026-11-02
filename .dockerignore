@@ -1,0 +1,9 @@
+# Never bake secrets or unnecessary data into the image
+.env
+.git
+**/.git
+**/__pycache__
+**/*.pyc
+**/.venv
+**/logs
+DECEIVE/.git
