@@ -1,0 +1,344 @@
+{
+  "deceive": [
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "fe2a15c68b7a911f40147bac4e9aa836",
+      "auth_methods": null,
+      "run": 1,
+      "auth_method_used": "none",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "fe2a15c68b7a911f40147bac4e9aa836",
+      "auth_methods": null,
+      "run": 2,
+      "auth_method_used": "none",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "fe2a15c68b7a911f40147bac4e9aa836",
+      "auth_methods": null,
+      "run": 3,
+      "auth_method_used": "none",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "fe2a15c68b7a911f40147bac4e9aa836",
+      "auth_methods": null,
+      "run": 4,
+      "auth_method_used": "none",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "fe2a15c68b7a911f40147bac4e9aa836",
+      "auth_methods": null,
+      "run": 5,
+      "auth_method_used": "none",
+      "connection_error": null
+    }
+  ],
+  "beelzebub": [
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "cac0223bc7360c5b1045fcf84a3bf951",
+      "auth_methods": null,
+      "run": 1,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "cac0223bc7360c5b1045fcf84a3bf951",
+      "auth_methods": null,
+      "run": 2,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "cac0223bc7360c5b1045fcf84a3bf951",
+      "auth_methods": null,
+      "run": 3,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "cac0223bc7360c5b1045fcf84a3bf951",
+      "auth_methods": null,
+      "run": 4,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "cac0223bc7360c5b1045fcf84a3bf951",
+      "auth_methods": null,
+      "run": 5,
+      "auth_method_used": "password",
+      "connection_error": null
+    }
+  ],
+  "cowrie": [
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "ee5d297931adc91cd26a6ad6c9462c7a",
+      "auth_methods": null,
+      "run": 1,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "ee5d297931adc91cd26a6ad6c9462c7a",
+      "auth_methods": null,
+      "run": 2,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "ee5d297931adc91cd26a6ad6c9462c7a",
+      "auth_methods": null,
+      "run": 3,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "ee5d297931adc91cd26a6ad6c9462c7a",
+      "auth_methods": null,
+      "run": 4,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "ee5d297931adc91cd26a6ad6c9462c7a",
+      "auth_methods": null,
+      "run": 5,
+      "auth_method_used": "password",
+      "connection_error": null
+    }
+  ],
+  "advshellm": [
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "8a4f7c843c92a1be0faf8fbb72057ca1",
+      "auth_methods": null,
+      "run": 1,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "8a4f7c843c92a1be0faf8fbb72057ca1",
+      "auth_methods": null,
+      "run": 2,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "8a4f7c843c92a1be0faf8fbb72057ca1",
+      "auth_methods": null,
+      "run": 3,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "8a4f7c843c92a1be0faf8fbb72057ca1",
+      "auth_methods": null,
+      "run": 4,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "8a4f7c843c92a1be0faf8fbb72057ca1",
+      "auth_methods": null,
+      "run": 5,
+      "auth_method_used": "password",
+      "connection_error": null
+    }
+  ],
+  "llmhoneypot": [
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "b1dc587fc2d66254a7fc59d8f0e52ce3",
+      "auth_methods": null,
+      "run": 1,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "b1dc587fc2d66254a7fc59d8f0e52ce3",
+      "auth_methods": null,
+      "run": 2,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "b1dc587fc2d66254a7fc59d8f0e52ce3",
+      "auth_methods": null,
+      "run": 3,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "b1dc587fc2d66254a7fc59d8f0e52ce3",
+      "auth_methods": null,
+      "run": 4,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "b1dc587fc2d66254a7fc59d8f0e52ce3",
+      "auth_methods": null,
+      "run": 5,
+      "auth_method_used": "password",
+      "connection_error": null
+    }
+  ],
+  "groundtruth_ssh": [
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.13",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "64aa346ac0135079bba555c03351f451",
+      "auth_methods": null,
+      "run": 1,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.13",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "64aa346ac0135079bba555c03351f451",
+      "auth_methods": null,
+      "run": 2,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.13",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "64aa346ac0135079bba555c03351f451",
+      "auth_methods": null,
+      "run": 3,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.13",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "64aa346ac0135079bba555c03351f451",
+      "auth_methods": null,
+      "run": 4,
+      "auth_method_used": "password",
+      "connection_error": null
+    },
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.13",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "64aa346ac0135079bba555c03351f451",
+      "auth_methods": null,
+      "run": 5,
+      "auth_method_used": "password",
+      "connection_error": null
+    }
+  ]
+}
