@@ -61,7 +61,7 @@ services:
       # LLM sampling temperature.
       TEMPERATURE: "0.2"
       # Maximum tokens per LLM response.
-      MAX_TOKENS: "2048"
+      MAX_TOKENS: "8192"
       # OPENAI_API_KEY and OPENAI_BASE_URL come from env_file above.
       # Do not duplicate them here.
 

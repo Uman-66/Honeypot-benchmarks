@@ -2,6 +2,8 @@
 
 Benchmark integration notes for **honeybee** (package `pyhoneybee` v0.1.1).
 
+UI generation tabs now report empty or exhausted model results instead of raising.
+
 ---
 
 ## Step 1 — Code Investigation Answers

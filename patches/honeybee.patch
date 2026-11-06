@@ -598,10 +598,10 @@ diff --git a/honeybee/tabs/__init__.py b/honeybee/tabs/__init__.py
 new file mode 100644
 index 0000000..e69de29
 diff --git a/honeybee/tabs/dockercompose_tab.py b/honeybee/tabs/dockercompose_tab.py
-index 956e7c8..8feb2b5 100644
+index 956e7c8..8a36874 100644
 --- a/honeybee/tabs/dockercompose_tab.py
 +++ b/honeybee/tabs/dockercompose_tab.py
-@@ -1,17 +1,24 @@
+@@ -1,17 +1,34 @@
  import streamlit as st
 -from src.validations import run_yamlfix
 -from src.trace_tools import add_tcpdump_service
@@ -613,6 +613,12 @@ index 956e7c8..8feb2b5 100644
 +from honeybee.src import generators, query_history
  
 -def render(application, input_mode, input_content, selected_misconfigs, client, model, docker_compose_supported):
++GENERATION_FAILURE_MESSAGE = (
++    "Generation failed: the model returned no usable output, probably because "
++    "the token limit was reached. Try fewer misconfigurations or a higher "
++    "MAX_TOKENS. See the container logs."
++)
++
 +def render(application, input_mode, input_content, selected_misconfigs, client, model,
 +           docker_compose_supported, temperature=0.2, max_tokens=2048):
      with_trace = st.toggle("With trace tools", help="Add tcpdump service")
@@ -630,19 +636,29 @@ index 956e7c8..8feb2b5 100644
 +                    client, model, application, selected_misconfigs,
 +                    temperature=temperature, max_tokens=max_tokens,
 +                )
++
++            if not comps:
++                st.error(GENERATION_FAILURE_MESSAGE)
++                return
  
              for item in comps:
                  if item["file_type"].lower() == "yaml":
 diff --git a/honeybee/tabs/dockerfile_tab.py b/honeybee/tabs/dockerfile_tab.py
-index 5cb86e4..1ea266f 100644
+index 5cb86e4..c6f6a56 100644
 --- a/honeybee/tabs/dockerfile_tab.py
 +++ b/honeybee/tabs/dockerfile_tab.py
-@@ -1,13 +1,20 @@
+@@ -1,13 +1,29 @@
  import streamlit as st
 -from src import generators, query_history
 +from honeybee.src import generators, query_history
  
 -def render(application, input_mode, input_content, selected_misconfigs, client, model):
++GENERATION_FAILURE_MESSAGE = (
++    "Generation failed: the model returned no usable output, probably because "
++    "the token limit was reached. Try fewer misconfigurations or a higher "
++    "MAX_TOKENS. See the container logs."
++)
++
 +def render(application, input_mode, input_content, selected_misconfigs, client, model,
 +           temperature=0.2, max_tokens=2048):
      if application and st.button("Generate Dockerfile", use_container_width=True, type="primary"):
@@ -659,19 +675,28 @@ index 5cb86e4..1ea266f 100644
 +                    client, model, application, selected_misconfigs,
 +                    temperature=temperature, max_tokens=max_tokens,
 +                )
++            if not dockerfile:
++                st.error(GENERATION_FAILURE_MESSAGE)
++                return
          st.session_state["dockerfile_generated"] = True
          st.session_state["dockerfile_content"] = dockerfile
          query_history.save_query("Dockerfile", [application, selected_misconfigs], dockerfile)
 diff --git a/honeybee/tabs/nuclei_tab.py b/honeybee/tabs/nuclei_tab.py
-index 25c4d71..4492b55 100644
+index 25c4d71..f2bae35 100644
 --- a/honeybee/tabs/nuclei_tab.py
 +++ b/honeybee/tabs/nuclei_tab.py
-@@ -1,13 +1,20 @@
+@@ -1,13 +1,29 @@
  import streamlit as st
 -from src import generators, query_history
 +from honeybee.src import generators, query_history
  
 -def render(application, input_mode, input_content, selected_misconfigs, client, model):
++GENERATION_FAILURE_MESSAGE = (
++    "Generation failed: the model returned no usable output, probably because "
++    "the token limit was reached. Try fewer misconfigurations or a higher "
++    "MAX_TOKENS. See the container logs."
++)
++
 +def render(application, input_mode, input_content, selected_misconfigs, client, model,
 +           temperature=0.2, max_tokens=2048):
      if application and st.button("Generate Nuclei", use_container_width=True, type="primary"):
@@ -688,6 +713,9 @@ index 25c4d71..4492b55 100644
 +                    client, model, application, selected_misconfigs,
 +                    temperature=temperature, max_tokens=max_tokens,
 +                )
++            if not nuclei:
++                st.error(GENERATION_FAILURE_MESSAGE)
++                return
          st.session_state["nuclei_generated"] = True
          st.session_state["nuclei_content"] = nuclei
          query_history.save_query("Nuclei", [application, selected_misconfigs], nuclei)
