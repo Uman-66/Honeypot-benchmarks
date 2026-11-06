@@ -1,0 +1,17 @@
+# vellmes.requirements.txt
+# Minimal dependency set for the VelLMes SSH honeypot wrapper only.
+#
+# Runtime path: vellmes_ssh_wrapper.py (asyncssh SSH server) spawns
+#   VelLMes.py (openai SDK, python-dotenv, pyyaml, tiktoken, requests)
+# The VelLMes application dependencies (openai, tiktoken, etc.) are
+# installed separately from VelLMes-AI-Deception-Framework/requirements.txt
+# in the Dockerfile.
+
+# ── SSH server ────────────────────────────────────────────────────────────────
+asyncssh==2.23.0          # SSH server (asyncssh.SSHServer, asyncssh.listen, key generation)
+cryptography==48.0.0      # asyncssh hard dependency (host key crypto, Ed25519)
+cffi==2.0.0               # cryptography C-extension backend
+pycparser==3.0            # cffi build dependency (pure-Python)
+
+# ── asyncio event loop helpers ────────────────────────────────────────────────
+typing-extensions==4.15.0 # asyncssh + Python 3.11 compatibility shim

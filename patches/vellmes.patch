@@ -1,0 +1,181 @@
+diff --git a/VelLMes.py b/VelLMes.py
+index 4e68e73..5c29667 100644
+--- a/VelLMes.py
++++ b/VelLMes.py
+@@ -1,6 +1,6 @@
+ """
+ Honeypot tool that uses LLMs to generate realistic
+-shell environments with high interaction and simulate 
++shell environments with high interaction and simulate
+ various protocols such as SSH, HTTP, MySQL, POP3... (2023-2024).
+ 
+ Authors:
+@@ -9,14 +9,22 @@ Authors:
+ 
+ import argparse
+ import os
++import re
+ import random
+ from datetime import datetime
+ from time import sleep
+ import yaml
+ from dotenv import dotenv_values
+-import tiktoken
+ import openai
+ 
++# tiktoken is optional: encoding_for_model raises KeyError for non-OpenAI model
++# names (e.g. accounts/fireworks/models/glm-5p3-flash).  Wrap the import so we
++# can fall back gracefully when it is unavailable or the model is unknown.
++try:
++    import tiktoken as _tiktoken
++except ImportError:
++    _tiktoken = None
++
+ today = datetime.now()
+ 
+ def read_arguments():
+@@ -46,13 +54,66 @@ def read_arguments():
+ 
+     return config_path, env_path, model_name, temperature, max_tokens, output_dir, log_file
+ 
++# ---------------------------------------------------------------------------
++# Compiled pattern for stripping <think>...</think> reasoning blocks and
++# markdown code fences that some models (e.g. GLM) emit around their output.
++# Both are stripped before the response is printed or stored.
++# ---------------------------------------------------------------------------
++_THINK_RE    = re.compile(r'<think>.*?</think>', re.DOTALL | re.IGNORECASE)
++_FENCE_START = re.compile(r'^```[a-zA-Z0-9]*\n', re.MULTILINE)
++_FENCE_END   = re.compile(r'\n```\s*$', re.MULTILINE)
++
++
++def _strip_reasoning(text: str) -> str:
++    """Remove <think>…</think> blocks and outer markdown code fences."""
++    text = _THINK_RE.sub('', text)
++    # Strip a single wrapping ```…``` fence if present
++    text = _FENCE_START.sub('', text, count=1)
++    text = _FENCE_END.sub('', text, count=1)
++    return text.strip()
++
++
++# ---------------------------------------------------------------------------
++# OpenAI client factory — reads key and base_url from environment so that
++# secrets are never stored in files or passed on the command line.
++# ---------------------------------------------------------------------------
++_openai_client = None
++
++
++def _get_client() -> openai.OpenAI:
++    """Return a cached OpenAI-compatible client configured from environment."""
++    global _openai_client
++    if _openai_client is None:
++        api_key  = os.environ.get("OPENAI_API_KEY", "")
++        base_url = os.environ.get("OPENAI_BASE_URL", None)   # None → default api.openai.com
++        kwargs = {"api_key": api_key}
++        if base_url:
++            kwargs["base_url"] = base_url
++        _openai_client = openai.OpenAI(**kwargs)
++    return _openai_client
++
++
+ def set_key(env_path):
+-    env = dotenv_values(env_path)
+-    openai.api_key = env["OPENAI_API_KEY"]
++    # Read .env file if it exists and is non-empty; values are injected into
++    # os.environ so _get_client() picks them up.  If env_path is /dev/null
++    # or the file is empty, fall back to the environment variables already set
++    # by Docker Compose (OPENAI_API_KEY, OPENAI_BASE_URL).
++    try:
++        env = dotenv_values(env_path)
++        if env.get("OPENAI_API_KEY"):
++            os.environ.setdefault("OPENAI_API_KEY", env["OPENAI_API_KEY"])
++        if env.get("OPENAI_BASE_URL"):
++            os.environ.setdefault("OPENAI_BASE_URL", env["OPENAI_BASE_URL"])
++    except Exception:
++        pass  # /dev/null or missing file — env vars already set externally
+ 
+ 
+ def read_history(identity, output_dir, reset_prompt):
+-    
++    # Benchmark mode: always start fresh — never carry conversation history
++    # from a previous session into a new one.  Cross-session carry-over would
++    # contaminate benchmark runs where each SSH connection must see a clean
++    # state.  The output file is unique per session (set by the wrapper via
++    # the -o flag), so this branch always creates a new empty file.
+     history = open(output_dir, "a+", encoding="utf-8")
+     TOKEN_COUNT = 0
+ 
+@@ -64,8 +125,15 @@ def read_history(identity, output_dir, reset_prompt):
+         history.seek(0)
+         prompt = history.read()
+ 
+-        encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+-        TOKEN_COUNT = len(encoding.encode(prompt))
++        # tiktoken fallback: encoding_for_model raises KeyError for non-OpenAI
++        # model names.  Catch it and leave TOKEN_COUNT = 0 (forces a fresh
++        # session, which is the safe behaviour for an unknown model anyway).
++        try:
++            if _tiktoken is not None:
++                encoding = _tiktoken.encoding_for_model("gpt-3.5-turbo")
++                TOKEN_COUNT = len(encoding.encode(prompt))
++        except (KeyError, Exception):
++            TOKEN_COUNT = 0
+ 
+     # Check if the token count was exceeded or history is empty:
+     #   - If yes, load the initial personality
+@@ -79,20 +147,25 @@ def read_history(identity, output_dir, reset_prompt):
+     return prompt
+ 
+ def setParameters(identity, model_name, model_temperature, model_max_tokens, output_dir, log_file):
+-    if model_name == None:
+-        model_name = identity['model'].strip()
++    # CLI flags take priority.  If not set by CLI, check environment variables
++    # (set by Docker Compose).  If not set there either, fall back to the
++    # YAML config values.
++    if model_name is None:
++        model_name = os.environ.get("MODEL") or identity['model'].strip()
+ 
+-    if model_max_tokens == None:
+-        model_max_tokens = int(identity['max_tokens'].strip())
++    if model_max_tokens is None:
++        env_mt = os.environ.get("MAX_TOKENS")
++        model_max_tokens = int(env_mt) if env_mt else int(identity['max_tokens'].strip())
+ 
+-    if model_temperature == None:
+-        model_temperature = float(identity['temperature'].strip())
++    if model_temperature is None:
++        env_t = os.environ.get("TEMPERATURE")
++        model_temperature = float(env_t) if env_t else float(identity['temperature'].strip())
+ 
+-    if output_dir == None:
++    if output_dir is None:
+         output_dir = identity['output'].strip()
+-    
+-    if log_file == None:
+-            log_file = identity['log'].strip()
++
++    if log_file is None:
++        log_file = identity['log'].strip()
+ 
+     return model_name, model_temperature, model_max_tokens, output_dir, log_file
+ 
+@@ -200,7 +273,7 @@ def main():
+ 
+         # Get model response
+         try:
+-            res = openai.chat.completions.create(
++            res = _get_client().chat.completions.create(
+                 model = model_name,
+                 messages = messages,
+                 temperature = model_temperature,
+@@ -208,7 +281,10 @@ def main():
+             )
+ 
+             # Get message as dict from response
+-            msg = res.choices[0].message.content
++            raw_msg = res.choices[0].message.content or ""
++            # Strip <think>…</think> reasoning blocks and markdown fences
++            # emitted by some models (e.g. GLM) before showing the response.
++            msg = _strip_reasoning(raw_msg)
+             message = {"content": msg, "role": 'assistant'}
+ 
+             # Write message to working memory

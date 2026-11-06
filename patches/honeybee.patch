@@ -1,0 +1,709 @@
+diff --git "a/honeybee/1_\360\237\220\235_app.py" "b/honeybee/1_\360\237\220\235_app.py"
+index 95df6fb..4aa5b56 100644
+--- "a/honeybee/1_\360\237\220\235_app.py"
++++ "b/honeybee/1_\360\237\220\235_app.py"
+@@ -4,14 +4,14 @@ import json
+ import time
+ from pathlib import Path
+ 
+-from src.settings import get_llm_settings, get_jina_ai_api_key
+-from src.client_provider import get_llm_client
+-from src.validations import run_yamlfix
+-from src.trace_tools import add_tcpdump_service
+-from src.local_deploy import local_deploy_compose, check_docker_compose_installed
+-import src.generators as generators
+-import src.query_history as query_history
+-from tabs import dockerfile_tab, dockercompose_tab, nuclei_tab
++from honeybee.src.settings import get_llm_settings, get_jina_ai_api_key
++from honeybee.src.client_provider import get_llm_client
++from honeybee.src.validations import run_yamlfix
++from honeybee.src.trace_tools import add_tcpdump_service
++from honeybee.src.local_deploy import local_deploy_compose, check_docker_compose_installed
++from honeybee.src import generators
++from honeybee.src import query_history
++from honeybee.tabs import dockerfile_tab, dockercompose_tab, nuclei_tab
+ 
+ 
+ # Set up Streamlit page
+@@ -44,6 +44,8 @@ elif settings["provider"] == "Azure OpenAI" and (
+ # Initialize LLM client and model
+ client = get_llm_client(settings)
+ model = settings["model"]
++temperature = settings["temperature"]
++max_tokens = settings["max_tokens"]
+ 
+ # Get Jina AI API key
+ jina_ai_api = get_jina_ai_api_key()
+@@ -51,7 +53,7 @@ jina_ai_api = get_jina_ai_api_key()
+ # Load misconfigurations data
+ 
+ misconfigurations_data = json.loads(
+-    Path(__file__).parent.joinpath("misconfigurations_catalog.json").read_text()
++    Path(__file__).parent.joinpath("misconfigurations_catalog.json").read_text(encoding="utf-8")
+ )
+ 
+ 
+@@ -194,6 +196,8 @@ with dockercompose_tab_obj:
+         client,
+         model,
+         docker_compose_supported,
++        temperature=temperature,
++        max_tokens=max_tokens,
+     )
+ 
+ # dockerfile tab
+@@ -205,6 +209,8 @@ with dockerfile_tab_obj:
+         selected_misconfigurations,
+         client,
+         model,
++        temperature=temperature,
++        max_tokens=max_tokens,
+     )
+ 
+ # nuclei tab
+@@ -216,4 +222,6 @@ with nuclei_tab_obj:
+         selected_misconfigurations,
+         client,
+         model,
++        temperature=temperature,
++        max_tokens=max_tokens,
+     )
+diff --git "a/honeybee/pages/1_\342\217\263_history.py" "b/honeybee/pages/1_\342\217\263_history.py"
+index 8677049..62b3833 100644
+--- "a/honeybee/pages/1_\342\217\263_history.py"
++++ "b/honeybee/pages/1_\342\217\263_history.py"
+@@ -4,7 +4,7 @@ import streamlit as st
+ from pathlib import Path
+ from datetime import datetime, date, timedelta
+ 
+-from src.query_history import load_history
++from honeybee.src.query_history import load_history
+ 
+ # Page configuration
+ st.set_page_config(
+diff --git a/honeybee/pages/__init__.py b/honeybee/pages/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/honeybee/src/__init__.py b/honeybee/src/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/honeybee/src/client_provider.py b/honeybee/src/client_provider.py
+index 7354428..ff4c4dc 100644
+--- a/honeybee/src/client_provider.py
++++ b/honeybee/src/client_provider.py
+@@ -1,12 +1,19 @@
++import os
++
+ from openai import OpenAI, AzureOpenAI
+ 
++
+ def get_llm_client(settings):
+     provider = settings["provider"]
+     if provider == "OpenAI":
+-        return OpenAI(api_key=settings["api_key"])
++        # OPENAI_BASE_URL allows routing to OpenAI-compatible endpoints
++        # (e.g. Fireworks AI: https://api.fireworks.ai/inference/v1).
++        # Falls back to the default OpenAI base URL when not set.
++        base_url = os.getenv("OPENAI_BASE_URL") or None
++        return OpenAI(api_key=settings["api_key"], base_url=base_url)
+     elif provider == "Azure OpenAI":
+         return AzureOpenAI(
+             api_key=settings["api_key"],
+             api_version="2024-07-01-preview",
+-            azure_endpoint=settings["azure_endpoint"]
++            azure_endpoint=settings["azure_endpoint"],
+         )
+diff --git a/honeybee/src/generators.py b/honeybee/src/generators.py
+index df50059..30ddb17 100644
+--- a/honeybee/src/generators.py
++++ b/honeybee/src/generators.py
+@@ -1,18 +1,54 @@
+ import json
++import os
+ import re
++import sys
+ from pathlib import Path
+ 
+ PROMPTS_PATH = Path(__file__).parent.parent.joinpath("prompts")
++DEFAULT_MAX_TOKENS = int(os.getenv("MAX_TOKENS", "8192"))
++LAST_ATTEMPTS: list[dict] = []
+ 
+ 
+-def generate_from_prompt(client, model, prompt_file, user_prompt):
++def _strip_think_and_fences(text: str | None) -> str:
++    """
++    Pre-process a raw LLM response before JSON parsing.
++
++    Some models (e.g. glm-5p3-flash via Fireworks) emit a <think>…</think>
++    reasoning block before the actual answer.  We strip it first, then strip
++    any leading/trailing markdown code fences so the remainder can be parsed
++    as plain JSON.
++
++    Steps (applied in order):
++      1. Remove <think>…</think> blocks (greedy, dotall).
++      2. Extract the content of the first ```json … ``` fence if present.
++      3. If no fence found, strip any stray leading/trailing ``` lines.
++    """
++    if not text:
++        return ""
++    # Step 1: remove <think> blocks
++    text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE)
++    # Step 2: try to find a ```json ... ``` fence
++    m = re.search(r"```(?:json)?\s*(\[.*?\]|\{.*?\})\s*```", text, re.DOTALL)
++    if m:
++        return m.group(1).strip()
++    # Step 3: no fenced block — strip stray fence markers and return the core
++    text = re.sub(r"^```[a-zA-Z]*\s*", "", text.strip())
++    text = re.sub(r"\s*```$", "", text.strip())
++    return text.strip()
++
++
++def generate_from_prompt(client, model, prompt_file, user_prompt,
++                         temperature=0.2, max_tokens=DEFAULT_MAX_TOKENS):
+     """
+     Generic function to generate content from the LLM.
+     Expects the response to include a JSON block wrapped in markdown.
++    Strips <think> blocks and markdown fences before parsing so that
++    reasoning models (glm-5p3-flash) work without structured-output mode.
+     """
+-    # Max try 5 times:
++    global LAST_ATTEMPTS
++    LAST_ATTEMPTS = []
+     for i in range(5):
+-        with open(prompt_file, "r") as f:
++        with open(prompt_file, "r", encoding="utf-8") as f:
+             system_prompt = f.read()
+         chat_completion = client.chat.completions.create(
+             messages=[
+@@ -20,37 +56,60 @@ def generate_from_prompt(client, model, prompt_file, user_prompt):
+                 {"role": "user", "content": user_prompt},
+             ],
+             model=model,
++            temperature=temperature,
++            max_tokens=max_tokens,
++        )
++        message = chat_completion.choices[0].message
++        usage = getattr(chat_completion, "usage", None)
++        finish_reason = getattr(chat_completion.choices[0], "finish_reason", None)
++        completion_tokens = getattr(usage, "completion_tokens", None)
++        has_reasoning = hasattr(message, "reasoning") or hasattr(message, "reasoning_content")
++        LAST_ATTEMPTS.append({
++            "finish_reason": finish_reason,
++            "completion_tokens": completion_tokens,
++            "has_reasoning": has_reasoning,
++        })
++        print(
++            f"honeybee attempt={i + 1} finish_reason={finish_reason!r} "
++            f"completion_tokens={completion_tokens!r} has_reasoning={has_reasoning}",
++            file=sys.stderr,
+         )
+-        api_response = chat_completion.choices[0].message.content
++        api_response = getattr(message, "content", None)
++        cleaned = _strip_think_and_fences(api_response)
+         try:
+-            json_text = re.search(r"```json(.*?)```$", api_response, re.DOTALL).group(1)
+-            return json.loads(json_text)
+-        except AttributeError:
+-            # Sometimes the AI doesnt return a valid json in markdown... simply try again.
++            return json.loads(cleaned)
++        except (json.JSONDecodeError, TypeError):
++            # Sometimes the model doesn't return valid JSON — retry.
+             continue
+ 
+ 
+-def generate_dockerfile(client, model, application, misconfigurations):
++def generate_dockerfile(client, model, application, misconfigurations,
++                        temperature=0.2, max_tokens=DEFAULT_MAX_TOKENS):
+     user_prompt = (
+         f"Generate a Dockerfile for {application} with the following misconfigurations: "
+         f"{', '.join(misconfigurations)}. Provide the output as a JSON object with 'file_name', 'file_path', and 'file_content' keys for each file."
+     )
+     return generate_from_prompt(
+-        client, model, PROMPTS_PATH.joinpath("generate_dockerfile.md"), user_prompt
++        client, model, PROMPTS_PATH.joinpath("generate_dockerfile.md"), user_prompt,
++        temperature=temperature, max_tokens=max_tokens,
+     )
+ 
+ 
+-def generate_docker_compose(client, model, application, misconfigurations):
++def generate_docker_compose(client, model, application, misconfigurations,
++                            temperature=0.2, max_tokens=DEFAULT_MAX_TOKENS):
+     user_prompt = (
+         f"Generate a Docker Compose for {application} with the following misconfigurations: "
+         f"{', '.join(misconfigurations)}. Provide the output as a JSON object with 'file_name', 'file_path', and 'file_content' keys for each file."
+     )
+     return generate_from_prompt(
+-        client, model, PROMPTS_PATH.joinpath("generate_dockercompose.md"), user_prompt
++        client, model, PROMPTS_PATH.joinpath("generate_dockercompose.md"), user_prompt,
++        temperature=temperature, max_tokens=max_tokens,
+     )
+ 
+ 
+-def generate_nuclei(client, model, application, misconfigurations):
++def generate_nuclei(client, model, application, misconfigurations,
++                    temperature=0.2, max_tokens=DEFAULT_MAX_TOKENS):
++    global LAST_ATTEMPTS
+     user_prompt = (
+         f"Generate a Nuclei template for {application} with the following misconfigurations: "
+         f"{', '.join(misconfigurations)}. Return the template as JSON."
+@@ -59,16 +118,35 @@ def generate_nuclei(client, model, application, misconfigurations):
+         messages=[
+             {
+                 "role": "system",
+-                "content": PROMPTS_PATH.joinpath("write_nuclei_rule.md").read_text(),
++                "content": PROMPTS_PATH.joinpath("write_nuclei_rule.md").read_text(encoding="utf-8"),
+             },
+             {"role": "user", "content": user_prompt},
+         ],
+         model=model,
++        temperature=temperature,
++        max_tokens=max_tokens,
++    )
++    message = chat_completion.choices[0].message
++    usage = getattr(chat_completion, "usage", None)
++    finish_reason = getattr(chat_completion.choices[0], "finish_reason", None)
++    completion_tokens = getattr(usage, "completion_tokens", None)
++    has_reasoning = hasattr(message, "reasoning") or hasattr(message, "reasoning_content")
++    LAST_ATTEMPTS = [{
++        "finish_reason": finish_reason,
++        "completion_tokens": completion_tokens,
++        "has_reasoning": has_reasoning,
++    }]
++    print(
++        f"honeybee attempt=1 finish_reason={finish_reason!r} "
++        f"completion_tokens={completion_tokens!r} has_reasoning={has_reasoning}",
++        file=sys.stderr,
+     )
+-    return chat_completion.choices[0].message.content
++    raw = getattr(message, "content", None)
++    return _strip_think_and_fences(raw)
+ 
+ 
+-def generate_dockerfile_from_markdown(client, model, markdown_content):
++def generate_dockerfile_from_markdown(client, model, markdown_content,
++                                      temperature=0.2, max_tokens=DEFAULT_MAX_TOKENS):
+     """
+     Generate a Dockerfile based purely on provided markdown specification.
+     """
+@@ -78,11 +156,13 @@ def generate_dockerfile_from_markdown(client, model, markdown_content):
+         "Provide the output as a JSON object with 'file_name', 'file_path', and 'file_content' keys for each file."
+     )
+     return generate_from_prompt(
+-        client, model, PROMPTS_PATH.joinpath("generate_dockerfile.md"), user_prompt
++        client, model, PROMPTS_PATH.joinpath("generate_dockerfile.md"), user_prompt,
++        temperature=temperature, max_tokens=max_tokens,
+     )
+ 
+ 
+-def generate_docker_compose_from_markdown(client, model, markdown_content):
++def generate_docker_compose_from_markdown(client, model, markdown_content,
++                                          temperature=0.2, max_tokens=DEFAULT_MAX_TOKENS):
+     """
+     Generate a Docker Compose based purely on provided markdown specification.
+     """
+@@ -92,11 +172,14 @@ def generate_docker_compose_from_markdown(client, model, markdown_content):
+         "Provide the output as a JSON object with 'file_name', 'file_path', and 'file_content' keys for each file."
+     )
+     return generate_from_prompt(
+-        client, model, PROMPTS_PATH.joinpath("generate_dockercompose.md"), user_prompt
++        client, model, PROMPTS_PATH.joinpath("generate_dockercompose.md"), user_prompt,
++        temperature=temperature, max_tokens=max_tokens,
+     )
+ 
+ 
+-def generate_nuclei_from_markdown(client, model, markdown_content):
++def generate_nuclei_from_markdown(client, model, markdown_content,
++                                  temperature=0.2, max_tokens=DEFAULT_MAX_TOKENS):
++    global LAST_ATTEMPTS
+     """
+     Generate a Nuclei template based purely on provided markdown specification.
+     """
+@@ -109,16 +192,20 @@ def generate_nuclei_from_markdown(client, model, markdown_content):
+         messages=[
+             {
+                 "role": "system",
+-                "content": PROMPTS_PATH.joinpath("write_nuclei_rule.md").read_text(),
++                "content": PROMPTS_PATH.joinpath("write_nuclei_rule.md").read_text(encoding="utf-8"),
+             },
+             {"role": "user", "content": user_prompt},
+         ],
+         model=model,
++        temperature=temperature,
++        max_tokens=max_tokens,
+     )
+-    return chat_completion.choices[0].message.content
++    raw = chat_completion.choices[0].message.content
++    return _strip_think_and_fences(raw)
+ 
+ 
+-def extract_application_from_markdown(client, model, markdown_content):
++def extract_application_from_markdown(client, model, markdown_content,
++                                      temperature=0.2, max_tokens=DEFAULT_MAX_TOKENS):
+     """
+     Extract application name from the provided markdown content.
+     """
+@@ -128,6 +215,7 @@ def extract_application_from_markdown(client, model, markdown_content):
+         "Return the application name as a string."
+     )
+     response = generate_from_prompt(
+-        client, model, PROMPTS_PATH.joinpath("extract_application.md"), user_prompt
++        client, model, PROMPTS_PATH.joinpath("extract_application.md"), user_prompt,
++        temperature=temperature, max_tokens=max_tokens,
+     )
+     return response.get("application_name", "")
+diff --git a/honeybee/src/local_deploy.py b/honeybee/src/local_deploy.py
+index 32e4803..d237ffc 100644
+--- a/honeybee/src/local_deploy.py
++++ b/honeybee/src/local_deploy.py
+@@ -1,94 +1,32 @@
+-import signal
+-import shutil
+-import subprocess
+-
+-
+-import streamlit as st
+-from pathlib import Path
+-from tempfile import mkdtemp
+-
+-
+-def check_docker_compose_installed():
+-    try:
+-        process = subprocess.run(
+-            ["docker", "compose", "ls"], stdout=subprocess.PIPE, check=False
+-        )
+-    except Exception:
+-        return False
+-    # Check normal output of docker compose to make sure it is properly installed.
+-    return process.returncode == 0 and process.stdout.startswith(b"NAME")
+-
+-
+-def stop_current_local_deploy(process, tmpdir):
+-    process.send_signal(signal.SIGINT)
+-    full_output = st.session_state.get("deploy_process_output", [])
+-    if full_output is None:
+-        full_output = []
+-    # Get the final lines of output...
+-    for line in iter(process.stdout.readline, ""):
+-        if not line:
+-            break
+-        if line != b"\n":
+-            full_output.append(line.decode("utf-8").rstrip("\n"))
+-
+-    process = subprocess.Popen(
+-        [
+-            "docker",
+-            "compose",
+-            "down",
+-        ],
+-        stdout=subprocess.PIPE,
+-        stderr=subprocess.STDOUT,
+-        cwd=tmpdir,
++# local_deploy.py
++#
++# The "one-click deploy" feature is DISABLED in this benchmark deployment.
++#
++# Rationale: the honeybee container runs without docker.sock and without the
++# Docker CLI, so subprocess calls to `docker compose up` would always fail.
++# More importantly, generated artifacts must remain inert text — never executed.
++#
++# check_docker_compose_installed() always returns False so that the "Deploy
++# Locally" button in dockercompose_tab.py is permanently rendered as disabled.
++# local_deploy_compose() raises RuntimeError as a hard guard in case the button
++# somehow becomes callable.
++
++import streamlit as st  # kept for type compatibility with callers
++
++
++def check_docker_compose_installed() -> bool:
++    """Always returns False — deploy feature is disabled in this deployment."""
++    return False
++
++
++def local_deploy_compose(docker_compose: str) -> None:
++    """
++    Deploy feature is disabled.  This function must never be reachable through
++    normal UI flow (the 'Deploy Locally' button is disabled when
++    check_docker_compose_installed() returns False).  Raises RuntimeError as a
++    hard guard.
++    """
++    raise RuntimeError(
++        "local_deploy_compose: the deploy feature is disabled in this benchmark "
++        "deployment.  Generated artifacts must not be executed."
+     )
+-    # Get the output from `docker compose down`
+-    for line in iter(process.stdout.readline, ""):
+-        if not line:
+-            break
+-        if line != b"\n":
+-            full_output.append(line.decode("utf-8").rstrip("\n"))
+-
+-    st.session_state["deploy_process_output"] = full_output
+-    shutil.rmtree(tmpdir)
+-
+-
+-def local_deploy_compose(docker_compose):
+-    ## TODO: Add a cleanup function that cleans-up stray honeybee- folders in-case the server crashed.
+-    tmpdir = Path(mkdtemp(prefix="honeybee-"))
+-    tmpdir.joinpath("docker-compose.yaml").write_text(docker_compose)
+-    full_output = []
+-    process = subprocess.Popen(
+-        [
+-            "docker",
+-            "compose",
+-            "up",
+-        ],
+-        stdout=subprocess.PIPE,
+-        stderr=subprocess.STDOUT,
+-        cwd=tmpdir,
+-    )
+-
+-    code_container = st.container()
+-    st.button(
+-        "🛑 Stop Local Deploy",
+-        on_click=stop_current_local_deploy,
+-        args=(process, tmpdir),
+-        use_container_width=True,
+-        type="secondary",
+-    )
+-    with code_container.empty():
+-        for line in iter(process.stdout.readline, ""):
+-            if not line:
+-                break
+-            if line != b"\n":
+-                full_output.append(line.decode("utf-8").rstrip("\n"))
+-                st.code(
+-                    "\n".join(full_output),
+-                    height=400,
+-                    line_numbers=True,
+-                    wrap_lines=True,
+-                )
+-            st.session_state["deploy_process_output"] = full_output
+-
+-    # If we leave this loop it means the local deploy failed or existed.
+-    st.session_state.pop("deploy_process_output")
+diff --git a/honeybee/src/query_history.py b/honeybee/src/query_history.py
+index 234c03a..ef1063c 100644
+--- a/honeybee/src/query_history.py
++++ b/honeybee/src/query_history.py
+@@ -5,7 +5,14 @@ import streamlit as st
+ from pathlib import Path
+ 
+ 
+-HISTORY_PATH = Path(__file__).parent.joinpath(".qhistory")
++# Write history to /app/data/.qhistory when running in the container
++# (DATA_DIR is set by the Dockerfile or can be overridden at runtime).
++# Falls back to a .qhistory sibling of this source file for local dev.
++_DATA_DIR = os.getenv("DATA_DIR")
++if _DATA_DIR:
++    HISTORY_PATH = Path(_DATA_DIR) / ".qhistory"
++else:
++    HISTORY_PATH = Path(__file__).parent.joinpath(".qhistory")
+ 
+ # check if the history directory exists, if not create it
+ if not HISTORY_PATH.exists():
+@@ -20,4 +27,4 @@ def save_query(type, input_parameters, output):
+ 
+ def load_history():
+     query_files = HISTORY_PATH.glob("*.json")
+-    return {q.with_suffix("").name: json.loads(q.read_text()) for q in query_files}
++    return {q.with_suffix("").name: json.loads(q.read_text(encoding="utf-8")) for q in query_files}
+diff --git a/honeybee/src/settings.py b/honeybee/src/settings.py
+index 1ef8cc7..3af95ce 100644
+--- a/honeybee/src/settings.py
++++ b/honeybee/src/settings.py
+@@ -1,6 +1,13 @@
+ import os
+ import streamlit as st
+ 
++# ── Environment-variable defaults ─────────────────────────────────────────────
++# MODEL, TEMPERATURE and MAX_TOKENS can be overridden via the compose file's
++# `environment:` block without rebuilding the image.
++_ENV_MODEL = os.getenv("MODEL", "gpt-4o")
++_ENV_TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
++_ENV_MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2048"))
++
+ 
+ def get_llm_settings():
+     st.sidebar.header("⚙️ Settings️")
+@@ -25,6 +32,8 @@ def get_llm_settings():
+     if provider == "OpenAI":
+         openai_api_key = os.getenv("OPENAI_API_KEY")
+         if not openai_api_key:
++            # Key not in env — show a password input (value stays in session
++            # state only; it is NEVER written to disk or logged).
+             default_openai_key = st.session_state.get("openai_api_key", "")
+             openai_api_key = st.sidebar.text_input(
+                 "Enter your OpenAI API Key",
+@@ -36,7 +45,8 @@ def get_llm_settings():
+             st.sidebar.info("Using OpenAI API Key from environment variable")
+         settings["api_key"] = openai_api_key
+ 
+-        default_model = st.session_state.get("model", "gpt-4o")
++        # Default model seeded from MODEL env var; overridable in the sidebar.
++        default_model = st.session_state.get("model", _ENV_MODEL)
+         model = st.sidebar.text_input(
+             "Model",
+             value=default_model,
+@@ -68,7 +78,7 @@ def get_llm_settings():
+             )
+         settings["azure_endpoint"] = azure_endpoint
+ 
+-        default_model = st.session_state.get("model", "gpt-4o")
++        default_model = st.session_state.get("model", _ENV_MODEL)
+         model = st.sidebar.text_input(
+             "Model",
+             value=default_model,
+@@ -80,20 +90,18 @@ def get_llm_settings():
+     # Save the model in session state for later use
+     st.session_state["model"] = settings["model"]
+ 
++    # Expose temperature and max_tokens (read from env; not surfaced in the UI
++    # to avoid accidental overrides that would break structured output parsing).
++    settings["temperature"] = _ENV_TEMPERATURE
++    settings["max_tokens"] = _ENV_MAX_TOKENS
++
+     return settings
+ 
+ 
+ def get_jina_ai_api_key():
+     """
+-    Get the Jina AI API key from environment variables or Streamlit session state.
++    Jina AI is DISABLED in this benchmark deployment.
++    Always returns an empty string so the caller can detect it is unavailable.
++    The Import from URL mode will show a warning and stop, which is intentional.
+     """
+-    api_key = os.getenv("JINA_API_TOKEN")
+-    if not api_key:
+-        api_key = st.session_state.get("jina_api_key", "")
+-        if not api_key:
+-            api_key = st.sidebar.text_input(
+-                "Enter your Jina AI API Key",
+-                type="password",
+-                key="jina_api_key",
+-            )
+-    return api_key
++    return ""
+diff --git a/honeybee/src/trace_tools.py b/honeybee/src/trace_tools.py
+index e3c0bb0..4c62259 100644
+--- a/honeybee/src/trace_tools.py
++++ b/honeybee/src/trace_tools.py
+@@ -1,5 +1,5 @@
+ import oyaml as yaml
+-from src.validations import run_yamlfix
++from honeybee.src.validations import run_yamlfix
+ 
+ 
+ def add_tcpdump_service(docker_yaml):
+diff --git a/honeybee/tabs/__init__.py b/honeybee/tabs/__init__.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/honeybee/tabs/dockercompose_tab.py b/honeybee/tabs/dockercompose_tab.py
+index 956e7c8..8feb2b5 100644
+--- a/honeybee/tabs/dockercompose_tab.py
++++ b/honeybee/tabs/dockercompose_tab.py
+@@ -1,17 +1,24 @@
+ import streamlit as st
+-from src.validations import run_yamlfix
+-from src.trace_tools import add_tcpdump_service
+-from src.local_deploy import local_deploy_compose
+-from src import generators, query_history
++from honeybee.src.validations import run_yamlfix
++from honeybee.src.trace_tools import add_tcpdump_service
++from honeybee.src.local_deploy import local_deploy_compose
++from honeybee.src import generators, query_history
+ 
+-def render(application, input_mode, input_content, selected_misconfigs, client, model, docker_compose_supported):
++def render(application, input_mode, input_content, selected_misconfigs, client, model,
++           docker_compose_supported, temperature=0.2, max_tokens=2048):
+     with_trace = st.toggle("With trace tools", help="Add tcpdump service")
+     if application and st.button("Generate Docker Compose", use_container_width=True, type="primary"):
+         with st.spinner("Generating Docker Compose..."):
+             if input_mode in ("import_url", "paste_input"):
+-                comps = generators.generate_docker_compose_from_markdown(client, model, input_content)
++                comps = generators.generate_docker_compose_from_markdown(
++                    client, model, input_content,
++                    temperature=temperature, max_tokens=max_tokens,
++                )
+             else:
+-                comps = generators.generate_docker_compose(client, model, application, selected_misconfigs)
++                comps = generators.generate_docker_compose(
++                    client, model, application, selected_misconfigs,
++                    temperature=temperature, max_tokens=max_tokens,
++                )
+ 
+             for item in comps:
+                 if item["file_type"].lower() == "yaml":
+diff --git a/honeybee/tabs/dockerfile_tab.py b/honeybee/tabs/dockerfile_tab.py
+index 5cb86e4..1ea266f 100644
+--- a/honeybee/tabs/dockerfile_tab.py
++++ b/honeybee/tabs/dockerfile_tab.py
+@@ -1,13 +1,20 @@
+ import streamlit as st
+-from src import generators, query_history
++from honeybee.src import generators, query_history
+ 
+-def render(application, input_mode, input_content, selected_misconfigs, client, model):
++def render(application, input_mode, input_content, selected_misconfigs, client, model,
++           temperature=0.2, max_tokens=2048):
+     if application and st.button("Generate Dockerfile", use_container_width=True, type="primary"):
+         with st.spinner("Generating Dockerfile..."):
+             if input_mode in ("import_url", "paste_input"):
+-                dockerfile = generators.generate_dockerfile_from_markdown(client, model, input_content)
++                dockerfile = generators.generate_dockerfile_from_markdown(
++                    client, model, input_content,
++                    temperature=temperature, max_tokens=max_tokens,
++                )
+             else:
+-                dockerfile = generators.generate_dockerfile(client, model, application, selected_misconfigs)
++                dockerfile = generators.generate_dockerfile(
++                    client, model, application, selected_misconfigs,
++                    temperature=temperature, max_tokens=max_tokens,
++                )
+         st.session_state["dockerfile_generated"] = True
+         st.session_state["dockerfile_content"] = dockerfile
+         query_history.save_query("Dockerfile", [application, selected_misconfigs], dockerfile)
+diff --git a/honeybee/tabs/nuclei_tab.py b/honeybee/tabs/nuclei_tab.py
+index 25c4d71..4492b55 100644
+--- a/honeybee/tabs/nuclei_tab.py
++++ b/honeybee/tabs/nuclei_tab.py
+@@ -1,13 +1,20 @@
+ import streamlit as st
+-from src import generators, query_history
++from honeybee.src import generators, query_history
+ 
+-def render(application, input_mode, input_content, selected_misconfigs, client, model):
++def render(application, input_mode, input_content, selected_misconfigs, client, model,
++           temperature=0.2, max_tokens=2048):
+     if application and st.button("Generate Nuclei", use_container_width=True, type="primary"):
+         with st.spinner("Generating Nuclei..."):
+             if input_mode in ("import_url", "paste_input"):
+-                nuclei = generators.generate_nuclei_from_markdown(client, model, input_content)
++                nuclei = generators.generate_nuclei_from_markdown(
++                    client, model, input_content,
++                    temperature=temperature, max_tokens=max_tokens,
++                )
+             else:
+-                nuclei = generators.generate_nuclei(client, model, application, selected_misconfigs)
++                nuclei = generators.generate_nuclei(
++                    client, model, application, selected_misconfigs,
++                    temperature=temperature, max_tokens=max_tokens,
++                )
+         st.session_state["nuclei_generated"] = True
+         st.session_state["nuclei_content"] = nuclei
+         query_history.save_query("Nuclei", [application, selected_misconfigs], nuclei)
+diff --git a/pyproject.toml b/pyproject.toml
+index 8947928..1262649 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -26,7 +26,10 @@ version = {attr = "honeybee.__version__"}
+ dependencies = {file = ["requirements.txt"]}
+ 
+ [tool.setuptools.packages.find]
+-include = ["honeybee"]
++include = ["honeybee*"]
++
++[tool.setuptools.package-data]
++"honeybee" = ["misconfigurations_catalog.json", "prompts/*.md"]
+ 
+ [tool.setuptools_scm]
+ 

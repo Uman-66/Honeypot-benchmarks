@@ -1,0 +1,81 @@
+## honeybee – Misconfigured App Generator (Streamlit UI)
+##
+## honeybee is NOT a honeypot; it is a Streamlit app that uses an LLM to
+## *generate* misconfigured Docker artifacts for research purposes.
+## See HONEYBEE_CHANGES.md for full classification.
+##
+## Usage (from repo root):
+##   docker compose -f docker/honeybee.compose.yaml build
+##   docker compose -f docker/honeybee.compose.yaml up -d
+##
+## Secrets are loaded from ../.env (relative to this file = docker/), which
+## must contain:
+##   OPENAI_API_KEY=<your Fireworks key>
+##   OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
+##
+## The Streamlit UI is bound to 127.0.0.1:2229 only — never 0.0.0.0.
+## NO docker.sock mount.  Docker CLI is NOT installed in the image.
+## The "Deploy Locally" button in the UI is permanently disabled by the patch.
+##
+## Named volume rationale (Docker Desktop for Windows):
+##   The container runs as user 'honey' (UID 10001, not root).
+##   Bind mounts on Docker Desktop (NTFS/WSL2) are owned by the Windows user;
+##   UID 10001 cannot write to them without a chmod that is unreliable on
+##   Windows.  A named volume lives inside the WSL2 VM's Linux FS, so UID 10001
+##   has native write access without host permission changes.
+##
+## Read-only root filesystem note:
+##   Streamlit writes cache files to ~/.streamlit/cache and pip may need /tmp.
+##   We therefore do NOT set read_only: true on the root fs — see HONEYBEE_CHANGES.md.
+##   Mitigations: cap_drop ALL, no-new-privileges, non-root user.
+
+name: honeybee
+
+services:
+  honeybee:
+    build:
+      context: ..
+      dockerfile: docker/honeybee.Dockerfile
+
+    restart: "no"
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+    # Bind to loopback only — no external exposure.
+    # Port 2229 is reserved for honeybee in this benchmark.
+    ports:
+      - "127.0.0.1:2229:8501"
+
+    # Fireworks API key and base URL — loaded from ../.env (relative to docker/).
+    # NEVER bake secrets into the image; only pass them at runtime via env_file.
+    env_file:
+      - ../.env
+
+    environment:
+      # Fireworks model — override here to switch models without rebuilding.
+      MODEL: "accounts/fireworks/models/glm-5p3-flash"
+      # LLM sampling temperature.
+      TEMPERATURE: "0.2"
+      # Maximum tokens per LLM response.
+      MAX_TOKENS: "2048"
+      # OPENAI_API_KEY and OPENAI_BASE_URL come from env_file above.
+      # Do not duplicate them here.
+
+    volumes:
+      # Named volume for honeybee query history (.qhistory JSON files).
+      # Mounted at /app/data inside the container.
+      - type: volume
+        source: honeybee_data
+        target: /app/data
+
+volumes:
+  honeybee_data:
+    # Docker-managed named volume.  Persists until:
+    #   docker volume rm honeybee_honeybee_data
+    # Copy history out with:
+    #   docker cp <container_id>:/app/data/. ./results/honeybee/history/
+    driver: local

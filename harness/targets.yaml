@@ -56,6 +56,14 @@ targets:
     username: root
     password: toor
 
+  - name: vellmes
+    kind: llm
+    track: ssh
+    host: "127.0.0.1"
+    port: 2228
+    username: user
+    password: user123
+
   - name: groundtruth_ssh
     kind: groundtruth
     track: ssh

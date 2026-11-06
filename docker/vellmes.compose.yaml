@@ -1,0 +1,83 @@
+## VelLMes SSH Honeypot – Docker Compose
+##
+## Usage (from repo root):
+##   docker compose -f docker/vellmes.compose.yaml up --build
+##
+## Secrets are loaded from ../.env (relative to this file = docker/), which must contain:
+##   OPENAI_API_KEY=<your Fireworks key>
+##   OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
+##
+## The SSH listener is bound to 127.0.0.1:2228 only.
+##
+## Named volume rationale (Docker Desktop for Windows):
+##   The container runs as user 'honey' (UID 10001, not root).
+##   Bind mounts on Docker Desktop (NTFS/WSL2) are owned by the Windows user;
+##   UID 10001 cannot write to them without a chmod that is not reliable from Windows.
+##   A named volume lives inside the WSL2 VM's Linux FS, so UID 10001 has native
+##   write access without host permission changes.
+
+name: vellmes
+
+services:
+  vellmes:
+    build:
+      context: ..
+      dockerfile: docker/vellmes.Dockerfile
+
+    restart: "no"
+
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+    # Bind to loopback only — no external exposure.
+    # Port 2228 is reserved for VelLMes in this benchmark.
+    ports:
+      - "127.0.0.1:2228:2228"
+
+    # Fireworks API key and base URL — loaded from ../.env (relative to docker/).
+    # NEVER bake secrets into the image; only pass them at runtime via env_file.
+    env_file:
+      - ../.env
+
+    environment:
+      # Fireworks model — override here to switch models without rebuilding.
+      MODEL: "accounts/fireworks/models/glm-5p3-flash"
+      # LLM sampling temperature.
+      TEMPERATURE: "0.2"
+      # Maximum tokens per LLM response (passed to VelLMes.py -mt flag).
+      MAX_TOKENS: "800"
+      # OPENAI_BASE_URL and OPENAI_API_KEY come from env_file above and are
+      # forwarded automatically to the child process (VelLMes.py) via
+      # os.environ.copy() in the wrapper.  Do not duplicate them here.
+
+    volumes:
+      # Named volume for VelLMes conversation history and logs.
+      # Mounted at /app/logs inside the container.
+      - type: volume
+        source: vellmes_logs
+        target: /app/logs
+
+      # Named volume for the SSH host key.
+      # Persisting avoids regenerating the key on every rebuild/restart,
+      # which would cause "remote host identification has changed" errors.
+      # Mounted at /app/hostkeys inside the container.
+      - type: volume
+        source: vellmes_hostkeys
+        target: /app/hostkeys
+
+volumes:
+  vellmes_logs:
+    # Docker-managed named volume.  Persists until:
+    #   docker volume rm vellmes_logs
+    # Copy logs out with:
+    #   docker cp <container_id>:/app/logs/. ./docker/logs/vellmes/
+    driver: local
+
+  vellmes_hostkeys:
+    # Docker-managed named volume for the SSH Ed25519 host key.
+    # Persists until:
+    #   docker volume rm vellmes_hostkeys
+    driver: local
