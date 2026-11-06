@@ -25,6 +25,8 @@ results/summary.md
 results/summary.csv
 results/summary_by_run.csv
 results/ANALYSIS_AUDIT.md
+results/http_requests_long.csv
+results/ssh_commands_long.csv
 results/*_commands_long.csv.bak*
 results/ssh_fingerprints.json
 logs/
