@@ -1,11 +1,57 @@
+# secrets
 .env
+**/.env
+
+# local and generated
+.venv/
+.venv-hb/
+harness/.venv/
 .mypy_cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.old
+*.bak
 .vscode/
+report/
+DOC_REVIEW_NOTES.md
+results_backup_as_found/
+results_bak_*/
+results_pilot/
+results/raw/
+results/raw_http/
+results/honeypot_logs/
+results/summary.md
+results/summary.csv
+results/summary_by_run.csv
+results/ANALYSIS_AUDIT.md
+results/*_commands_long.csv.bak*
+results/ssh_fingerprints.json
+logs/
+docker/logs/
+results_smoke/
+results/honeybee_dryrun/
+results/errors.log
+recovered/
+trap_test.txt
+
+# third-party clones (re-clone per README)
+DECEIVE/
+beelzebub/
+shelLM/
 galah/
 llm-honeypot/
-shelLM/
-beelzebub/
-DECEIVE/
 cowrie-base/
 cowrie-peek/
+Changes/
+graphify-out/
+honeybee/
+VelLMes-AI-Deception-Framework/
 
+# third-party clone history
+honeybee/**/.qhistory/
+honeybee/**/.qhistory
+
+# model-invented credential-like strings from the HTTP honeypot
+results/raw_http/
+results/honeypot_logs/galah/

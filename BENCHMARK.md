@@ -475,6 +475,10 @@ A stricter system prompt specifying the server type would likely reduce this var
 
 ## 7. Limitations and Confounds
 
+This benchmark is limited by a single model, 5 runs, scripted commands, a difflib
+similarity proxy, shared API load across targets, cold-start effects, and latencies
+censored at the 90 s SSH timeout ceiling.
+
 - **Single model**: All four LLM SSH honeypots and galah used the same model
   (`accounts/fireworks/models/glm-5p3-flash`).  Results may not generalise to other
   models.  Temperature could be set for DECEIVE (0.2), AdvancedshelLM (0.2), and

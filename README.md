@@ -31,8 +31,8 @@ OpenAI-compatible endpoint).
 | [galah](https://github.com/0x4D31/galah) | ✅ Done | HTTP | Yes | 8088 | LLM generates HTTP responses as JSON |
 | [llm-honeypot](https://github.com/PalisadeResearch/llm-honeypot) | ✅ Done (detector only) | SSH | No | 2227 | ANSI-hidden prompt injection; detector — not a fidelity target |
 | [Cowrie](https://github.com/cowrie/cowrie) | ✅ Baseline added | SSH | No | 2223 | Static emulation baseline |
-| [VelLMes](https://github.com/stratosphereips/VelLMes-LLM-Honeypot) | ❌ Not attempted | SSH | Yes | — | — |
-| [honeybee](https://github.com/jaredfolkins/honeybee) | ❌ Not attempted | SSH | Yes | — | — |
+| VelLMes | Deployed (patched); run pending | SSH | Yes | 2228 | Commit `192fa5084df84b38a16f6581939fd3143c350181` |
+| honeybee | Evaluated on output validity only | N/A | Yes | 2229 | Commit `dbf62c42604eeae2cfbfd4d36b99bef65555c303`; not a honeypot: LLM generator of misconfigured environments |
 | Ground truth SSH | ✅ Added | SSH | No | 2225 | Ubuntu 20.04 + OpenSSH 8.2p1 |
 | Ground truth HTTP | ✅ Added | HTTP | No | 2226 | Ubuntu 20.04 + nginx 1.18.0 |
 
@@ -73,6 +73,10 @@ honeypot-benchmark/
 │   ├── raw/              Per-run JSONL files (SSH)
 │   ├── raw_http/         Per-run JSONL files (HTTP)
 │   └── honeypot_logs/    Copied container logs
+├── patches/              Reproducible third-party source patches
+│   ├── vellmes.patch
+│   └── honeybee.patch
+├── tests/                Synthetic pytest coverage for harness and generator helpers
 ├── docs/
 │   └── PATCH_NOTES.md    All source edits made to third-party repos
 ├── Changes/              Detailed per-task design and change notes
@@ -142,7 +146,8 @@ git clone --branch v2.6.1 https://github.com/cowrie/cowrie cowrie-base
 
 ### Step 3 — Apply source patches
 
-No `patches/` directory is present.  Apply every edit listed in
+Apply `patches/vellmes.patch` and `patches/honeybee.patch` to the corresponding
+third-party clones. Then apply every edit listed in
 [docs/PATCH_NOTES.md](docs/PATCH_NOTES.md) manually to the cloned repositories.
 The detailed rationale for each edit is in the corresponding file under `Changes/`.
 
@@ -270,6 +275,8 @@ To remove them: `docker volume prune`.
 | Ground truth SSH | 2225 | SSH | Ground truth |
 | Ground truth HTTP | 2226 | HTTP | Ground truth |
 | llm-honeypot | 2227 | SSH | Detector (not fidelity target) |
+| VelLMes | 2228 | SSH | LLM honeypot (run pending) |
+| honeybee | 2229 | N/A | Generator UI; output validity only |
 | galah | 8088 | HTTP | LLM honeypot |
 
 All ports are bound to `127.0.0.1` only — no external exposure.
@@ -285,8 +292,11 @@ All ports are bound to `127.0.0.1` only — no external exposure.
   (Cowrie, llm-honeypot) emulate `wget`/`curl` and may attempt real outbound TCP
   connections to raw IP addresses even with DNS blocked.  The benchmark command list
   was designed to avoid this.
-- **The harness has no resume**: it appends to existing CSV/JSONL files.  Delete old
-  output before a full rerun (see Step 8).
+- **Use UTF-8 explicitly on Windows** when reading or writing benchmark files.
+- **Do not run `down -v` before copying logs**: named volumes contain the logs used for
+  post-run analysis.
+- **The harness now guards complete pairs**: use `--force` only when intentionally
+  backing up and rerunning an existing target/run pair.
 - **AdvancedshelLM had startup failures in early passes**: the final data in
   `results/raw/` is from successful runs; early failures are recorded in
   `results/honeypot_logs/advshellm/`.
