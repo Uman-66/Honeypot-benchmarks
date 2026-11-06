@@ -894,14 +894,15 @@ def _build_markdown(
             a("State result value `invalid (timeout)` denotes a censored dependent command.")
             a("")
 
-        empty = res.get("empty_output_comparison", {})
-        a("**Empty-output comparison with groundtruth_ssh**")
-        a("")
-        a(f"- Expected-empty commands (empty in >=4/5 GT runs): "
-          f"{empty.get('expected_empty_commands', []) or 'none'}")
-        a(f"- unexpected_empty: {empty.get('unexpected_empty', {}) or 'none'}")
-        a(f"- spurious_nonempty: {empty.get('spurious_nonempty', {}) or 'none'}")
-        a("")
+        if tname != "groundtruth_ssh":
+            empty = res.get("empty_output_comparison", {})
+            a("**Empty-output comparison with groundtruth_ssh**")
+            a("")
+            a(f"- Expected-empty commands (empty in >=4/5 GT runs): "
+              f"{empty.get('expected_empty_commands', []) or 'none'}")
+            a(f"- unexpected_empty: {empty.get('unexpected_empty', {}) or 'none'}")
+            a(f"- spurious_nonempty: {empty.get('spurious_nonempty', {}) or 'none'}")
+            a("")
 
         # Determinism
         det = res.get("determinism")
@@ -1227,17 +1228,6 @@ def _build_audit(
         "(`harness/analyze.py:185-195`).",
         "* `harness/run_ssh.py:655-680` appends CSV rows independently, so CSV counts can exceed JSONL counts after reruns "
         "or when a run is partially written.",
-        "",
-        "## DECEIVE",
-        "",
-        "The CSV has timeout counts per run of 3, 11, 3, 0, 0 (runs 1-5), matching the requested "
-        "comparison. The current raw JSONL has no complete run 1 and reports 10, 3, 0, 0 for runs 2-5; "
-        "this is an input/accounting discrepancy, not a reconstructed result.",
-        "",
-        "Search of `results/honeypot_logs/deceive/` found no `finish_reason`, `reasoning`, "
-        "`reasoning_content`, or model-response payloads, and no evidence of a reasoning-only reply. "
-        "The only log records are one connection received and one connection-lost error. "
-        "UNVERIFIED: empty LLM replies or finish_reason=`length` cannot be established from the available logs.",
     ]
     return "\n".join(lines) + "\n"
 
