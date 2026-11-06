@@ -47,6 +47,7 @@ Changes/
 graphify-out/
 honeybee/
 VelLMes-AI-Deception-Framework/
+patches/*_before_fixes.patch
 
 # third-party clone history
 honeybee/**/.qhistory/
