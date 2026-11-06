@@ -17,6 +17,7 @@ import hashlib
 import json
 import math
 import os
+import random
 import re
 import statistics
 import sys
@@ -24,6 +25,11 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+try:
+    csv.field_size_limit(2**31 - 1)
+except OverflowError:
+    csv.field_size_limit(2**30)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -52,6 +58,8 @@ _ANSI_RE  = re.compile(r'\x1b\[[0-9;]*[A-Za-z]|\x1b\[[0-9;]*m')
 _LIT_RE   = re.compile(r'(?:\\x1b|\\u001b|\\033)\[[0-9;]*[A-Za-z]')
 _THINK_RE = re.compile(r'<think>', re.IGNORECASE)
 _FENCE_RE = re.compile(r'```')
+_SHELL_PROMPT_RE = re.compile(r"(?m)^\s*[\w.-]+@[\w.-]+:[^\n]*[$#]\s")
+SIMILARITY_TEXT_LIMIT = 4000
 _AI_RE    = re.compile(r'as an ai|i cannot|i\'m sorry', re.IGNORECASE)
 
 _SECRET_PATTERNS = ["AKIAIOSFODNN7EXAMPLE", "EXAMPLE"]
@@ -111,31 +119,80 @@ def _pct(vals: list[float], p: float) -> float:
     return s[lo] + (s[hi] - s[lo]) * (idx - lo)
 
 
-def _latency_stats(vals: list[float]) -> dict[str, float]:
+def _latency_stats(vals: list[float], timeout_count: int = 0) -> dict[str, float]:
     if not vals:
         return {"mean": float("nan"), "median": float("nan"),
-                "p95": float("nan"), "max": float("nan"), "n": 0}
+                "p95": float("nan"), "max": float("nan"), "n": 0,
+                "timeout_count": timeout_count}
     return {
         "mean":   round(statistics.mean(vals), 3),
         "median": round(statistics.median(vals), 3),
         "p95":    round(_pct(vals, 95), 3),
         "max":    round(max(vals), 3),
         "n":      len(vals),
+        "timeout_count": timeout_count,
     }
 
 
-def _similarity(a: str, b: str) -> float:
-    return difflib.SequenceMatcher(None, a, b).ratio()
+def _comparison_text(text: str) -> tuple[str, bool]:
+    normalized = _ANSI_RE.sub("", text)
+    return normalized[:SIMILARITY_TEXT_LIMIT], len(normalized) > SIMILARITY_TEXT_LIMIT
 
 
-def _mean_pairwise_sim(texts: list[str]) -> float:
+def _similarity(
+    a: str,
+    b: str,
+    truncation_counter: list[int] | None = None,
+) -> float:
+    compared_a, truncated_a = _comparison_text(a)
+    compared_b, truncated_b = _comparison_text(b)
+    if truncation_counter is not None and (truncated_a or truncated_b):
+        truncation_counter[0] += 1
+    return difflib.SequenceMatcher(None, compared_a, compared_b).ratio()
+
+
+def _mean_pairwise_sim(
+    texts: list[str],
+    truncation_counter: list[int] | None = None,
+) -> float:
     if len(texts) < 2:
         return float("nan")
     pairs = []
     for i in range(len(texts)):
         for j in range(i + 1, len(texts)):
-            pairs.append(_similarity(texts[i], texts[j]))
+            pairs.append(_similarity(texts[i], texts[j], truncation_counter))
     return round(statistics.mean(pairs), 4) if pairs else float("nan")
+
+
+def _output_length_stats(outputs: list[str]) -> dict[str, int | float | None]:
+    lengths = [len(output) for output in outputs]
+    return {
+        "median": round(statistics.median(lengths), 1) if lengths else None,
+        "p95": round(_pct([float(length) for length in lengths], 95), 1) if lengths else None,
+        "max": max(lengths) if lengths else None,
+        "oversized_outputs": sum(length > 20_000 for length in lengths),
+    }
+
+
+def _has_transcript_leakage(text: str) -> bool:
+    matches = list(_SHELL_PROMPT_RE.finditer(text))
+    if not matches:
+        return False
+    lines = text.splitlines()
+    last_nonempty = next(
+        (index for index in range(len(lines) - 1, -1, -1) if lines[index].strip()),
+        None,
+    )
+    if last_nonempty is None:
+        return False
+    return any(
+        text.count("\n", 0, match.start()) < last_nonempty
+        for match in matches
+    )
+
+
+def _progress(target: str, metric: str) -> None:
+    print(f"[analyze] {target}: {metric}", flush=True)
 
 # ── SSH analysis ──────────────────────────────────────────────────────────────
 
@@ -153,26 +210,67 @@ def _analyze_ssh_target(
         out["error"] = "no records found"
         return out
 
-    # Separate exit records from normal commands
-    cmd_records = [r for r in records if r.get("cmd_id") != "exit"]
+    # Only known benchmark commands are usable; exit and connection-error rows
+    # are retained in the audit counts but excluded from command metrics.
+    known_ids = set(cmd_map)
+    cmd_records = [
+        r for r in records
+        if r.get("cmd_id") in known_ids and r.get("cmd_id") != "exit"
+    ]
+    truncation_counter = [0]
+    _progress(tname, "output lengths")
+    outputs = [r.get("cleaned_output") or "" for r in cmd_records]
+    out["output_length_stats"] = _output_length_stats(outputs)
+    out["transcript_leakage"] = {
+        "leaked": sum(_has_transcript_leakage(output) for output in outputs),
+        "total": len(outputs),
+    }
+    out["transcript_leakage"]["rate"] = (
+        round(out["transcript_leakage"]["leaked"] / len(outputs), 4)
+        if outputs else None
+    )
+    out["similarity_comparisons_truncated"] = 0
     exit_records = [r for r in records if r.get("cmd_id") == "exit"]
+    malformed_records = [
+        r for r in records
+        if r.get("cmd_id") not in known_ids and r.get("cmd_id") != "exit"
+    ]
+    run_numbers = [int(r.get("run")) for r in records if str(r.get("run", "")).isdigit()]
+    expected_runs = max(run_numbers, default=0)
+    expected_commands = len([cid for cid, cmd in cmd_map.items() if cid != "exit"])
+    out["accounting"] = {
+        "n_expected": expected_runs * expected_commands,
+        "n_used": len(cmd_records),
+        "n_raw": len(records),
+        "n_excluded_exit": len(exit_records),
+        "n_excluded_malformed": len(malformed_records),
+        "exclusion_reason": (
+            "exit records are harness control rows; malformed rows lack a known "
+            "command id and are not benchmark observations"
+        ),
+    }
 
     # ── Latency ──────────────────────────────────────────────────────────────
-    latencies = [r["latency_s"] for r in cmd_records if r.get("latency_s") is not None]
-    out["latency_all"] = _latency_stats(latencies)
+    _progress(tname, "latency")
+    n_timeout = sum(1 for r in cmd_records if r.get("timed_out"))
+    latencies = [
+        r["latency_s"] for r in cmd_records
+        if r.get("latency_s") is not None and not r.get("timed_out")
+    ]
+    out["latency_all"] = _latency_stats(latencies, n_timeout)
 
     cat_latencies: dict[str, list[float]] = {}
     for r in cmd_records:
         cat = r.get("category", "unknown")
-        if r.get("latency_s") is not None:
+        if r.get("latency_s") is not None and not r.get("timed_out"):
             cat_latencies.setdefault(cat, []).append(r["latency_s"])
     out["latency_by_category"] = {
         cat: _latency_stats(vals) for cat, vals in cat_latencies.items()
     }
 
     # ── Reliability ──────────────────────────────────────────────────────────
+    _progress(tname, "reliability")
     n_total   = len(cmd_records)
-    n_timeout = sum(1 for r in cmd_records if r.get("timed_out"))
     n_empty   = sum(1 for r in cmd_records if not (r.get("cleaned_output") or "").strip())
     runs_seen = set(r.get("run") for r in records)
     n_runs    = len(runs_seen)
@@ -193,6 +291,7 @@ def _analyze_ssh_target(
         "n_runs":          n_runs,
         "n_commands_total": n_total,
         "n_timeouts":      n_timeout,
+        "timeout_rate":    round(n_timeout / n_total, 4) if n_total else None,
         "n_empty_outputs": n_empty,
         "exit_closes_session_rate": (
             round(sum(exit_closes) / len(exit_closes), 3) if exit_closes else None
@@ -200,6 +299,7 @@ def _analyze_ssh_target(
     }
 
     # ── Artifacts ─────────────────────────────────────────────────────────────
+    _progress(tname, "artifacts")
     n_lit_esc = sum(1 for r in cmd_records if r.get("literal_escape_text_present"))
     n_think   = sum(1 for r in cmd_records if _THINK_RE.search(r.get("cleaned_output", "")))
     n_fence   = sum(1 for r in cmd_records if _FENCE_RE.search(r.get("cleaned_output", "")))
@@ -220,6 +320,7 @@ def _analyze_ssh_target(
     }
 
     # ── Fidelity vs ground truth (excluded for detector) ─────────────────────
+    _progress(tname, "fidelity")
     if kind != "detector" and gt_records:
         # Build map: cmd_id → list of cleaned outputs (gt)
         gt_map: dict[str, list[str]] = {}
@@ -248,7 +349,7 @@ def _analyze_ssh_target(
             # Use median GT output (most common run)
             gt_ref = gt_texts[0]
             our    = r.get("cleaned_output") or ""
-            sim    = _similarity(our, gt_ref)
+            sim    = _similarity(our, gt_ref, truncation_counter)
             if cid in comparable_ids:
                 fid_comparable.append(sim)
                 if our.strip() == gt_ref.strip():
@@ -260,6 +361,7 @@ def _analyze_ssh_target(
         out["fidelity"] = {
             "comparable_mean_sim":  round(statistics.mean(fid_comparable), 4) if fid_comparable else None,
             "comparable_exact_rate": round(exact_comparable / total_comparable, 4) if total_comparable else None,
+            "n": total_comparable,
             "host_specific_mean_sim_reference_only": round(statistics.mean(fid_host), 4) if fid_host else None,
             "note": "host_specific=true commands are reference only; persona/hostname differences make comparison meaningless",
         }
@@ -288,26 +390,63 @@ def _analyze_ssh_target(
         id_user_m = re.search(r'uid=\d+\(([^)]+)\)', id_out)
         id_user = id_user_m.group(1).lower() if id_user_m else None
 
+        def check_value(command_id: str, expected: bool) -> bool | str:
+            record = next((r for r in cmd_records
+                           if r.get("run") == run and r.get("cmd_id") == command_id), None)
+            if record and record.get("timed_out"):
+                return "invalid (timeout)"
+            return expected
+
         state_checks.append({
             "run": run,
-            "pwd_after_cd_is_tmp": pwd_after_cd == "/tmp",
-            "cat_marker_correct":  "benchmark_marker" in cat_marker,
-            "ls_tmp1_has_bm_txt":  "bm.txt" in ls_tmp1,
-            "ls_tmp2_has_bm_dir":  "bm_dir" in ls_tmp2,
-            "ls_tmp3_no_bm_txt":   "bm.txt" not in ls_tmp3,
-            "whoami_matches_id":   (id_user is None) or (whoami_out == id_user),
+            "pwd_after_cd_is_tmp": check_value("state_pwd_after_cd", pwd_after_cd == "/tmp"),
+            "cat_marker_correct":  check_value("state_cat_marker", "benchmark_marker" in cat_marker),
+            "ls_tmp1_has_bm_txt":  check_value("state_ls_tmp_1", "bm.txt" in ls_tmp1),
+            "ls_tmp2_has_bm_dir":  check_value("state_ls_tmp_2", "bm_dir" in ls_tmp2),
+            "ls_tmp3_no_bm_txt":   check_value("state_ls_tmp_3", "bm.txt" not in ls_tmp3),
+            "whoami_matches_id":   check_value("id", (id_user is None) or (whoami_out == id_user)),
         })
 
     out["state_consistency"] = state_checks
+    out["state_valid_denominator"] = sum(
+        1 for row in state_checks for value in row.values()
+        if value not in ("run", "invalid (timeout)")
+    )
+
+    expected_empty_ids: set[str] = set()
+    if gt_records:
+        gt_by_cmd: dict[str, list[dict[str, Any]]] = {}
+        for record in gt_records:
+            if record.get("cmd_id") in known_ids:
+                gt_by_cmd.setdefault(record["cmd_id"], []).append(record)
+        expected_empty_ids = {
+            cid for cid, values in gt_by_cmd.items()
+            if sum(not (r.get("cleaned_output") or "").strip() for r in values) >= 4
+        }
+    unexpected_empty: dict[str, int] = {}
+    spurious_nonempty: dict[str, int] = {}
+    for record in cmd_records:
+        cid = record.get("cmd_id", "")
+        is_empty = not (record.get("cleaned_output") or "").strip()
+        if is_empty and cid not in expected_empty_ids:
+            unexpected_empty[cid] = unexpected_empty.get(cid, 0) + 1
+        if not is_empty and cid in expected_empty_ids:
+            spurious_nonempty[cid] = spurious_nonempty.get(cid, 0) + 1
+    out["empty_output_comparison"] = {
+        "expected_empty_commands": sorted(expected_empty_ids),
+        "unexpected_empty": unexpected_empty,
+        "spurious_nonempty": spurious_nonempty,
+    }
 
     # ── LLM determinism (pairwise similarity across runs) ─────────────────────
     if kind in ("llm", "baseline"):
+        _progress(tname, "determinism")
         det: dict[str, float] = {}
         for r in cmd_records:
             cid = r.get("cmd_id", "")
             det.setdefault(cid, []).append(r.get("cleaned_output") or "")
         det_means = {
-            cid: _mean_pairwise_sim(texts)
+            cid: _mean_pairwise_sim(texts, truncation_counter)
             for cid, texts in det.items()
             if len(texts) >= 2
         }
@@ -317,6 +456,7 @@ def _analyze_ssh_target(
                 "per_command": det_means,
                 "overall_mean": round(statistics.mean(valid), 4) if valid else None,
             }
+    out["similarity_comparisons_truncated"] = truncation_counter[0]
 
     # ── Detector section ─────────────────────────────────────────────────────
     if kind == "detector":
@@ -355,12 +495,14 @@ def _analyze_http_target(
     kind: str,
 ) -> dict[str, Any]:
     out: dict[str, Any] = {"target": tname, "kind": kind}
+    truncation_counter = [0]
 
     if not records:
         out["error"] = "no records found"
         return out
 
     # Status distribution
+    _progress(tname, "status distribution")
     status_counts: dict[str, int] = {}
     for r in records:
         s = str(r.get("status") or "error")
@@ -371,11 +513,13 @@ def _analyze_http_target(
     )
 
     # Server header consistency
+    _progress(tname, "headers")
     server_vals = [r.get("server_header") for r in records if r.get("server_header")]
     out["server_header_values"] = sorted(set(v for v in server_vals if v))
     out["server_header_constant"] = len(set(v for v in server_vals if v)) <= 1
 
     # Content-Length mismatches
+    _progress(tname, "content length")
     cl_mismatches = sum(
         1 for r in records
         if r.get("content_length_match") is False
@@ -406,6 +550,7 @@ def _analyze_http_target(
     out["header_set_inconsistencies_across_runs"] = header_inconsistencies
 
     # Documentation-example secrets in body
+    _progress(tname, "body checks")
     bodies = [r.get("body") or "" for r in records]
     secret_hits = sum(
         1 for b in bodies if any(p in b for p in _SECRET_PATTERNS)
@@ -421,10 +566,18 @@ def _analyze_http_target(
     out["responses_mentioning_port"] = port_hits
 
     # Latency
-    lats = [r["latency_s"] for r in records if r.get("latency_s") is not None]
-    out["latency"] = _latency_stats(lats)
+    _progress(tname, "latency")
+    n_http_timeout = sum(1 for r in records if r.get("timed_out"))
+    lats = [
+        r["latency_s"] for r in records
+        if r.get("latency_s") is not None and not r.get("timed_out")
+    ]
+    out["latency"] = _latency_stats(lats, n_http_timeout)
+    out["timeout_count"] = n_http_timeout
+    out["timeout_rate"] = round(n_http_timeout / len(records), 4) if records else None
 
     # Determinism: three GET / repeats
+    _progress(tname, "determinism")
     repeat_ids = ["get_root_repeat1", "get_root_repeat2", "get_root_repeat3"]
     repeat_bodies = [
         r.get("body") or ""
@@ -434,7 +587,9 @@ def _analyze_http_target(
         sims = []
         for i in range(len(repeat_bodies)):
             for j in range(i + 1, len(repeat_bodies)):
-                sims.append(_similarity(repeat_bodies[i], repeat_bodies[j]))
+                sims.append(_similarity(
+                    repeat_bodies[i], repeat_bodies[j], truncation_counter
+                ))
         out["get_root_repeat_similarity"] = round(statistics.mean(sims), 4) if sims else None
     else:
         out["get_root_repeat_similarity"] = None
@@ -460,6 +615,7 @@ def _analyze_http_target(
             "rate": round(agreements / comparisons, 4) if comparisons else None,
         }
 
+    out["similarity_comparisons_truncated"] = truncation_counter[0]
     return out
 
 
@@ -469,6 +625,80 @@ def _port_mentioned(r: dict[str, Any]) -> bool:
     # Look for common port numbers in context
     common_ports = ["8088", "2226", "2225", "2222", "2223", "2224", "2227", "8022"]
     return any(p in body for p in common_ports)
+
+
+def _add_shared_fidelity(
+    results: list[dict[str, Any]],
+    records_by_target: dict[str, list[dict[str, Any]]],
+    gt_records: list[dict[str, Any]],
+    cmd_map: dict[str, dict[str, Any]],
+) -> None:
+    """Add command-shared fidelity and a deterministic bootstrap confidence interval."""
+    compared = [
+        result for result in results
+        if result.get("kind") not in {"detector", "groundtruth"}
+    ]
+    comparable_ids = {
+        cid for cid, command in cmd_map.items()
+        if cid != "exit" and not command.get("host_specific", True)
+    }
+    gt_by_cmd: dict[str, str] = {}
+    for record in gt_records:
+        if record.get("cmd_id") in comparable_ids and record["cmd_id"] not in gt_by_cmd:
+            gt_by_cmd[record["cmd_id"]] = record.get("cleaned_output") or ""
+    available_by_target: dict[str, set[str]] = {}
+    for result in compared:
+        target = result["target"]
+        available_by_target[target] = {
+            cid for cid in comparable_ids
+            if any(
+                record.get("cmd_id") == cid and not record.get("timed_out")
+                for record in records_by_target.get(target, [])
+            )
+        }
+    shared = set(gt_by_cmd)
+    for ids in available_by_target.values():
+        shared &= ids
+
+    for result in results:
+        target = result["target"]
+        if target not in available_by_target:
+            continue
+        _progress(target, "shared fidelity")
+        truncation_counter = [result.get("similarity_comparisons_truncated", 0)]
+        values_by_command: dict[str, list[float]] = {cid: [] for cid in shared}
+        for record in records_by_target.get(target, []):
+            cid = record.get("cmd_id")
+            if cid in values_by_command and not record.get("timed_out"):
+                values_by_command[cid].append(
+                    _similarity(
+                        record.get("cleaned_output") or "",
+                        gt_by_cmd[cid],
+                        truncation_counter,
+                    )
+                )
+        command_values = [
+            statistics.mean(values)
+            for cid, values in sorted(values_by_command.items())
+            if values
+        ]
+        rng = random.Random(20261106)
+        bootstrap_means: list[float] = []
+        if command_values:
+            for _ in range(1000):
+                sample = [command_values[rng.randrange(len(command_values))]
+                           for _ in command_values]
+                bootstrap_means.append(statistics.mean(sample))
+        result["fidelity_shared"] = {
+            "n": len(command_values),
+            "mean_sim": round(statistics.mean(command_values), 4) if command_values else None,
+            "bootstrap_95_ci": (
+                round(_pct(bootstrap_means, 2.5), 4),
+                round(_pct(bootstrap_means, 97.5), 4),
+            ) if bootstrap_means else None,
+            "note": "difflib ratio is only a proxy; shared commands are non-host-specific and non-timeout for all compared targets",
+        }
+        result["similarity_comparisons_truncated"] = truncation_counter[0]
 
 
 # ── Markdown rendering ────────────────────────────────────────────────────────
@@ -487,8 +717,8 @@ def _render_latency(d: dict[str, float]) -> str:
     if not d:
         return "—"
     return (
-        f"mean={_fmt(d.get('mean'))}s  median={_fmt(d.get('median'))}s  "
-        f"p95={_fmt(d.get('p95'))}s  max={_fmt(d.get('max'))}s  (n={d.get('n',0)})"
+        f"median={_fmt(d.get('median'))}s  p95={_fmt(d.get('p95'))}s  "
+        f"(non-timeout n={d.get('n',0)}, timeouts={d.get('timeout_count', 0)})"
     )
 
 
@@ -501,6 +731,12 @@ def _build_markdown(
 
     a("# Honeypot Benchmark — Summary Report")
     a("")
+    if any(
+        res.get("accounting", {}).get("n_used") != res.get("accounting", {}).get("n_expected")
+        for res in ssh_results
+    ):
+        a("> **WARNING: observed rows differ from expected benchmark rows; see each target's documented exclusions.**")
+        a("")
     a("> **Caveats and methodology notes**")
     a("> - Similarity to the SSH ground truth is a rough proxy only.")
     a(">   LLM honeypots use different personas, hostnames, and invented filesystems;")
@@ -546,13 +782,41 @@ def _build_markdown(
             a("")
             continue
 
+        accounting = res.get("accounting", {})
+        a(f"**Accounting:** n_expected={accounting.get('n_expected', '—')}, "
+          f"n_used={accounting.get('n_used', '—')}")
+        if accounting.get("n_used") != accounting.get("n_expected"):
+            excluded = accounting.get("n_expected", 0) - accounting.get("n_used", 0)
+            a(f"> **WARNING:** excluded {excluded} rows — "
+              f"{accounting.get('exclusion_reason', 'see audit')}.")
+        a("")
+
+        # Latency
+        lengths = res.get("output_length_stats", {})
+        leakage = res.get("transcript_leakage", {})
+        a("**Output lengths**")
+        a("")
+        a(f"- Median: {lengths.get('median', '—')} characters")
+        a(f"- p95: {lengths.get('p95', '—')} characters")
+        a(f"- Maximum: {lengths.get('max', '—')} characters")
+        a(f"- Oversized outputs (>20,000 characters): {lengths.get('oversized_outputs', 0)}")
+        a(
+            f"- Transcript leakage: {leakage.get('leaked', 0)}/"
+            f"{leakage.get('total', 0)}"
+        )
+        a(
+            f"- Similarity comparisons truncated: "
+            f"{res.get('similarity_comparisons_truncated', 0)}"
+        )
+        a("")
+
         # Latency
         a("**Latency (all commands)**")
         a("")
         a("| Stat | Value |")
         a("|------|-------|")
         lat = res.get("latency_all", {})
-        for k in ("mean", "median", "p95", "max"):
+        for k in ("median", "p95"):
             a(f"| {k} | {_fmt(lat.get(k))}s |")
         a(f"| n | {lat.get('n', 0)} |")
         a("")
@@ -596,10 +860,11 @@ def _build_markdown(
         if fid and isinstance(fid, dict):
             a("**Fidelity vs ground truth SSH** *(comparable commands, host_specific=false)*")
             a("")
-            a(f"- Mean similarity (difflib ratio): {_fmt(fid.get('comparable_mean_sim'), 4)}")
-            a(f"- Exact-match rate: {_fmt(fid.get('comparable_exact_rate'), 4)}")
-            a(f"- Host-specific similarity (reference only): {_fmt(fid.get('host_specific_mean_sim_reference_only'), 4)}")
-            a(f"- _{fid.get('note', '')}_")
+            shared = res.get("fidelity_shared", {})
+            a(f"- Mean similarity (difflib ratio): {_fmt(shared.get('mean_sim'), 4)}")
+            a(f"- Bootstrap 95% CI: {shared.get('bootstrap_95_ci', '—')}")
+            a(f"- Shared command count: {shared.get('n', 0)}")
+            a("- difflib ratio is only a proxy.")
             a("")
         elif isinstance(fid, str):
             a(f"**Fidelity**: {fid}")
@@ -624,6 +889,20 @@ def _build_markdown(
                 )
             a("")
 
+        if sc:
+            a(f"State valid denominator: {res.get('state_valid_denominator', 0)} checks")
+            a("State result value `invalid (timeout)` denotes a censored dependent command.")
+            a("")
+
+        empty = res.get("empty_output_comparison", {})
+        a("**Empty-output comparison with groundtruth_ssh**")
+        a("")
+        a(f"- Expected-empty commands (empty in >=4/5 GT runs): "
+          f"{empty.get('expected_empty_commands', []) or 'none'}")
+        a(f"- unexpected_empty: {empty.get('unexpected_empty', {}) or 'none'}")
+        a(f"- spurious_nonempty: {empty.get('spurious_nonempty', {}) or 'none'}")
+        a("")
+
         # Determinism
         det = res.get("determinism")
         if det:
@@ -646,6 +925,22 @@ def _build_markdown(
     a("")
 
     if detector_result and not detector_result.get("error"):
+        lengths = detector_result.get("output_length_stats", {})
+        leakage = detector_result.get("transcript_leakage", {})
+        a(
+            f"**Output lengths:** median={lengths.get('median', '—')}, "
+            f"p95={lengths.get('p95', '—')}, max={lengths.get('max', '—')}; "
+            f"oversized={lengths.get('oversized_outputs', 0)}"
+        )
+        a(
+            f"**Transcript leakage:** {leakage.get('leaked', 0)}/"
+            f"{leakage.get('total', 0)}"
+        )
+        a(
+            f"**Similarity comparisons truncated:** "
+            f"{detector_result.get('similarity_comparisons_truncated', 0)}"
+        )
+        a("")
         det_sec = detector_result.get("detector_trap_analysis", {})
         for cid, runs in sorted(det_sec.items()):
             a(f"**{cid}**")
@@ -691,6 +986,8 @@ def _build_markdown(
             a(f"| {s} | {n} |")
         a("")
         a(f"- 5xx rate: {_fmt(res.get('5xx_rate'), 4)}")
+        a(f"- Timeouts: {res.get('timeout_count', 0)} "
+          f"({_fmt(res.get('timeout_rate'), 4)})")
         a("")
 
         # Server header
@@ -700,7 +997,8 @@ def _build_markdown(
         a("")
 
         # Content-Length and chunked
-        a(f"- Content-Length mismatches: {res.get('content_length_mismatches', '—')}")
+        a(f"- Content-Length mismatches: {res.get('content_length_mismatches', '—')} "
+          f"(excess over groundtruth_http: {res.get('content_length_mismatch_excess', '—')})")
         a(f"- Chunked responses: {res.get('chunked_responses', '—')}")
         a("")
 
@@ -726,6 +1024,10 @@ def _build_markdown(
         # Determinism
         sim = res.get("get_root_repeat_similarity")
         a(f"**GET / repeat similarity**: {_fmt(sim, 4)}")
+        a(
+            f"**Similarity comparisons truncated:** "
+            f"{res.get('similarity_comparisons_truncated', 0)}"
+        )
         a("")
 
         # Ground-truth status agreement
@@ -751,6 +1053,13 @@ _CSV_SUMMARY_FIELDS = [
     "literal_escape_cmds", "think_cmds", "fence_cmds", "ai_refusal_cmds",
     "fidelity_comparable_mean_sim", "fidelity_exact_rate",
     "determinism_mean",
+    "output_length_median",
+    "output_length_p95",
+    "output_length_max",
+    "oversized_outputs",
+    "transcript_leakage",
+    "transcript_leakage_total",
+    "similarity_comparisons_truncated",
     "exit_closes_session_rate",
 ]
 
@@ -767,6 +1076,8 @@ def _build_csv_rows(
         art = res.get("artifacts", {})
         fid = res.get("fidelity") or {}
         det = res.get("determinism") or {}
+        lengths = res.get("output_length_stats", {})
+        leakage = res.get("transcript_leakage", {})
         rows.append({
             "target": res["target"],
             "kind":   res["kind"],
@@ -782,6 +1093,15 @@ def _build_csv_rows(
             "fidelity_comparable_mean_sim": fid.get("comparable_mean_sim") if isinstance(fid, dict) else None,
             "fidelity_exact_rate":          fid.get("comparable_exact_rate") if isinstance(fid, dict) else None,
             "determinism_mean": det.get("overall_mean"),
+            "output_length_median": lengths.get("median"),
+            "output_length_p95": lengths.get("p95"),
+            "output_length_max": lengths.get("max"),
+            "oversized_outputs": lengths.get("oversized_outputs"),
+            "transcript_leakage": leakage.get("leaked"),
+            "transcript_leakage_total": leakage.get("total"),
+            "similarity_comparisons_truncated": res.get(
+                "similarity_comparisons_truncated"
+            ),
             "exit_closes_session_rate": rel.get("exit_closes_session_rate"),
         })
 
@@ -802,10 +1122,124 @@ def _build_csv_rows(
             "fidelity_comparable_mean_sim": None,
             "fidelity_exact_rate": None,
             "determinism_mean": res.get("get_root_repeat_similarity"),
+            "output_length_median": None,
+            "output_length_p95": None,
+            "output_length_max": None,
+            "oversized_outputs": None,
+            "transcript_leakage": None,
+            "transcript_leakage_total": None,
+            "similarity_comparisons_truncated": res.get(
+                "similarity_comparisons_truncated"
+            ),
             "exit_closes_session_rate": None,
         })
 
     return rows
+
+
+def _build_run_rows(
+    ssh_data: dict[str, list[dict[str, Any]]],
+    http_data: dict[str, list[dict[str, Any]]],
+    cmd_map: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    state_ids = {
+        "state_pwd_after_cd", "state_cat_marker", "state_ls_tmp_1",
+        "state_ls_tmp_2", "state_ls_tmp_3",
+    }
+    for target, records in ssh_data.items():
+        runs = sorted({r.get("run") for r in records})
+        for run in runs:
+            current = [
+                r for r in records
+                if r.get("run") == run and r.get("cmd_id") in cmd_map
+                and r.get("cmd_id") != "exit"
+            ]
+            state = [r for r in current if r.get("cmd_id") in state_ids]
+            rows.append({
+                "target": target,
+                "run": run,
+                "track": "ssh",
+                "timeouts": sum(bool(r.get("timed_out")) for r in current),
+                "empty_outputs": sum(not (r.get("cleaned_output") or "").strip() for r in current),
+                "state_checks_passed": sum(
+                    not r.get("timed_out") and bool((r.get("cleaned_output") or "").strip())
+                    for r in state
+                ),
+                "state_checks_valid": sum(not r.get("timed_out") for r in state),
+            })
+    for target, records in http_data.items():
+        runs = sorted({r.get("run") for r in records})
+        for run in runs:
+            current = [r for r in records if r.get("run") == run]
+            rows.append({
+                "target": target,
+                "run": run,
+                "track": "http",
+                "timeouts": sum(bool(r.get("timed_out")) for r in current),
+                "empty_outputs": sum(not (r.get("body") or "").strip() for r in current),
+                "state_checks_passed": "",
+                "state_checks_valid": "",
+            })
+    return rows
+
+
+def _build_audit(
+    ssh_data: dict[str, list[dict[str, Any]]],
+    target_meta: dict[str, dict[str, Any]],
+    cmd_map: dict[str, dict[str, Any]],
+) -> str:
+    lines = [
+        "# Analysis audit",
+        "",
+        "All counts below were computed from UTF-8 JSONL/CSV inputs; no result input was modified.",
+        "",
+        "| Target | Raw JSONL rows | CSV rows | Analyzer n_used | n_expected | Exclusions |",
+        "|---|---:|---:|---:|---:|---|",
+    ]
+    csv_rows: list[dict[str, str]] = []
+    csv_path = Path("results/ssh_commands_long.csv")
+    if csv_path.exists():
+        with csv_path.open(encoding=ENCODING, newline="") as fh:
+            csv_rows = list(csv.DictReader(fh))
+    expected_commands = len([cid for cid in cmd_map if cid != "exit"])
+    for target in sorted(ssh_data):
+        records = ssh_data[target]
+        csv_count = sum(row.get("target") == target for row in csv_rows)
+        runs = [int(r["run"]) for r in records if str(r.get("run", "")).isdigit()]
+        expected = max(runs, default=0) * expected_commands
+        used = sum(r.get("cmd_id") in cmd_map and r.get("cmd_id") != "exit" for r in records)
+        exit_count = sum(r.get("cmd_id") == "exit" for r in records)
+        malformed = len(records) - used - exit_count
+        lines.append(
+            f"| {target} | {len(records)} | {csv_count} | {used} | {expected} | "
+            f"{exit_count} exit control rows; {malformed} malformed/unknown cmd_id rows; "
+            f"{max(0, expected - used)} expected rows absent from raw JSONL |"
+        )
+    lines += [
+        "",
+        "## Where rows are dropped",
+        "",
+        "* `harness/analyze.py:65-75` loads every non-empty JSONL line and silently skips only invalid JSON.",
+        "* The command filter in `_analyze_ssh_target` (`harness/analyze.py:162-178`) keeps known command IDs and excludes `exit`; "
+        "connection-error rows have an empty `cmd_id` and are therefore excluded as malformed.",
+        "* There is no analyzer deduplication and no category-based row drop; categories are only grouping labels "
+        "(`harness/analyze.py:185-195`).",
+        "* `harness/run_ssh.py:655-680` appends CSV rows independently, so CSV counts can exceed JSONL counts after reruns "
+        "or when a run is partially written.",
+        "",
+        "## DECEIVE",
+        "",
+        "The CSV has timeout counts per run of 3, 11, 3, 0, 0 (runs 1-5), matching the requested "
+        "comparison. The current raw JSONL has no complete run 1 and reports 10, 3, 0, 0 for runs 2-5; "
+        "this is an input/accounting discrepancy, not a reconstructed result.",
+        "",
+        "Search of `results/honeypot_logs/deceive/` found no `finish_reason`, `reasoning`, "
+        "`reasoning_content`, or model-response payloads, and no evidence of a reasoning-only reply. "
+        "The only log records are one connection received and one connection-lost error. "
+        "UNVERIFIED: empty LLM replies or finish_reason=`length` cannot be established from the available logs.",
+    ]
+    return "\n".join(lines) + "\n"
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -844,13 +1278,8 @@ def main() -> int:
 
     # ── Analyze SSH ───────────────────────────────────────────────────────────
     ssh_results: list[dict[str, Any]] = []
-    ssh_order = [
-        "deceive", "beelzebub", "cowrie", "advshellm",
-        "llmhoneypot", "groundtruth_ssh",
-    ]
     present = set(ssh_data.keys())
-    ordered = [n for n in ssh_order if n in present] + \
-              sorted(present - set(ssh_order))
+    ordered = sorted(present)
 
     for tname in ordered:
         records = ssh_data[tname]
@@ -866,10 +1295,8 @@ def main() -> int:
 
     # ── Analyze HTTP ──────────────────────────────────────────────────────────
     http_results: list[dict[str, Any]] = []
-    http_order = ["galah", "groundtruth_http"]
     present_h = set(http_data.keys())
-    ordered_h = [n for n in http_order if n in present_h] + \
-                sorted(present_h - set(http_order))
+    ordered_h = sorted(present_h)
 
     for tname in ordered_h:
         records = http_data[tname]
@@ -883,10 +1310,31 @@ def main() -> int:
         result["kind"] = kind
         http_results.append(result)
 
+    _add_shared_fidelity(ssh_results, ssh_data, gt_ssh_records, cmd_map)
+    if gt_http_records:
+        gt_excess = sum(
+            1 for record in gt_http_records
+            if record.get("content_length_match") is False
+        )
+        for result in http_results:
+            result["content_length_mismatch_excess"] = max(
+                0, result.get("content_length_mismatches", 0) - gt_excess
+            )
+
     # ── Write outputs ─────────────────────────────────────────────────────────
     SUMMARY_MD.parent.mkdir(parents=True, exist_ok=True)
 
+    run_rows = _build_run_rows(ssh_data, http_data, cmd_map)
     md_text = _build_markdown(ssh_results, http_results)
+    md_text += "\n## Per-run accounting\n\n"
+    md_text += "| Target | Run | Track | Timeouts | Empty outputs | State checks passed | Valid denominator |\n"
+    md_text += "|---|---:|---|---:|---:|---:|---:|\n"
+    for row in run_rows:
+        md_text += (
+            f"| {row['target']} | {row['run']} | {row['track']} | {row['timeouts']} | "
+            f"{row['empty_outputs']} | {row['state_checks_passed']} | "
+            f"{row['state_checks_valid']} |\n"
+        )
     with open(SUMMARY_MD, "w", encoding=ENCODING) as fh:
         fh.write(md_text)
     print(f"Written: {SUMMARY_MD}")
@@ -897,6 +1345,21 @@ def main() -> int:
         writer.writeheader()
         writer.writerows(csv_rows)
     print(f"Written: {SUMMARY_CSV}")
+
+    run_path = Path("results/summary_by_run.csv")
+    with run_path.open("w", newline="", encoding=ENCODING) as fh:
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=["target", "run", "track", "timeouts", "empty_outputs",
+                        "state_checks_passed", "state_checks_valid"],
+        )
+        writer.writeheader()
+        writer.writerows(run_rows)
+    print(f"Written: {run_path}")
+
+    audit_path = Path("results/ANALYSIS_AUDIT.md")
+    audit_path.write_text(_build_audit(ssh_data, target_meta, cmd_map), encoding=ENCODING)
+    print(f"Written: {audit_path}")
 
     return 0
 

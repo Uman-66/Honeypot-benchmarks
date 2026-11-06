@@ -23,12 +23,20 @@ import csv
 import hashlib
 import http.client
 import json
+import os
+import shutil
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+try:
+    csv.field_size_limit(2**31 - 1)
+except OverflowError:
+    csv.field_size_limit(2**30)
 
 ENCODING = "utf-8"
 MAX_BODY_BYTES = 20_000
@@ -55,12 +63,15 @@ _CSV_FIELDS = [
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="HTTP benchmark harness")
-    p.add_argument("--targets",  default="harness/targets.yaml")
+    p.add_argument("--targets",  default="harness/targets.yaml",
+                   help="Target config path, or comma-separated target names")
     p.add_argument("--requests", default="harness/http_requests.yaml")
     p.add_argument("--runs",     type=int, default=5)
     p.add_argument("--out",      default="results/raw_http")
     p.add_argument("--timeout",  type=float, default=30.0)
     p.add_argument("--dry-run",  action="store_true")
+    p.add_argument("--force", action="store_true",
+                   help="Back up and rerun already-complete target/run pairs")
     p.add_argument(
         "--target",
         default=None,
@@ -204,10 +215,62 @@ def _append_csv(path: Path, rows: list[dict[str, Any]], target_name: str) -> Non
             writer.writerow(row_out)
 
 
+def _csv_without_pair(path: Path, target: str, run: int) -> None:
+    if not path.exists():
+        return
+    temp_name: str | None = None
+    try:
+        with path.open("r", newline="", encoding=ENCODING) as fh:
+            reader = csv.DictReader(fh)
+            fieldnames = reader.fieldnames or _CSV_FIELDS
+            rows = [
+                row for row in reader
+                if not (
+                    row.get("target") == target
+                    and str(row.get("run")) == str(run)
+                )
+            ]
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            newline="",
+            encoding=ENCODING,
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as fh:
+            temp_name = fh.name
+            writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(rows)
+        os.replace(temp_name, path)
+        temp_name = None
+    except Exception as exc:
+        if temp_name is not None:
+            try:
+                os.unlink(temp_name)
+            except OSError:
+                pass
+        print(
+            f"ERROR: could not safely update CSV {path}: {exc}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from exc
+
+
+def _backup_pair(path: Path, csv_path: Path, target: str, run: int) -> None:
+    if path.exists():
+        shutil.copy2(path, path.with_suffix(path.suffix + ".bak"))
+    if csv_path.exists():
+        shutil.copy2(csv_path, csv_path.with_suffix(csv_path.suffix + ".bak"))
+    _csv_without_pair(csv_path, target, run)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
 
-    with open(args.targets, encoding=ENCODING) as fh:
+    targets_path = Path(args.targets) if Path(args.targets).is_file() else Path("harness/targets.yaml")
+    with open(targets_path, encoding=ENCODING) as fh:
         targets_data = yaml.safe_load(fh)
     with open(args.requests, encoding=ENCODING) as fh:
         requests_data = yaml.safe_load(fh)
@@ -217,8 +280,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # Filter to HTTP targets
     http_targets = [t for t in all_targets if t.get("track") == "http"]
-    if args.target:
-        requested = {n.strip() for n in args.target.split(",")}
+    selection = args.target
+    if selection is None and not Path(args.targets).is_file():
+        selection = args.targets
+    if selection:
+        requested = {n.strip() for n in selection.split(",")}
         http_targets = [t for t in http_targets if t["name"] in requested]
 
     if not http_targets:
@@ -240,6 +306,17 @@ def main(argv: list[str] | None = None) -> int:
 
     out_dir  = Path(args.out)
     csv_path = Path("results") / "http_requests_long.csv"
+    expected_records = len(all_requests)
+    planned: list[tuple[str, int, str]] = []
+    for target in http_targets:
+        for run_idx in range(1, args.runs + 1):
+            pair = out_dir / f"{target['name']}_run{run_idx:02d}.jsonl"
+            complete = pair.exists() and sum(
+                1 for _ in pair.open(encoding=ENCODING)
+            ) == expected_records
+            planned.append((target["name"], run_idx, "run" if args.force or not complete else "skip"))
+    print("Plan: " + ", ".join(f"{name}/run{run:02d}={action}"
+                               for name, run, action in planned))
 
     for target in http_targets:
         tname = target["name"]
@@ -248,6 +325,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n=== HTTP Target: {tname} ({host}:{port}) ===")
 
         for run_idx in range(1, args.runs + 1):
+            plan = next(item for item in planned if item[0] == tname and item[1] == run_idx)
+            jsonl_path = out_dir / f"{tname}_run{run_idx:02d}.jsonl"
+            if plan[2] == "skip":
+                print(f"  Run {run_idx}/{args.runs} ... skipped (complete)")
+                continue
+            if args.force and jsonl_path.exists():
+                _backup_pair(jsonl_path, csv_path, tname, run_idx)
+            else:
+                _csv_without_pair(csv_path, tname, run_idx)
             print(f"  Run {run_idx}/{args.runs} ...", end=" ", flush=True)
             t0 = time.monotonic()
             run_records: list[dict[str, Any]] = []
@@ -262,7 +348,6 @@ def main(argv: list[str] | None = None) -> int:
             n_err = sum(1 for r in run_records if r.get("error"))
             print(f"done ({elapsed:.1f}s, {len(run_records)} reqs, {n_err} errors)")
 
-            jsonl_path = out_dir / f"{tname}_run{run_idx:02d}.jsonl"
             _write_jsonl(jsonl_path, run_records)
             _append_csv(csv_path, run_records, tname)
 
