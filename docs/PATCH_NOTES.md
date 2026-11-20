@@ -4,16 +4,42 @@
 This document lists every source edit made to each cloned third-party repository
 to make it work with this benchmark.  Entries are taken from the notes in `Changes/`.
 
-**Important**: No `patches/` directory exists in this repository; the changes were
-applied by hand.  Reproducers must apply every edit listed here manually before
-building the Docker images.  The `Changes/` directory contains the detailed
-rationale documents — consult them if a step is unclear.
+**Apply one route or the other, not both.** Machine-readable patches exist for the
+VelLMes and HoneyBee repositories and live in `patches/` — see §0 below.  For every
+other target the changes were applied by hand and are documented in the sections
+that follow; there is no patch file for DECEIVE, Beelzebub, shelLM, galah, Cowrie,
+the ground-truth servers, or the harness.  The `Changes/` directory contains the
+detailed rationale documents — consult them if a step is unclear.
 
 All items are marked **UNVERIFIED against upstream commit** because the exact commit
 hashes of the third-party repositories at clone time were not recorded.  The clone
 date window was **October 31 – November 2, 2026**.
 
 ---
+
+## 0. Patch inventory
+
+The patches in `patches/` are unified diffs against the third-party clones.  All
+three are byte-reproducible records of edits that are **already applied** in the
+current working trees; applying them again on top will fail.
+
+| File | Lines | Hunks | Repository | State of the working tree |
+|---|---:|---:|---|---|
+| `patches/vellmes.patch` | 181 | 7 | `VelLMes-AI-Deception-Framework/` | applied — `git status` reports `M VelLMes.py` |
+| `patches/honeybee.patch` | 737 | 28 | `honeybee/` | applied — modified and added files present |
+| `patches/honeybee_before_fixes.patch` | 632 | 26 | `honeybee/` | **not** applied — superseded, kept for provenance |
+
+`honeybee.patch` and `honeybee_before_fixes.patch` differ by two hunks: the current
+patch adds the `temperature` / `max_tokens` settings wiring and an
+`encoding="utf-8"` fix in `1_🐝_app.py`.  Do not apply
+`honeybee_before_fixes.patch` on top of the current tree.
+
+Verify the state before touching either repository:
+
+```
+git -C VelLMes-AI-Deception-Framework status --short
+git -C honeybee status --short
+```
 
 ## 1. DECEIVE (`DECEIVE/`)
 
@@ -206,5 +232,44 @@ These are new files created for this benchmark, not edits to third-party code.
 | `harness/analyze.py` | Reads from JSONL files in `results/raw/` and `results/raw_http/`; excludes `exit` command from all metrics; llm-honeypot excluded from fidelity/similarity/determinism averages |
 
 ---
+
+## 9. VelLMes (`VelLMes-AI-Deception-Framework/`)
+
+Source notes: `Changes/VELLMES_CHANGES.md`, `patches/vellmes.patch`
+
+Patch file exists (§0).  Applied to `VelLMes.py` only; the working tree diff is
+`1 file changed, 95 insertions(+), 19 deletions(-)`.
+
+| Change | Why |
+|--------|-----|
+| `import tiktoken` wrapped in `try/except ImportError`, bound to `_tiktoken` (may be `None`) | `encoding_for_model()` raises `KeyError` for non-OpenAI model IDs such as `accounts/fireworks/models/glm-5p3-flash`; a hard import made the script unusable before the first request |
+| Added `import re` and compiled `_THINK_RE`, `_FENCE_START`, `_FENCE_END` | GLM wraps replies in ` thinking…</think>` blocks and markdown fences; both must be stripped before the text is treated as shell output |
+| Added `_strip_reasoning(text)` | Removes think blocks and one outer fence, then strips whitespace |
+| Added `_get_client()`, a cached `openai.OpenAI` built from `OPENAI_API_KEY` and optional `OPENAI_BASE_URL` | Keeps the key out of files and out of `argv`; the Compose `env_file` supplies it at runtime |
+| `.env` loading tolerates a missing, empty, or `/dev/null` path and falls back to the process environment | `docker/vellmes.Dockerfile` runs the child with `-e /dev/null`; the original loader assumed a populated dotenv file |
+| `read_arguments()` / `main()`: model, temperature and max tokens resolve as **CLI flag → environment variable (`MODEL`, `TEMPERATURE`, `MAX_TOKENS`) → YAML identity** | Docker Compose supplies the values as environment variables; without this fallback a run with a flag left unset silently used the YAML values instead |
+| `chat.completions.create()` is called through `_get_client()` with `temperature = model_temperature` and `max_tokens = model_max_tokens` (`VelLMes.py:276-281`) | Confirms the resolved values reach the API request, not merely the config parse |
+| Token counting wrapped so a `tiktoken` failure sets `TOKEN_COUNT = 0` | An unavailable encoding aborted the session instead of degrading to an unknown count |
+| `== None` / `!= None` comparisons changed to `is None` / `is not None` | Style fix carried in the same hunks |
+
+UNVERIFIED against upstream commit.
+
+## 10. HoneyBee (`honeybee/`)
+
+Source notes: `Changes/HONEYBEE_CHANGES.md`, `patches/honeybee.patch`
+
+Patch file exists (§0).  HoneyBee is an LLM **generator**, not a honeypot; it is
+listed here because it is a cloned third-party repository with source edits.
+
+| Change | Why |
+|--------|-----|
+| Import paths rewritten from `src.*` → `honeybee.src.*` and `tabs.*` → `honeybee.tabs.*` across the Streamlit app, pages and tabs | The package is installed editable from `honeybee/`, so the importable top-level package is `honeybee`, not the repository root |
+| Added `honeybee/src/__init__.py` and `honeybee/pages/__init__.py` | Both directories lacked an `__init__.py` and were not importable as packages |
+| `settings["temperature"]` and `settings["max_tokens"]` read into module-level variables | The app previously ignored both settings, so the recorded run parameters could not be attributed to it |
+| `Path(...).read_text(encoding="utf-8")` for `misconfigurations_catalog.json` | Default Windows code page fails to decode the non-ASCII catalog |
+| `pyproject.toml` adjusted for the editable install path | Required by the package rename above |
+| Touched modules: `client_provider.py`, `generators.py`, `local_deploy.py`, `query_history.py`, `settings.py`, `trace_tools.py`, `tabs/{dockercompose,dockerfile,nuclei}_tab.py` | Supporting changes for the rename and the runtime settings |
+
+UNVERIFIED against upstream commit.
 
 *End of PATCH_NOTES.md*
