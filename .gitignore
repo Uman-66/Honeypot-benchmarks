@@ -1,8 +1,9 @@
-# secrets
+# ── secrets ───────────────────────────────────────────────────────────────────
 .env
 **/.env
 
-# local and generated
+# ── local and generated ───────────────────────────────────────────────────────
+scratch/
 .venv/
 .venv-hb/
 harness/.venv/
@@ -13,48 +14,58 @@ __pycache__/
 *.old
 *.bak
 .vscode/
-report/
 DOC_REVIEW_NOTES.md
-results_backup_as_found/
-results_bak_*/
-results_pilot/
-results/raw/
-results/raw_http/
-results/honeypot_logs/
-results/summary.md
-results/summary.csv
-results/summary_by_run.csv
-results/ANALYSIS_AUDIT.md
-results/http_requests_long.csv
-results/ssh_commands_long.csv
-results/*_commands_long.csv.bak*
-results/ssh_fingerprints.json
-logs/
-docker/logs/
-results_smoke/
-results/honeybee_dryrun/
-results/errors.log
-recovered/
+/recovered/
 trap_test.txt
+/results_smoke/
+/results_backup_as_found/
+/results_bak_*/
 
-# third-party clones (re-clone per README)
-DECEIVE/
-beelzebub/
-shelLM/
-galah/
-llm-honeypot/
-cowrie-base/
-cowrie-peek/
-Changes/
-graphify-out/
-honeybee/
-VelLMes-AI-Deception-Framework/
+# ── kept, but not published ───────────────────────────────────────────────────
+# The pilot batch is superseded by the final batch and is not published.
+/results_pilot/
+# Pilot LaTeX source and internal review notes. The published report source is
+# report/honeypot_report.tex.
+report/main.tex
+report/REPORT_REVIEW_NOTES.md
+
+# ── verbose by-products (the scored data under results/raw* is tracked) ────────
+/logs/
+/docker/logs/
+/results/honeypot_logs/
+/results/honeybee_dryrun/
+/results/errors.log
+results/*_commands_long.csv.bak*
+results/http_requests_long.csv.bak
+results/ssh_commands_long.csv.bak_before_fix
+
+# Root-anchored so that results/honeybee/ (real benchmark output) is NOT ignored
+# by the /honeybee/ clone pattern.
+/DECEIVE/
+/beelzebub/
+/shelLM/
+/galah/
+/llm-honeypot/
+/cowrie-base/
+/cowrie-peek/
+/Changes/
+/graphify-out/
+/honeybee/
+/VelLMes-AI-Deception-Framework/
 patches/*_before_fixes.patch
 
-# third-party clone history
+# ── third-party clone history ─────────────────────────────────────────────────
 honeybee/**/.qhistory/
 honeybee/**/.qhistory
 
-# model-invented credential-like strings from the HTTP honeypot
-results/raw_http/
-results/honeypot_logs/galah/
+# galah HTTP raw bodies withheld — model-fabricated credential-like strings.
+# See docs/WITHHELD_FILES.md. Files remain on disk.
+/results/raw_http/galah_run01.jsonl
+/results/raw_http/galah_run02.jsonl
+/results/raw_http/galah_run03.jsonl
+/results/raw_http/galah_run04.jsonl
+/results_pilot/raw_http/galah_run02.jsonl
+/results_pilot/raw_http/galah_run03.jsonl
+/results_pilot/raw_http/galah_run04.jsonl
+/results_pilot/raw_http/galah_run05.jsonl
+/results_pilot/honeypot_logs/galah/

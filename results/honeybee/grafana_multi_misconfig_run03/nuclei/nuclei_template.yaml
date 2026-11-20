@@ -1,0 +1,58 @@
+id: grafana-misconfiguration
+
+info:
+  name: Grafana Misconfiguration - Default Credentials & Exposed Data Sources
+  author: honeybee
+  severity: high
+  description: |
+    Grafana instance is exposed to the internet with default admin credentials
+    (admin:admin) unchanged, allowing unauthenticated access to data sources
+    due to missing authentication and role-based access control (RBAC).
+  reference:
+    - https://grafana.com/docs/grafana/latest/setup-grafana/sign-in-to-grafana/
+  metadata:
+    max-request: 2
+    shodan-query: product:"Grafana"
+  tags: grafana,misconfig,default-login,exposure
+
+http:
+  # Check 1: Default admin credentials (admin:admin) not changed
+  - raw:
+      - |
+        POST /login HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"user":"admin","password":"admin"}
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        part: header
+        words:
+          - "grafana_session"
+
+      - type: status
+        status:
+          - 200
+
+  # Check 2: Data sources accessible without authentication (no RBAC)
+  - raw:
+      - |
+        GET /api/datasources HTTP/1.1
+        Host: {{Hostname}}
+        Accept: application/json
+
+    disable-cookie: true
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+
+      - type: word
+        part: body
+        words:
+          - "\"uid\""
+          - "\"type\""
+        condition: and

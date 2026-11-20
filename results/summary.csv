@@ -1,0 +1,10 @@
+target,kind,track,latency_mean_s,latency_p95_s,n_timeouts,n_empty_outputs,literal_escape_cmds,think_cmds,fence_cmds,ai_refusal_cmds,fidelity_comparable_mean_sim,fidelity_exact_rate,determinism_mean,output_length_median,output_length_p95,output_length_max,oversized_outputs,transcript_leakage,transcript_leakage_total,similarity_comparisons_truncated,exit_closes_session_rate
+advshellm,llm,ssh,2.404,4.504,0,26,0,0,0,0,0.5947,0.4462,0.7836,37.0,1213.2,3176,0,0,180,0,1.0
+beelzebub,llm,ssh,8.348,31.656,16,16,0,0,0,0,0.3785,0.2154,0.68,77.0,5553.5,239959,9,14,180,53,0.8
+cowrie,baseline,ssh,0.578,0.61,0,40,0,0,0,0,0.5877,0.4615,0.9874,28.5,1987.0,9508,0,0,180,15,1.0
+deceive,llm,ssh,3.701,10.361,5,27,0,0,0,0,0.4738,0.3077,0.4664,70.0,2006.3,135108,2,0,180,18,1.0
+groundtruth_ssh,groundtruth,ssh,0.563,0.579,0,35,0,0,0,0,,,,32.5,1059.0,1828,0,0,180,0,1.0
+llmhoneypot,detector,ssh,0.56,0.578,0,30,0,0,0,0,,,,67.0,769.0,876,0,0,180,0,1.0
+vellmes,llm,ssh,2.033,4.874,9,25,0,0,0,0,0.607,0.4,0.8364,67.0,1717.0,3175,0,0,180,0,1.0
+galah,llm,http,5.178,8.887,,,,,,,,,0.2364,,,,,,,0,
+groundtruth_http,groundtruth,http,0.014,0.032,,,,,,,,,1.0,,,,,,,0,

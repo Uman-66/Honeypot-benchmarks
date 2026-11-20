@@ -1,0 +1,47 @@
+id: grafana-default-creds-misconfiguration
+
+info:
+  name: Grafana Default Admin Credentials & Misconfiguration
+  author: honeybee
+  severity: critical
+  description: |
+    Detects Grafana instances where the default admin credentials (admin:admin)
+    have not been changed, the admin interface is exposed to the internet,
+    data sources are accessible without proper authentication, and role-based
+    access control (RBAC) is not enforced.
+  reference:
+    - https://grafana.com/docs/grafana/latest/administration/
+  tags: grafana,misconfig,default-login,rbac,exposure
+
+http:
+  - raw:
+      - |
+        POST /login HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"user":"admin","password":"admin"}
+
+      - |
+        GET /api/datasources HTTP/1.1
+        Host: {{Hostname}}
+
+      - |
+        GET /api/users HTTP/1.1
+        Host: {{Hostname}}
+
+    cookie-reuse: true
+
+    matchers-condition: and
+    matchers:
+      - type: dsl
+        dsl:
+          - 'status_code_1 == 200 && contains(body_1, "Logged in")'
+
+      - type: dsl
+        dsl:
+          - 'status_code_2 == 200'
+
+      - type: dsl
+        dsl:
+          - 'status_code_3 == 200 && contains(body_3, "email")'

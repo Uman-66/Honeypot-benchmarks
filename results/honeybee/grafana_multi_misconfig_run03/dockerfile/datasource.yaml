@@ -1,0 +1,20 @@
+# ============================================================
+# MISCONFIGURATION: No data source authentication
+# ============================================================
+# This Prometheus data source is provisioned without basic auth,
+# without a bearer token/API key, and without TLS.
+# IMPACT: Any user (including anonymous Admins) can query the data
+# source, and the backend itself accepts unauthenticated requests.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus-Insecure
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    # basicAuthUser/basicAuthPassword and secureJsonData are
+    # intentionally omitted -> no authentication is configured
+    jsonData:
+      httpMethod: GET

@@ -1,0 +1,42 @@
+honeybee-1  | 2026-11-06 10:05:42.104 
+honeybee-1  | Warning: the config option 'server.enableCORS=false' is not compatible with
+honeybee-1  | 'server.enableXsrfProtection=true'.
+honeybee-1  | As a result, 'server.enableCORS' is being overridden to 'true'.
+honeybee-1  | 
+honeybee-1  | More information:
+honeybee-1  | In order to protect against CSRF attacks, we send a cookie with each request.
+honeybee-1  | To do so, we must specify allowable origins, which places a restriction on
+honeybee-1  | cross-origin resource sharing.
+honeybee-1  | 
+honeybee-1  | If cross origin resource sharing is required, please disable server.enableXsrfProtection.
+honeybee-1  |             
+honeybee-1  | 
+honeybee-1  |   You can now view your Streamlit app in your browser.
+honeybee-1  | 
+honeybee-1  |   URL: http://0.0.0.0:8501
+honeybee-1  | 
+honeybee-1  | honeybee attempt=1 finish_reason='stop' completion_tokens=5186 has_reasoning=True
+honeybee-1  | honeybee attempt=1 finish_reason='stop' completion_tokens=6758 has_reasoning=True
+honeybee-1  | honeybee attempt=1 finish_reason='stop' completion_tokens=4182 has_reasoning=True
+honeybee-1  | honeybee attempt=1 finish_reason='stop' completion_tokens=2266 has_reasoning=True
+honeybee-1  | honeybee attempt=1 finish_reason='stop' completion_tokens=6923 has_reasoning=True
+honeybee-1  | honeybee attempt=1 finish_reason='stop' completion_tokens=4622 has_reasoning=True
+honeybee-1  | honeybee attempt=1 finish_reason='stop' completion_tokens=2337 has_reasoning=True
+honeybee-1  |   Stopping...
+honeybee-1  | 2026-11-06 10:13:47.387 
+honeybee-1  | Warning: the config option 'server.enableCORS=false' is not compatible with
+honeybee-1  | 'server.enableXsrfProtection=true'.
+honeybee-1  | As a result, 'server.enableCORS' is being overridden to 'true'.
+honeybee-1  | 
+honeybee-1  | More information:
+honeybee-1  | In order to protect against CSRF attacks, we send a cookie with each request.
+honeybee-1  | To do so, we must specify allowable origins, which places a restriction on
+honeybee-1  | cross-origin resource sharing.
+honeybee-1  | 
+honeybee-1  | If cross origin resource sharing is required, please disable server.enableXsrfProtection.
+honeybee-1  |             
+honeybee-1  | 
+honeybee-1  |   You can now view your Streamlit app in your browser.
+honeybee-1  | 
+honeybee-1  |   URL: http://0.0.0.0:8501
+honeybee-1  | 

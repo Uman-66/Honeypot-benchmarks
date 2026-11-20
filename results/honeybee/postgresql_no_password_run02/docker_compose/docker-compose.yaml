@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: insecure-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: appdb
+      # MISCONFIGURATION: Weak, hardcoded superuser password committed to source control
+      POSTGRES_PASSWORD: postgres
+      # MISCONFIGURATION: 'trust' host auth method - the image skips password setup entirely
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      # MISCONFIGURATION: Published on 0.0.0.0:5432 - reachable from any network the host is on
+      - "5432:5432"
+    volumes:
+      # MISCONFIGURATION: Custom configs enforce listen_addresses='*' and trust authentication
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - db_data:/var/lib/postgresql/data
+    # Custom config_file + hba_file force the insecure settings at server startup
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c hba_file=/etc/postgresql/pg_hba.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

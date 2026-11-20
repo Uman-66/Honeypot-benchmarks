@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  grafana:
+    image: grafana/grafana:9.5.2
+    container_name: grafana
+    restart: always
+    ports:
+      # MISCONFIGURATION: Admin UI bound to 0.0.0.0 — reachable from any network/internet
+      - "0.0.0.0:3000:3000"
+    environment:
+      # MISCONFIGURATION: Default admin credentials left unchanged (admin/admin)
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      # MISCONFIGURATION: No RBAC — anonymous visitors are granted the Admin role
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      # MISCONFIGURATION: Open self-registration allows anyone to create accounts
+      - GF_USERS_ALLOW_SIGN_UP=true
+      # MISCONFIGURATION: Basic auth disabled, removing a primary access-control layer
+      - GF_AUTH_BASIC_ENABLED=false
+      # MISCONFIGURATION: Brute-force protection effectively disabled
+      - GF_AUTH_LOGIN_MAXIMUM_ATTEMPTS=0
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus
+    restart: always
+    ports:
+      # MISCONFIGURATION: Metrics backend also exposed publicly with no auth layer
+      - "0.0.0.0:9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+volumes:
+  grafana_data:

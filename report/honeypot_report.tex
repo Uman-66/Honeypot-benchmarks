@@ -1,0 +1,395 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  citecolor=black
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\title{\textbf{Benchmarking LLM-Based Honeypots with a Scripted Local Harness: Setup, Findings and Limitations}}
+\author{Muhammad Rumman Aslam}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report documents a scripted local benchmark of LLM-based SSH and HTTP
+honeypots, a static Cowrie baseline, ground-truth services, an ANSI-hidden
+prompt-injection detector target, and HoneyBee as a separate environment
+generator. The final batch used five runs per SSH and HTTP target. Each SSH
+run sent 37 ordered commands, of which 36 were scored; each HTTP run sent 20
+requests. The harness used a 120-second runner timeout and recorded raw JSONL
+observations for later analysis. SSH latency summaries use completed commands
+only, while timed-out observations are retained as censored events. Similarity
+comparisons use ANSI-stripped prefixes capped at 4,000 characters. The
+observed data show target-specific determinism, command-specific timeouts,
+large outputs, and differing HTTP response consistency. HoneyBee was evaluated
+as an LLM generator rather than as a honeypot. These are pilot-scale,
+scripted measurements from one shared model and endpoint; they do not rank
+tools, establish causes, or generalize beyond the tested configurations.
+\end{abstract}
+
+\section{Introduction and goals}
+
+LLM-based honeypots can answer shell or HTTP interactions with outputs
+constructed by a language model rather than by a fixed emulation layer. A
+benchmark must therefore record both conventional service observations and
+properties specific to generated text: repeat consistency, output length,
+interior prompt leakage, empty or unexpected outputs, and timeout behavior.
+This project uses a local harness to make those observations comparable across
+several SSH and HTTP targets.
+
+The study is pilot-scale. It uses a single shared model and API endpoint for
+the LLM targets, five scripted runs, and a fixed command/request corpus. The
+goal is measurement and reproducibility rather than a universal ranking. The
+ground-truth SSH service is Ubuntu 20.04 with OpenSSH, and the HTTP reference
+is Ubuntu 20.04 with nginx. Cowrie supplies a static SSH baseline. The
+llm-honeypot target is treated as a detector target and excluded from fidelity,
+similarity, determinism, and aggregate averages.
+
+The report has three practical goals: document the local setup and target
+configuration; state the metrics and accounting rules precisely; and preserve
+the limitations and unresolved questions that should guide a larger study.
+
+\section{Setup}
+
+\subsection{Targets and ports}
+
+All benchmark services were published on loopback ports. Table~\ref{tab:targets}
+summarizes the final target inventory. HoneyBee is deliberately listed as a
+generator: it produces Docker-oriented artifacts and is not an interactive
+honeypot in this benchmark.
+
+\begin{table}[ht]
+\centering
+\caption{Final target inventory.}
+\label{tab:targets}
+\small
+\begin{tabularx}{\textwidth}{l l r l Y}
+\toprule
+Target & Track & Port & Role & Recorded scope \\
+\midrule
+DECEIVE & SSH & 8022 & LLM honeypot & Scripted SSH responses \\
+Beelzebub & SSH & 2222 & LLM honeypot & Scripted SSH responses \\
+Cowrie & SSH & 2223 & Static baseline & Static emulation \\
+AdvancedshelLM & SSH & 2224 & LLM honeypot & Subprocess/wrapper path \\
+Ground truth SSH & SSH & 2225 & Reference & Ubuntu 20.04/OpenSSH \\
+llm-honeypot & SSH & 2227 & Detector target & ANSI-hidden marker detector \\
+VelLMes & SSH & 2228 & LLM honeypot & Scripted SSH responses \\
+galah & HTTP & 8088 & LLM HTTP responder & Scripted HTTP responses \\
+Ground truth HTTP & HTTP & 2226 & Reference & Ubuntu 20.04/nginx \\
+HoneyBee & generator & 2229 config & LLM generator & Output-quality evaluation \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Runtime and configuration}
+
+The documented reproduction environment is Windows 10/11 with Python 3.10+
+(tested with Python 3.12), Git, and Docker Desktop with WSL 2. Services are
+bound to loopback. The LLM targets use one shared model/API endpoint, while
+the configuration values that were explicitly recorded differ by target.
+Table~\ref{tab:config} preserves ``not recorded'' where the permitted
+documents did not specify a value.
+
+\begin{table}[ht]
+\centering
+\caption{Recorded target configuration.}
+\label{tab:config}
+\scriptsize
+\begin{tabularx}{\textwidth}{l Y l l l Y}
+\toprule
+Target & Stack & Model & Temperature & Max tokens & User/hostname and main configuration \\
+\midrule
+DECEIVE & Python 3.11-slim + DECEIVE & glm-5p3-flash & 0.2 & no output cap & guest / not recorded; output stripping, Fireworks environment, exit sentinel, lazy imports \\
+Beelzebub & Go image + mounted YAML & glm-5p3-flash & not exposed by plugin config & not exposed by plugin config & guest / ubuntu; API-key/host fallback and benchmark YAML \\
+AdvancedshelLM & Python 3.11-slim + shelLM & glm-5p3-flash & 0.2 & 4096 & guest / not recorded; client, exit handling, environment fallback, wrapper \\
+VelLMes & Python 3.11-slim + VelLMes & glm-5p3-flash & 0.2 & 800 & user / not recorded; SSH wrapper and benchmark config \\
+galah & Go 1.22 builder + Debian slim & glm-5p3-flash & 0.2 & not recorded & not applicable / not recorded; response cleaning and entrypoint/config \\
+Cowrie & Official image digest & not applicable & not applicable & not applicable & root / ubuntu; mounted config, no upstream source edit \\
+llm-honeypot & Cowrie v2.6.1 overlay & not applicable & not applicable & not applicable & root / not recorded; overlay Dockerfile and v2.6.1 pin \\
+Ground truth SSH & Ubuntu 20.04 + OpenSSH & not applicable & not applicable & not applicable & guest / ubuntu; PTY and PAM benchmark changes \\
+Ground truth HTTP & Ubuntu 20.04 + nginx 1.18.0 & not applicable & not applicable & not applicable & not applicable / not recorded; benchmark Dockerfile/compose \\
+HoneyBee & Python 3.11-slim + Streamlit & glm-5p3-flash & 0.2 & 8192 & not applicable; deployment disabled and empty-generation handling \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Third-party source changes are documented as patches and notes. The verified
+third-party commit hashes are the HoneyBee clone
+\texttt{dbf62c42604eeae2cfbfd4d36b99bef65555c303} and the VelLMes clone
+\texttt{192fa5084df84b38a16f6581939fd3143c350181}. Other clone commit hashes
+are omitted here. The ground-truth services are benchmark-created services,
+not third-party source repositories.
+
+HoneyBee is not a honeypot in this study. It is a Streamlit application that
+uses an LLM to generate misconfigured Docker artifacts. The one-click deploy
+path is disabled, the image has no Docker CLI or Docker socket mount, and the
+evaluation reports generator validity rather than a honeypot security
+assessment.
+
+\section{Experimental protocol}
+
+\subsection{Inputs and collection order}
+
+The SSH manifest contains 37 ordered commands: 36 scored commands plus
+\texttt{exit}. Its observed categories are recon, files, process, errors,
+permissions, and state. Host-specific commands are excluded from fidelity
+scoring. The HTTP manifest contains 20 requests: 17 GET, one HEAD, one
+OPTIONS, and one POST, including three repeated \texttt{GET /} requests.
+
+Five runs were collected for every SSH and HTTP target. The runner timeout was
+120 seconds, and a duplicate guard skipped complete target/run pairs. The
+raw-file timestamps show a two-pass SSH order. In run 1, ground-truth SSH,
+Cowrie, llm-honeypot, and Beelzebub were written first, followed by
+AdvancedshelLM, DECEIVE, and VelLMes. The same two-stage SSH order repeated
+for runs 2--5. Galah HTTP runs 1--5 were collected after the first SSH pass;
+ground-truth HTTP was written immediately after Galah run 5. Containers were
+freshly started before the batch.
+
+\subsection{Metric definitions}
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Latency}: command or request wall time for completed commands
+only. SSH timeouts are censored at the runner timeout and excluded from
+median and p95, so the resulting latency summaries understate latency for
+targets with timeouts.
+\item \textbf{Fidelity}: the mean \texttt{SequenceMatcher} ratio for a target
+command against the first loaded ground-truth SSH output for that command.
+Host-specific commands are reference-only. Before each comparison, ANSI
+escapes are removed and both texts are capped at their first 4,000 characters.
+\item \textbf{Determinism}: mean pairwise \texttt{SequenceMatcher} similarity
+across non-empty run outputs for the same target and command, with the same
+ANSI-stripped 4,000-character cap.
+\item \textbf{Shared commands}: the 26 non-host-specific commands with a
+non-timeout observation for every compared target. Shared fidelity averages
+command means over this intersection.
+\item \textbf{Oversized output}: a command output longer than 20,000
+characters; the reported value counts such outputs per target.
+\item \textbf{Transcript leakage}: an output containing an interior shell
+prompt matching
+\texttt{(?m)\textasciicircum\textbackslash s*[\textbackslash w.-]+@[\textbackslash w.-]+:[\textbackslash n]*[\$\#]\textbackslash s}.
+The legitimate final non-empty prompt is excluded.
+\end{itemize}
+
+\section{Results}
+
+\subsection{SSH results}
+
+The scored SSH denominator is 180 commands per target. Table~\ref{tab:ssh}
+reports completed observations separately from timeouts. The fidelity interval
+is the shared-command interval over 26 commands. The detector target is shown
+for accounting and leakage, but its fidelity and determinism are excluded.
+
+\begin{table}[ht]
+\centering
+\caption{SSH results. Latency is median/p95 seconds over completed commands.}
+\label{tab:ssh}
+\scriptsize
+\begin{tabularx}{\textwidth}{l r r r r l r l l}
+\toprule
+Target & Median/p95 & Completed & Timeouts & Empty & Fidelity (95\% CI) & Det. & Oversized & Leakage \\
+\midrule
+Ground truth & 0.562/0.579 & 180 & 0 & 35 & --- & --- & 0 & 0/180 \\
+Cowrie & 0.563/0.610 & 180 & 0 & 40 & 0.5877 (0.4203--0.7438) & 0.9874 & 0 & 0/180 \\
+AdvancedshelLM & 1.922/4.504 & 180 & 0 & 26 & 0.5947 (0.4336--0.7386) & 0.7836 & 0 & 0/180 \\
+VelLMes & 1.687/4.874 & 171 & 9 & 25 & 0.6070 (0.4601--0.7506) & 0.8364 & 0 & 0/180 \\
+DECEIVE & 1.984/10.361 & 175 & 5 & 27 & 0.4731 (0.3493--0.5858) & 0.4664 & 2 & 0/180 \\
+Beelzebub & 5.023/31.656 & 164 & 16 & 16 & 0.3737 (0.2319--0.5239) & 0.6800 & 9 & 14/180 \\
+llm-honeypot & detector & 180 & 0 & 30 & excluded & excluded & 0 & 0/180 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Timeouts were command-specific. VelLMes \texttt{ps\_aux} timed out in 5/5
+runs and \texttt{env} in 4/5. Beelzebub
+\texttt{state\_cat\_marker}, \texttt{state\_echo\_marker}, and
+\texttt{state\_ls\_tmp\_3} each timed out in 3/5 runs. DECEIVE
+\texttt{cpuinfo} and \texttt{ps\_aux} timed out in runs 1 and 4. The complete
+timeout accounting is given in Table~\ref{tab:timeouts}.
+
+\begin{table}[ht]
+\centering
+\caption{Scored SSH timeout detail. The Beelzebub \texttt{exit} row is an unscored control row.}
+\label{tab:timeouts}
+\scriptsize
+\begin{tabularx}{\textwidth}{l l r l}
+\toprule
+Target & Command & Runs & Run numbers \\
+\midrule
+Beelzebub & \texttt{exit} (control) & 1 & 1 \\
+Beelzebub & \texttt{id} & 1 & 4 \\
+Beelzebub & \texttt{os\_release} & 1 & 4 \\
+Beelzebub & \texttt{passwd} & 1 & 5 \\
+Beelzebub & \texttt{state\_cat\_marker} & 3 & 1,3,5 \\
+Beelzebub & \texttt{state\_echo\_marker} & 3 & 1,4,5 \\
+Beelzebub & \texttt{state\_ls\_tmp\_3} & 3 & 1,4,5 \\
+Beelzebub & \texttt{state\_rm\_marker} & 2 & 2,3 \\
+Beelzebub & \texttt{state\_rmdir\_bm\_dir} & 1 & 1 \\
+Beelzebub & \texttt{whoami} & 1 & 2 \\
+DECEIVE & \texttt{cpuinfo} & 2 & 1,4 \\
+DECEIVE & \texttt{perm\_sudo\_l} & 1 & 3 \\
+DECEIVE & \texttt{ps\_aux} & 2 & 1,4 \\
+VelLMes & \texttt{env} & 4 & 1,2,4,5 \\
+VelLMes & \texttt{ps\_aux} & 5 & 1,2,3,4,5 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The Beelzebub timeout rows total 17 because the table includes the run 1
+\texttt{exit} control row. The scored total is 16 after excluding
+\texttt{exit}; DECEIVE totals 5 and VelLMes totals 9. The detector's injected
+strings were visible after ANSI stripping in all five runs for all 11
+monitored command IDs.
+
+\subsection{HTTP results}
+
+Galah produced 11/100 5xx responses, six errors including three timeouts, six
+distinct \texttt{Server} header values, 12 header-name-set inconsistencies,
+0.2364 repeated-\texttt{GET /} similarity, 25/94 status agreements with nginx,
+five documentation-example secret hits, and 19 target-port mentions. Its
+latency median/p95 was 3.531/8.887 seconds. Ground-truth nginx produced zero
+5xx responses, a constant \texttt{Server} header, 1.0000 repeat similarity,
+and a 0.015-second median.
+
+\subsection{HoneyBee results}
+
+HoneyBee was evaluated with \texttt{glm-5p3-flash}, temperature 0.2, maximum
+8192 tokens, and three generations per generator/case cell, for 18
+generations. Docker Compose validity was 6/6 cases, Dockerfile validity 4/6,
+and Nuclei validity 3/6. Length-limited results were 5/18, all in the
+PostgreSQL case. Grafana was clean in 9/9 generations and PostgreSQL in 4/9.
+The scorer was revised after the first results; original outputs remain in the
+recorded validity file. These are generator-validity observations, not a
+security verdict.
+
+\section{Findings}
+
+The following statements are limited to the supported findings in the
+verified benchmark report:
+
+\begin{itemize}[leftmargin=*]
+\item Measured determinism differed between Cowrie (0.9874) and the LLM SSH
+targets (0.4664--0.8364).
+\item Galah produced six \texttt{Server} header values versus one for nginx,
+0.2364 versus 1.0000 repeated-\texttt{GET /} similarity, and 25/94 status
+agreement with nginx.
+\item Beelzebub produced nine oversized outputs and 14/180 transcript-leakage
+outputs; DECEIVE produced two oversized outputs, with a maximum of 135,108
+characters.
+\item Command-specific recurrence was visible in the timeout table: VelLMes
+\texttt{ps\_aux} 5/5 and \texttt{env} 4/5; three Beelzebub state commands
+3/5 each; and DECEIVE \texttt{cpuinfo} and \texttt{ps\_aux} in runs 1 and 4.
+\item Median LLM SSH latency was reported as 3.0x for VelLMes, 3.4x for
+AdvancedshelLM, 3.5x for DECEIVE, and 8.9x for Beelzebub relative to the
+0.562-second ground-truth median. These ratios inherit the completed-command
+latency rule.
+\item The llm-honeypot injected strings were visible after ANSI stripping.
+\end{itemize}
+
+\section{Data-quality notes}
+
+The harness uses a duplicate guard to skip complete target/run pairs and a
+\texttt{--force} option that backs up and reruns an existing pair. The verified
+raw data retain per-command timeout fields. Beelzebub's raw timeout total is
+17 while its scored total is 16 because run 1 \texttt{exit} is a control row.
+
+Large LLM fields motivated an increased CSV field-size limit. The analyzer
+also bounds every similarity comparison after ANSI stripping to 4,000
+characters, preventing very long outputs from dominating runtime. The final
+data include outputs longer than 20,000 characters and a maximum Beelzebub
+output of 239,959 characters.
+
+HoneyBee scoring was revised after initial results; both the revised findings
+and the existence of original outputs are recorded. The pilot and final
+batches are not mixed. In the pilot summary, Galah has 29/100 5xx responses,
+Beelzebub has zero timeouts, and DECEIVE has 13 timeouts. Available pilot raw
+JSONL contains 14 DECEIVE timeouts, while
+\texttt{results\_pilot/ssh\_commands\_long.csv} contains 17. The available
+files therefore report different totals; no cause is assigned.
+
+\section{Limitations}
+
+The benchmark has five runs, one shared model/API endpoint, scripted inputs,
+freshly started containers, censored timeout latencies, and a
+character-similarity proxy. Personas, hostnames, and filesystem fixtures
+differ between targets. Shared API load can affect timeout and latency
+patterns. The 26-command fidelity intersection is a restricted subset, and
+host-specific commands are reference-only. HoneyBee has three generations per
+cell and static validity checks. These constraints limit generalization.
+
+The overlapping fidelity confidence intervals do not support a tool ranking.
+DECEIVE state-check failures do not establish its state-tracking capability.
+The scripted observations do not establish attacker detectability, HoneyBee
+output security, or behavior beyond this model, endpoint, and sample.
+
+\section{Next steps and questions for discussion}
+
+Several extensions follow directly from the documented limitations:
+
+\begin{enumerate}[leftmargin=*]
+\item Repeat the benchmark with a second model while preserving the same
+command and request manifests.
+\item Add an API-latency probe that separates service response time from
+local transport and wrapper time.
+\item Collect more runs and report confidence intervals with the same
+completed-command and censoring rules.
+\item Add a controlled state test with explicit fixtures and repeatable
+checks.
+\item Add detectability probes and a separate LLM-attacker evaluation.
+\item Request real attacker session logs, if they can be obtained and handled
+under appropriate controls.
+\item Decide whether the next study should prioritize detectability, fidelity,
+or LLM-attacker behavior; the present data do not select among these goals.
+\end{enumerate}
+
+\begin{thebibliography}{99}
+
+% Bibliographic details must be completed before submission.
+\bibitem{genai-sok}
+SoK, \url{https://arxiv.org/abs/2510.25939}.
+
+\bibitem{honeygpt}
+HoneyGPT.
+
+\bibitem{llmpot}
+LLMPot, \url{https://arxiv.org/abs/2405.05999}.
+
+\bibitem{galah}
+galah, \url{https://github.com/0x4D31/galah}.
+
+\bibitem{deceive}
+DECEIVE, \url{https://github.com/coverflex-tech/DECEIVE}.
+
+\bibitem{cowrie}
+Cowrie, \url{https://github.com/cowrie/cowrie}.
+
+\bibitem{beelzebub}
+Beelzebub, \url{https://github.com/mariocandela/beelzebub}.
+
+\bibitem{advancedshellm}
+shelLM/AdvancedShelLM, \url{https://github.com/stratosphereips/AdvancedShelLM}.
+
+\bibitem{vellmes}
+VelLMes, \url{https://github.com/stratosphereips/VelLMes-AI-Deception-Framework}.
+
+\end{thebibliography}
+
+\end{document}

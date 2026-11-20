@@ -1,0 +1,58 @@
+id: grafana-default-credentials
+
+info:
+  name: Grafana Default Admin Credentials & Misconfiguration
+  author: honeybee
+  severity: critical
+  description: |
+    Grafana instance is exposed to the internet with default admin credentials (admin:admin).
+    Successful authentication grants administrative access, exposes data sources without
+    authentication and indicates missing role-based access control (RBAC) enforcement.
+  reference:
+    - https://grafana.com/docs/grafana/latest/administration/default-users/
+  tags: grafana,default-login,misconfig,exposure
+
+http:
+  - raw:
+      - |
+        GET /login HTTP/1.1
+        Host: {{Hostname}}
+
+      - |
+        POST /login HTTP/1.1
+        Host: {{Hostname}}
+        Content-Type: application/json
+
+        {"user":"admin","password":"admin"}
+
+      - |
+        GET /api/datasources HTTP/1.1
+        Host: {{Hostname}}
+
+    cookie-reuse: true
+    redirects: true
+    max-redirects: 2
+
+    matchers-condition: and
+    matchers:
+      # Confirm the target is a Grafana instance
+      - type: dsl
+        dsl:
+          - 'contains(to_lower(body_1), "grafana")'
+
+      # Default admin credentials accepted (admin user exposed to internet / no RBAC hardening)
+      - type: dsl
+        dsl:
+          - 'status_code_2 == 200 && contains(body_2, "Logged in")'
+
+      # Authenticated admin access to data source API (no data source authentication)
+      - type: dsl
+        dsl:
+          - 'status_code_3 == 200'
+
+    extractors:
+      - type: regex
+        part: body
+        group: 1
+        regex:
+          - '"name":"([^"]+)"'

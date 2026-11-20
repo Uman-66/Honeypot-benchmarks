@@ -1,0 +1,578 @@
+[
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      7900
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 5,
+    "primary_file": "docker-compose.yaml",
+    "auxiliary_files": [
+      {
+        "name": "init.sql",
+        "type_guess": "sql"
+      },
+      {
+        "name": "pg_hba.conf",
+        "type_guess": "config"
+      },
+      {
+        "name": "postgresql.conf",
+        "type_guess": "config"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "dockerfile",
+    "attempts": 5,
+    "finish_reasons": [
+      "length",
+      "length",
+      "length",
+      "length",
+      "length"
+    ],
+    "completion_tokens": [
+      8192,
+      8192,
+      8192,
+      8192,
+      8192
+    ],
+    "length_limited": true,
+    "primary_found": false,
+    "syntactic_ok": false,
+    "semantic_ok": false,
+    "produced_output": false,
+    "truncated_accepted": true,
+    "valid": false,
+    "errors": [
+      "Expected non-empty list, got list"
+    ],
+    "files": 0,
+    "auxiliary_files": [],
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "length"
+    ],
+    "completion_tokens": [
+      8192
+    ],
+    "length_limited": true,
+    "primary_found": false,
+    "produced_output": false,
+    "syntactic_ok": false,
+    "semantic_ok": false,
+    "truncated_accepted": true,
+    "valid": false,
+    "errors": [
+      "Nuclei primary artifact is missing"
+    ],
+    "files": 0,
+    "auxiliary_files": [],
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run02",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5936
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 5,
+    "primary_file": "docker-compose.yaml",
+    "auxiliary_files": [
+      {
+        "name": "init.sql",
+        "type_guess": "sql"
+      },
+      {
+        "name": "pg_hba.conf",
+        "type_guess": "config"
+      },
+      {
+        "name": "postgresql.conf",
+        "type_guess": "config"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run02",
+    "generator": "dockerfile",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      4937
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 2,
+    "primary_file": "Dockerfile",
+    "auxiliary_files": [
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run02",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "length"
+    ],
+    "completion_tokens": [
+      8192
+    ],
+    "length_limited": true,
+    "primary_found": false,
+    "produced_output": false,
+    "syntactic_ok": false,
+    "semantic_ok": false,
+    "truncated_accepted": true,
+    "valid": false,
+    "errors": [
+      "Nuclei primary artifact is missing"
+    ],
+    "files": 0,
+    "auxiliary_files": [],
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run03",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      2087
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 4,
+    "primary_file": "docker-compose.yaml",
+    "auxiliary_files": [
+      {
+        "name": "pg_hba.conf",
+        "type_guess": "config"
+      },
+      {
+        "name": "postgresql.conf",
+        "type_guess": "config"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run03",
+    "generator": "dockerfile",
+    "attempts": 3,
+    "finish_reasons": [
+      "length",
+      "length",
+      "length"
+    ],
+    "completion_tokens": [
+      8192,
+      8192,
+      8192
+    ],
+    "length_limited": true,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": false,
+    "semantic_ok": false,
+    "truncated_accepted": true,
+    "valid": false,
+    "errors": [],
+    "files": 3,
+    "primary_file": "Dockerfile",
+    "auxiliary_files": [
+      {
+        "name": "init-insecure.sh",
+        "type_guess": "shell"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run03",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "length"
+    ],
+    "completion_tokens": [
+      8192
+    ],
+    "length_limited": true,
+    "primary_found": false,
+    "produced_output": false,
+    "syntactic_ok": false,
+    "semantic_ok": false,
+    "truncated_accepted": true,
+    "valid": false,
+    "errors": [
+      "Nuclei primary artifact is missing"
+    ],
+    "files": 0,
+    "auxiliary_files": [],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      4551
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 4,
+    "primary_file": "docker-compose.yaml",
+    "auxiliary_files": [
+      {
+        "name": "datasource.yaml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "prometheus.yml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "dockerfile",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      7509
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 4,
+    "primary_file": "Dockerfile",
+    "auxiliary_files": [
+      {
+        "name": "grafana.ini",
+        "type_guess": "config"
+      },
+      {
+        "name": "insecure-datasource.yaml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      3990
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 1,
+    "auxiliary_files": [],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run02",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5155
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 4,
+    "primary_file": "docker-compose.yaml",
+    "auxiliary_files": [
+      {
+        "name": "datasource.yml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "prometheus.yml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run02",
+    "generator": "dockerfile",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      6655
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 3,
+    "primary_file": "Dockerfile",
+    "auxiliary_files": [
+      {
+        "name": "datasources.yml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run02",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5628
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 1,
+    "auxiliary_files": [],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run03",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5513
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 4,
+    "primary_file": "docker-compose.yaml",
+    "auxiliary_files": [
+      {
+        "name": "datasource.yml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "prometheus.yml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run03",
+    "generator": "dockerfile",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5947
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 3,
+    "primary_file": "Dockerfile",
+    "auxiliary_files": [
+      {
+        "name": "datasource.yaml",
+        "type_guess": "yaml"
+      },
+      {
+        "name": "README.md",
+        "type_guess": "markdown"
+      }
+    ],
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run03",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      4645
+    ],
+    "length_limited": false,
+    "primary_found": true,
+    "produced_output": true,
+    "syntactic_ok": true,
+    "semantic_ok": true,
+    "truncated_accepted": false,
+    "valid": true,
+    "errors": [],
+    "files": 1,
+    "auxiliary_files": [],
+    "dry_run": false
+  }
+]

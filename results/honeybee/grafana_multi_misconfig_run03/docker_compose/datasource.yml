@@ -1,0 +1,15 @@
+apiVersion: 1
+
+# Data source provisioning with NO authentication
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true  # MISCONFIGURATION: Any user (including anonymous Admin) can modify this data source
+    jsonData:
+      timeInterval: 15s
+    # MISCONFIGURATION: No 'secureJsonData', no basicAuthPassword, no TLS settings.
+    # The data source connects with zero credentials — anyone who reaches Grafana
+    # can also query the underlying metrics without any authentication.

@@ -1,0 +1,357 @@
+[
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      7900
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Compose YAML parse error: expected '<document start>', but found '<scalar>'\n  in \"<unicode string>\", line 15, column 1:\n    log_connections = off\n    ^",
+      "Compose YAML parse error: expected '<document start>', but found '<scalar>'\n  in \"<unicode string>\", line 13, column 1:\n    host        all         all      ... \n    ^",
+      "Compose YAML parse error: mapping values are not allowed here\n  in \"<unicode string>\", line 5, column 20:\n    -- MISCONFIGURATION: Application account uses a tri ... \n                       ^",
+      "Compose YAML parse error: expected '<document start>', but found '<block sequence start>'\n  in \"<unicode string>\", line 6, column 1:\n    - **No Password / Weak Password  ... \n    ^"
+    ],
+    "files": 5,
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "dockerfile",
+    "attempts": 5,
+    "finish_reasons": [
+      "length",
+      "length",
+      "length",
+      "length",
+      "length"
+    ],
+    "completion_tokens": [
+      8192,
+      8192,
+      8192,
+      8192,
+      8192
+    ],
+    "valid": false,
+    "semantic_ok": false,
+    "errors": [
+      "Generator returned None (all retries exhausted)"
+    ],
+    "files": 0,
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "length"
+    ],
+    "completion_tokens": [
+      8192
+    ],
+    "valid": false,
+    "semantic_ok": false,
+    "errors": [
+      "Nuclei output is empty or not a string"
+    ],
+    "files": 0,
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run02",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5936
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Compose YAML parse error: expected '<document start>', but found '<scalar>'\n  in \"<unicode string>\", line 16, column 1:\n    log_connections = off\n    ^",
+      "Compose YAML parse error: expected '<document start>', but found '<scalar>'\n  in \"<unicode string>\", line 14, column 1:\n    host        all         all      ... \n    ^",
+      "Compose YAML parse error: mapping values are not allowed here\n  in \"<unicode string>\", line 6, column 20:\n    -- MISCONFIGURATION: Application account uses a tri ... \n                       ^",
+      "Compose YAML parse error: expected '<document start>', but found '<scalar>'\n  in \"<unicode string>\", line 7, column 1:\n    1. **Weak password / no password ... \n    ^"
+    ],
+    "files": 5,
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run02",
+    "generator": "dockerfile",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      4937
+    ],
+    "valid": true,
+    "semantic_ok": true,
+    "errors": [],
+    "files": 2,
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run02",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "length"
+    ],
+    "completion_tokens": [
+      8192
+    ],
+    "valid": false,
+    "semantic_ok": false,
+    "errors": [
+      "Nuclei output is empty or not a string"
+    ],
+    "files": 0,
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run03",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      2087
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Compose YAML parse error: expected '<document start>', but found '<scalar>'\n  in \"<unicode string>\", line 14, column 1:\n    log_connections = off\n    ^",
+      "Compose YAML parse error: expected '<document start>', but found '<scalar>'\n  in \"<unicode string>\", line 13, column 1:\n    host        all         all      ... \n    ^",
+      "Compose YAML parse error: expected '<document start>', but found '<block sequence start>'\n  in \"<unicode string>\", line 6, column 1:\n    - **Weak Password / No Password* ... \n    ^"
+    ],
+    "files": 4,
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run03",
+    "generator": "dockerfile",
+    "attempts": 3,
+    "finish_reasons": [
+      "length",
+      "length",
+      "length"
+    ],
+    "completion_tokens": [
+      8192,
+      8192,
+      8192
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Missing FROM in init-insecure.sh"
+    ],
+    "files": 3,
+    "dry_run": false
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run03",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "length"
+    ],
+    "completion_tokens": [
+      8192
+    ],
+    "valid": false,
+    "semantic_ok": false,
+    "errors": [
+      "Nuclei output is empty or not a string"
+    ],
+    "files": 0,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      4551
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Compose YAML parse error: expected '<document start>', but found '<block sequence start>'\n  in \"<unicode string>\", line 6, column 1:\n    - **Grafana** (port 3000): Visua ... \n    ^"
+    ],
+    "files": 4,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "dockerfile",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      7509
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Missing FROM in insecure-datasource.yaml",
+      "Missing FROM in README.md"
+    ],
+    "files": 4,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      3990
+    ],
+    "valid": true,
+    "semantic_ok": true,
+    "errors": [],
+    "files": 1,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run02",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5155
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Compose YAML parse error: expected '<document start>', but found '<block sequence start>'\n  in \"<unicode string>\", line 6, column 1:\n    - **Grafana** (port 3000): Visua ... \n    ^"
+    ],
+    "files": 4,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run02",
+    "generator": "dockerfile",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      6655
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Missing FROM in datasources.yml"
+    ],
+    "files": 3,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run02",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5628
+    ],
+    "valid": true,
+    "semantic_ok": true,
+    "errors": [],
+    "files": 1,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run03",
+    "generator": "docker_compose",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5513
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Compose YAML parse error: expected '<document start>', but found '<block sequence start>'\n  in \"<unicode string>\", line 6, column 1:\n    - **Grafana** (port 3000): Visua ... \n    ^"
+    ],
+    "files": 4,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run03",
+    "generator": "dockerfile",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      5947
+    ],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Missing FROM in datasource.yaml"
+    ],
+    "files": 3,
+    "dry_run": false
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run03",
+    "generator": "nuclei",
+    "attempts": 1,
+    "finish_reasons": [
+      "stop"
+    ],
+    "completion_tokens": [
+      4645
+    ],
+    "valid": true,
+    "semantic_ok": true,
+    "errors": [],
+    "files": 1,
+    "dry_run": false
+  }
+]
