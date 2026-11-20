@@ -15,8 +15,8 @@ section first: two of the rules below have changed.
 
 | Reviewer point | Status after Stage 2 |
 |---|---|
-| (a) the 0.5 s quiet period dominates real-server latency | **measured.** `groundtruth_ssh` quiet median 0.547 s / p95 0.563 s; cowrie 0.563 s / 0.587 s. Under `--timing prompt` both fall to 0.000 s median (p95 0.016 s). The published 0.56 s is the harness. See `results/exp/floor.md`. |
-| (b) no per-request API timing | **tooling ready, not yet run.** `harness/api_proxy.py` logs one JSONL row per request (duration, status, size, token usage, request SHA-256; never headers or bodies). Wiring per target is in `docs/STAGE2_NOTES.md`. No API calls were made in Stage 2. |
+| (a) the 0.5 s quiet period dominates real-server latency | **measured.** `groundtruth_ssh` quiet median 0.547 s / p95 0.563 s; cowrie 0.563 s / 0.578 s. Under `--timing prompt` both fall to 0.0155 s median (min 0.0148, p95 0.0187 / 0.0316), which is the 5 ms settle window rounded up to the 15.6 ms Windows timer tick. The published 0.56 s is the harness. See `results/exp/floor.md`. |
+| (b) no per-request API timing | **verified on one target.** `harness/api_proxy.py` logs one JSONL row per request (duration, status, size, token usage, request SHA-256; never headers or bodies). A 10-request AdvancedshelLM smoke run matched every command to exactly one request with a 0.045 s median non-API gap. Wiring for the other five targets is in `docs/STAGE2_NOTES.md` and is still untested. |
 | (c) ground-truth determinism never reported after masking | **done on the existing batch.** `results/exp/summary_v2.md` reports determinism for `groundtruth_ssh` and every target, raw text and masked, side by side. `groundtruth_ssh` = 0.9746 raw / 0.9841 masked; cowrie 0.9874 / 0.9957. |
 | (d) fidelity mixes persona with shell errors | **partly addressed.** A masked fidelity column and an explicit persona note were added; separating the two still needs E5c. |
 
@@ -32,7 +32,11 @@ Other changes that affect the phases below:
   are unchanged, so the published batch stays reproducible.
 - **Latency comparisons must subtract the floor.** Any new cell run in the default
   timing mode carries ~0.55 s of harness wait. Run E12c and the mechanism cells with
-  `--timing prompt`, or report both modes.
+  `--timing prompt` (~15.5 ms floor after the Stage 2 fix), or report both modes.
+- **Prompt mode is validated.** A full 37-command quiet-vs-prompt audit on
+  `groundtruth_ssh` and cowrie found no command losing output (same byte length in both
+  modes); the only differences are volatile fields such as free memory and PIDs.
+  `harness/timing_audit.py` reproduces that check.
 
 ## 0. What this round is for
 

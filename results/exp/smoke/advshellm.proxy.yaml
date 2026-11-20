@@ -1,7 +1,12 @@
 # Stage 2 smoke overlay (branch stage2-measurement).
-# Points AdvancedshelLM's OpenAI client at harness/api_proxy.py instead of
-# Fireworks directly. No secrets here: the key still comes from ../.env.
+#
+# 1. Points AdvancedshelLM's OpenAI client at harness/api_proxy.py instead of
+#    Fireworks directly. No secrets here: the key still comes from ../.env.
+# 2. Selects the smoke-only image recipe (no apt-get layer) because
+#    deb.debian.org is unreachable from this host. See the Dockerfile header.
 services:
   advshellm:
+    build:
+      dockerfile: results/exp/smoke/advshellm.smoke.Dockerfile
     environment:
       OPENAI_BASE_URL: "http://host.docker.internal:11435/inference/v1"
