@@ -74,7 +74,7 @@ UNVERIFIED.
 | `beelzebub` | No | UNVERIFIED | LICENSE = GPL-3.0 (verified by reading the file) |
 | `shelLM` | No | UNVERIFIED | LICENSE = CC BY-NC-SA 4.0, NonCommercial (verified by reading the file) |
 | `galah` | No | UNVERIFIED | LICENSE = Apache-2.0 (verified by reading the file) |
-| `llm-honeypot` | No | UNVERIFIED | no licence file found; no upstream code is redistributed in this repo |
+| `llm-honeypot` | No | UNVERIFIED | no licence file found; no upstream source code is redistributed, but `docker/llmhoneypot.cowrie.cfg` is derived from its `configs/cowrie.cfg` (recorded in `THIRD_PARTY_NOTICES.md`) |
 | `cowrie-base` | No | UNVERIFIED; pinned v2.6.1 in docs | `LICENSE.rst` = BSD-3-Clause (Cowrie's 3-clause BSD text, "Copyright (c) 2009-2024 Upi Tamminen, Michel Oosterhof") |
 | `cowrie-peek` | No | UNVERIFIED | no licence file found; used as a read-only overlay, not redistributed |
 

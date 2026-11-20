@@ -6,9 +6,9 @@ in directories that `.gitignore` excludes, and are re-cloned by the reader follo
 `README.md`.
 
 What this repository *does* contain is (a) original harness/Docker/documentation code
-under the MIT licence (see `LICENSE`), and (b) two patch files that are derivative
-works of upstream source. Licence texts for every tool below are reproduced verbatim
-in `LICENSES/`.
+under the MIT licence (see `LICENSE`), and (b) two patch files and one configuration
+file that are derivative works of upstream source. Licence texts for every tool below
+are reproduced verbatim in `LICENSES/`.
 
 **This file is a record of what was read from each clone. It is not legal advice.**
 
@@ -28,7 +28,7 @@ in `LICENSES/`.
 
 | Tool | Upstream | Commit | Licence | Modified? |
 |---|---|---|---|---|
-| llm-honeypot (Palisade Research) | Repository URL UNVERIFIED — the clone's README links only its dashboard (`https://ai-honeypot.palisaderesearch.org`) and paper (arXiv:2410.13919) | UNVERIFIED (clone has no `.git`) | **No licence file found.** No upstream code is redistributed in this repo | No — run as a Cowrie overlay image |
+| llm-honeypot (Palisade Research) | Repository URL UNVERIFIED — the clone's README links only its dashboard (`https://ai-honeypot.palisaderesearch.org`) and paper (arXiv:2410.13919) | UNVERIFIED (clone has no `.git`) | **No licence file found.** No upstream source code is redistributed in this repo | Yes — `docker/llmhoneypot.cowrie.cfg` (see below); the image itself is built from the reader's own clone |
 | Cowrie "peek" overlay | Clone directory `cowrie-peek/`; URL UNVERIFIED | UNVERIFIED | No licence file found. Used read-only to inspect behaviour; nothing is redistributed | No |
 
 ## How the licence obligations are met
@@ -50,9 +50,14 @@ in `LICENSES/`.
   NonCommercial licence, so this benchmark must not be used commercially in a way that
   builds on that tool, and no shelLM code is redistributed here — the Docker image copies
   it from a local clone at build time.
-- **No licence file (llm-honeypot, cowrie-peek).** No permission is granted upstream, so
-  no code, patch or derivative file for these two is redistributed here; they are only
-  referenced as evaluated targets and built locally from the reader's own clone.
+- **No licence file (llm-honeypot, cowrie-peek).** No permission is granted upstream.
+  `docker/llmhoneypot.cowrie.cfg` is the single file in this repository that derives from
+  llm-honeypot: a 220-line Cowrie configuration whose own header records
+  "Changes from llm-honeypot/configs/cowrie.cfg" as its starting point. No llm-honeypot
+  source code, patch or image is redistributed, and the container is built from the
+  reader's own clone. `cowrie-peek` contributes no file at all. If the llm-honeypot
+  authors publish a licence, this one file should be reconciled with it — or rewritten
+  from Cowrie's own `etc/cowrie.cfg.dist`, which would remove the derivation entirely.
 
 ## Verified by reading the file
 
