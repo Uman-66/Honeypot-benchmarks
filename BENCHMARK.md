@@ -1,5 +1,8 @@
 # Honeypot Benchmark — Final Report
 
+**Final batch, collected Nov 2026, 5 runs per target, 120 s timeout. Supersedes the
+pilot batch.**
+
 **Data**: `results/raw/`, `results/raw_http/`, `results/summary.md`,
 `results/summary.csv`, and local HoneyBee summaries.
 
@@ -170,8 +173,8 @@ those sources; it is not an inferred default.
 
 | Target | Stack | Model | Temperature | Max tokens | User / hostname | Main patch or configuration |
 |---|---|---|---:|---:|---|---|
-| DECEIVE | Python 3.11-slim + DECEIVE | `accounts/fireworks/models/glm-5p3-flash` | not recorded | not recorded | guest / not recorded | `strip_llm_output`, Fireworks env/base URL, exit sentinel, lazy imports |
-| Beelzebub | upstream Go image + mounted YAML | `accounts/fireworks/models/glm-5p3-flash` | not recorded | not recorded | guest / ubuntu | API-key/host fallback; benchmark service/core configs |
+| DECEIVE | Python 3.11-slim + DECEIVE | `accounts/fireworks/models/glm-5p3-flash` | 0.2 (`SSH/config.ini`) | none — no output cap (`SSH/ssh_server.py`) | guest / not recorded | `strip_llm_output`, Fireworks env/base URL, exit sentinel, lazy imports |
+| Beelzebub | upstream Go image + mounted YAML | `accounts/fireworks/models/glm-5p3-flash` | not exposed by plugin config | not exposed by plugin config | guest / ubuntu | API-key/host fallback; benchmark service/core configs |
 | AdvancedshelLM | Python 3.11-slim + shelLM | `accounts/fireworks/models/glm-5p3-flash` | 0.2 | 4096 | guest / not recorded | Fireworks client, exit handling, env fallback, wrapper |
 | VelLMes | Python 3.11-slim + VelLMes | `accounts/fireworks/models/glm-5p3-flash` | 0.2 | 800 | user / not recorded | SSH wrapper and benchmark config |
 | galah | Go 1.22 builder + Debian slim | `accounts/fireworks/models/glm-5p3-flash` | 0.2 | not recorded | not applicable / not recorded | response cleaning, Fireworks entrypoint/config |
@@ -180,6 +183,19 @@ those sources; it is not an inferred default.
 | Ground truth SSH | Ubuntu 20.04 + OpenSSH | not applicable | not applicable | not applicable | guest / ubuntu | benchmark Dockerfile/compose PTY and PAM changes |
 | Ground truth HTTP | Ubuntu 20.04 + nginx 1.18.0 package | not applicable | not applicable | not applicable | not applicable / not recorded | benchmark Dockerfile/compose |
 | HoneyBee | Python 3.11-slim + Streamlit | `accounts/fireworks/models/glm-5p3-flash` | 0.2 | 8192 | not applicable / not applicable | disabled deploy path and empty-generation UI handling |
+
+### Configuration values that need a caveat
+
+DECEIVE has **no output-token cap**. `ChatOpenAI` is constructed without `max_tokens` in
+`DECEIVE/SSH/ssh_server.py`, and the only token limit in that file is
+`trimmer_max_tokens = 64000` (`DECEIVE/SSH/config.ini`), which trims the conversation history sent
+to the backend rather than capping the reply. That is why DECEIVE produced 2 oversized outputs,
+with a maximum of 135,108 characters.
+
+Beelzebub's temperature and max-token values are **not exposed by the plugin configuration**: the
+`plugin:` block of `docker/beelzebub-ssh.yaml` sets neither, and the plugin source that would apply
+a default is not present in this tree (`beelzebub/plugins/` contains only `imports_gen.go`). They
+are therefore unknown at runtime, and "not recorded" in the table above should be read that way.
 
 ## Findings supported by the data
 
@@ -241,4 +257,14 @@ evaluation, and a separate HoneyBee security review.
 
 ## License
 
-TBD.
+My own work — the harness, Docker configuration, wrapper scripts and documentation —
+is under the MIT licence; see [`LICENSE`](LICENSE).
+
+The benchmarked third-party tools (DECEIVE, Beelzebub, AdvancedshelLM, VelLMes,
+galah, HoneyBee, Cowrie, llm-honeypot) keep their own upstream licences. Those
+texts are reproduced verbatim in [`LICENSES/`](LICENSES/), and
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) lists each tool with its
+upstream URL, pinned commit where known, licence, and whether it was modified.
+The patches in `patches/` are derivative works of the upstream files they modify
+and remain under those upstream licences (Apache-2.0 for HoneyBee, GPL-2.0 for
+VelLMes). No third-party source code is redistributed in this repository.
