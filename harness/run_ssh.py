@@ -56,6 +56,7 @@ except OverflowError:
 BANNER_TIMEOUT = 60       # seconds to wait for initial SSH banner
 AUTH_TIMEOUT   = 60       # seconds to wait for auth to complete
 QUIET_PERIOD   = 0.5      # seconds of silence before a prompt is confirmed
+PROMPT_SETTLE  = 0.005    # seconds of silence required after a prompt in --timing prompt
 EXIT_WAIT      = 10       # seconds to wait for server to close channel after exit
 RECV_CHUNK     = 4096     # bytes per recv() call
 ENCODING       = "utf-8"
@@ -241,24 +242,54 @@ def _read_until_prompt(
 
 # ── SSH "none" authentication ─────────────────────────────────────────────────
 
-def _read_command_output(
+def _drain_pending(chan: paramiko.Channel) -> int:
+    """
+    Discard bytes already queued on the channel and return how many.
+
+    In prompt mode the previous command can leave its trailing prompt in the
+    channel buffer. Without draining, the next command's first recv() returns that
+    stale prompt and the read stops before the command has run - a ~0 ms latency
+    that measures nothing at all.
+    """
+    drained = 0
+    chan.settimeout(0.0)
+    while True:
+        try:
+            chunk = chan.recv(RECV_CHUNK)
+        except Exception:
+            break
+        if not chunk:
+            break
+        drained += len(chunk)
+    return drained
+
+
+def _prompt_preceded_by_content(text: str, prompt: str) -> bool:
+    """
+    True if *text* ends with *prompt* and holds something besides it.
+
+    A prompt that closes an empty buffer is a suspect: it is either a target that
+    echoes nothing, or a stale prompt left over from the previous command.
+    """
+    clean = _strip_ansi(text).replace("\r\n", "\n").replace("\r", "\n")
+    tail = clean.rstrip()
+    needle = prompt.rstrip()
+    if not needle or not tail.endswith(needle):
+        return False
+    return bool(tail[: -len(needle)].strip())
+
+
+def _read_quiet(
     chan: paramiko.Channel,
     timeout: float,
-    timing: str = "quiet",
     started: float | None = None,
 ) -> dict[str, Any]:
     """
-    Read one command's output to completion.
+    The published-batch rule, unchanged: stop QUIET_PERIOD seconds after the last
+    chunk that contained a prompt.
 
-    timing="quiet"  — the published-batch rule: stop QUIET_PERIOD seconds after
-                      the last chunk that contained a prompt. This is why the
-                      measured latency of a sub-millisecond command is ~0.5 s.
-    timing="prompt" — stop the moment the prompt regex matches the end of the
-                      buffer (no quiet wait). Opt-in, so the published batch
-                      stays reproducible.
-
-    Returns raw_output, timed_out, prompt, elapsed, t_first_byte and t_prompt
-    (the last two measured from *started*).
+    Kept on ``time.monotonic`` and ``select`` so the published batch keeps the
+    exact behaviour it was measured with (including its ~0.5 s floor).
     """
     start = time.monotonic() if started is None else started
     raw_buf = ""
@@ -293,12 +324,10 @@ def _read_command_output(
                 prompt_found = candidate
                 prompt_found_at = now
                 last_prompt_at = now
-                if timing == "prompt":
-                    break
         else:
-            if timing == "quiet" and last_prompt_at is not None:
-                if (now - last_prompt_at) >= QUIET_PERIOD:
-                    break
+            if last_prompt_at is not None and \
+                    (now - last_prompt_at) >= QUIET_PERIOD:
+                break
             remaining = min(deadline_abs - now, QUIET_PERIOD)
             if remaining > 0:
                 try:
@@ -313,12 +342,133 @@ def _read_command_output(
         "prompt": prompt_found,
         "elapsed": end - start,
         "t_first_byte": (
-            None if first_byte_at is None else round(first_byte_at - start, 4)
+            None if first_byte_at is None else round(first_byte_at - start, 6)
         ),
         "t_prompt": (
-            None if prompt_found_at is None else round(prompt_found_at - start, 4)
+            None if prompt_found_at is None else round(prompt_found_at - start, 6)
         ),
+        "prompt_without_echo": False,
     }
+
+
+def _read_until_prompt_settled(
+    chan: paramiko.Channel,
+    timeout: float,
+    started: float | None = None,
+    settle: float = PROMPT_SETTLE,
+) -> dict[str, Any]:
+    """
+    Prompt mode: stop ``settle`` seconds after the prompt appears, without the
+    0.5 s quiet period.
+
+    Completion rule, in full:
+
+    1. The caller drained the channel before sending (``_drain_pending``), so
+       every byte seen here arrived after ``t_send``.
+    2. The prompt regex must match the end of the accumulated buffer, and the
+       buffer must hold the command echo or some output before it
+       (``_prompt_preceded_by_content``). A prompt closing an otherwise empty
+       buffer is still accepted, but only after the same settle window, and the
+       row is flagged ``prompt_without_echo`` so it can be audited.
+    3. After the prompt appears, ``settle`` (5 ms) of no further bytes must pass.
+       Any new chunk re-opens the decision: if the buffer no longer ends with a
+       prompt the settle is cancelled and reading continues.
+
+    Timing uses ``time.perf_counter`` (sub-microsecond) and blocking ``recv`` with
+    a short timeout, which releases the GIL so paramiko's reader thread keeps
+    draining the transport. A Python busy-spin starves that thread and inflates
+    every measurement; ``select``/``sleep`` quantise to the 15.6 ms Windows tick,
+    which is why an earlier version could only report 0.000 s or 0.016 s.
+    """
+    start = time.perf_counter() if started is None else started
+    raw_buf = ""
+    timed_out = False
+    deadline_abs = start + timeout
+    prompt_found: str | None = None
+    prompt_found_at: float | None = None
+    first_byte_at: float | None = None
+    settle_deadline: float | None = None
+    prompt_without_echo = False
+
+    while True:
+        now = time.perf_counter()
+        if now > deadline_abs:
+            timed_out = True
+            break
+
+        if settle_deadline is not None:
+            if now >= settle_deadline:
+                break
+            wait = min(0.005, settle_deadline - now)
+        else:
+            wait = 0.005
+        if wait <= 0:
+            break
+
+        chan.settimeout(wait)
+        try:
+            chunk = chan.recv(RECV_CHUNK)
+        except socket.timeout:
+            chunk = b""
+        except Exception:
+            timed_out = True
+            break
+        finally:
+            chan.settimeout(0.0)
+
+        if not chunk:
+            continue
+
+        if first_byte_at is None:
+            first_byte_at = time.perf_counter()
+        raw_buf += chunk.decode(ENCODING, ENCODING_ERRORS)
+        candidate = _detect_prompt(raw_buf)
+        if candidate:
+            prompt_found = candidate
+            prompt_found_at = time.perf_counter()
+            prompt_without_echo = not _prompt_preceded_by_content(
+                raw_buf, candidate
+            )
+            settle_deadline = prompt_found_at + settle
+        else:
+            # Output continued, or the prompt was split across chunks.
+            settle_deadline = None
+
+    end = time.perf_counter()
+    return {
+        "raw_output": raw_buf,
+        "timed_out": timed_out,
+        "prompt": prompt_found,
+        "elapsed": end - start,
+        "t_first_byte": (
+            None if first_byte_at is None else round(first_byte_at - start, 6)
+        ),
+        "t_prompt": (
+            None if prompt_found_at is None else round(prompt_found_at - start, 6)
+        ),
+        "prompt_without_echo": prompt_without_echo,
+    }
+
+
+def _read_command_output(
+    chan: paramiko.Channel,
+    timeout: float,
+    timing: str = "quiet",
+    started: float | None = None,
+    settle: float = PROMPT_SETTLE,
+) -> dict[str, Any]:
+    """
+    Read one command's output to completion and return the timing record.
+
+    timing="quiet"  -> ``_read_quiet``  (published rule, 0.5 s floor)
+    timing="prompt" -> ``_read_until_prompt_settled`` (opt-in, ~5 ms floor)
+
+    Returns raw_output, timed_out, prompt, elapsed, t_first_byte, t_prompt and
+    prompt_without_echo, all measured from *started* on that mode's clock.
+    """
+    if timing == "prompt":
+        return _read_until_prompt_settled(chan, timeout, started, settle)
+    return _read_quiet(chan, timeout, started)
 
 
 def _auth_none(transport: paramiko.Transport, username: str) -> bool:
@@ -583,7 +733,13 @@ def _run_once(
             })
             continue
 
-        t_send = time.monotonic()
+        # Prompt mode: discard anything already queued before timing starts, so a
+        # stale prompt from the previous command cannot end this read early.
+        stale_bytes = _drain_pending(chan) if timing == "prompt" else 0
+
+        # Prompt mode measures on perf_counter (sub-millisecond); quiet mode keeps
+        # monotonic so the published batch is unaffected.
+        t_send = time.perf_counter() if timing == "prompt" else time.monotonic()
         t_send_wall = time.time()
         chan.sendall((cmd_text + "\n").encode(ENCODING))
 
@@ -613,7 +769,9 @@ def _run_once(
                     break
                 time.sleep(0.05)
 
-            latency = time.monotonic() - t_send
+            latency = (
+                time.perf_counter() if timing == "prompt" else time.monotonic()
+            ) - t_send
             exit_record: dict[str, Any] = {
                 "target":   target["name"],
                 "run":      run_index,
@@ -674,10 +832,12 @@ def _run_once(
         # Timing fields are only written when --timing was passed explicitly, so
         # a default invocation still produces the published-batch record shape.
         if timing_explicit:
-            record["timing_mode"]     = timing
-            record["t_send"]          = round(t_send_wall, 6)
-            record["t_first_byte"]    = read["t_first_byte"]
-            record["t_prompt"]        = read["t_prompt"]
+            record["timing_mode"]        = timing
+            record["t_send"]             = round(t_send_wall, 6)
+            record["t_first_byte"]       = read["t_first_byte"]
+            record["t_prompt"]           = read["t_prompt"]
+            record["stale_bytes"]        = stale_bytes
+            record["prompt_without_echo"] = read["prompt_without_echo"]
         results.append(mask_record(record, enabled=mask_credentials_enabled))
 
     # ── Teardown ─────────────────────────────────────────────────────────────

@@ -1,0 +1,7 @@
+# Stage 2 smoke overlay (branch stage2-measurement).
+# Points AdvancedshelLM's OpenAI client at harness/api_proxy.py instead of
+# Fireworks directly. No secrets here: the key still comes from ../.env.
+services:
+  advshellm:
+    environment:
+      OPENAI_BASE_URL: "http://host.docker.internal:11435/inference/v1"

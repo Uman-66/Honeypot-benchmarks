@@ -1,121 +1,121 @@
 target,index,command,timing,latency_s,t_first_byte,t_prompt,timed_out,prompt_found,bytes
-groundtruth_ssh,1,true,quiet,0.547,0.016,0.016,False,True,42
+groundtruth_ssh,1,true,quiet,0.578,0.016,0.016,False,True,42
 groundtruth_ssh,2,echo x,quiet,0.547,0.0,0.0,False,True,47
 groundtruth_ssh,3,true,quiet,0.547,0.0,0.0,False,True,42
 groundtruth_ssh,4,echo x,quiet,0.547,0.0,0.0,False,True,47
 groundtruth_ssh,5,true,quiet,0.547,0.0,0.0,False,True,42
-groundtruth_ssh,6,echo x,quiet,0.547,0.0,0.0,False,True,47
-groundtruth_ssh,7,true,quiet,0.562,0.015,0.015,False,True,42
-groundtruth_ssh,8,echo x,quiet,0.563,0.0,0.0,False,True,47
-groundtruth_ssh,9,true,quiet,0.547,0.015,0.015,False,True,42
-groundtruth_ssh,10,echo x,quiet,0.546,0.015,0.015,False,True,47
-groundtruth_ssh,11,true,quiet,0.547,0.0,0.0,False,True,42
-groundtruth_ssh,12,echo x,quiet,0.547,0.016,0.016,False,True,47
-groundtruth_ssh,13,true,quiet,0.547,0.016,0.016,False,True,42
-groundtruth_ssh,14,echo x,quiet,0.547,0.016,0.016,False,True,47
-groundtruth_ssh,15,true,quiet,0.562,0.0,0.0,False,True,42
-groundtruth_ssh,16,echo x,quiet,0.563,0.0,0.0,False,True,47
-groundtruth_ssh,17,true,quiet,0.531,0.0,0.0,False,True,42
-groundtruth_ssh,18,echo x,quiet,0.563,0.016,0.016,False,True,47
-groundtruth_ssh,19,true,quiet,0.562,0.0,0.0,False,True,42
-groundtruth_ssh,20,echo x,quiet,0.563,0.0,0.0,False,True,47
+groundtruth_ssh,6,echo x,quiet,0.562,0.016,0.016,False,True,47
+groundtruth_ssh,7,true,quiet,0.547,0.0,0.0,False,True,42
+groundtruth_ssh,8,echo x,quiet,0.563,0.016,0.016,False,True,47
+groundtruth_ssh,9,true,quiet,0.562,0.0,0.0,False,True,42
+groundtruth_ssh,10,echo x,quiet,0.547,0.0,0.0,False,True,47
+groundtruth_ssh,11,true,quiet,0.563,0.016,0.016,False,True,42
+groundtruth_ssh,12,echo x,quiet,0.547,0.0,0.0,False,True,47
+groundtruth_ssh,13,true,quiet,0.546,0.0,0.0,False,True,42
+groundtruth_ssh,14,echo x,quiet,0.563,0.016,0.016,False,True,47
+groundtruth_ssh,15,true,quiet,0.547,0.0,0.0,False,True,42
+groundtruth_ssh,16,echo x,quiet,0.547,0.0,0.0,False,True,47
+groundtruth_ssh,17,true,quiet,0.547,0.0,0.0,False,True,42
+groundtruth_ssh,18,echo x,quiet,0.546,0.015,0.015,False,True,47
+groundtruth_ssh,19,true,quiet,0.563,0.0,0.0,False,True,42
+groundtruth_ssh,20,echo x,quiet,0.547,0.0,0.0,False,True,47
 groundtruth_ssh,21,true,quiet,0.547,0.0,0.0,False,True,42
-groundtruth_ssh,22,echo x,quiet,0.546,0.0,0.0,False,True,47
-groundtruth_ssh,23,true,quiet,0.547,0.016,0.016,False,True,42
-groundtruth_ssh,24,echo x,quiet,0.547,0.0,0.0,False,True,47
-groundtruth_ssh,25,true,quiet,0.547,0.0,0.0,False,True,42
+groundtruth_ssh,22,echo x,quiet,0.562,0.0,0.0,False,True,47
+groundtruth_ssh,23,true,quiet,0.547,0.0,0.0,False,True,42
+groundtruth_ssh,24,echo x,quiet,0.563,0.0,0.0,False,True,47
+groundtruth_ssh,25,true,quiet,0.546,0.0,0.0,False,True,42
 groundtruth_ssh,26,echo x,quiet,0.547,0.0,0.0,False,True,47
-groundtruth_ssh,27,true,quiet,0.562,0.016,0.016,False,True,42
-groundtruth_ssh,28,echo x,quiet,0.563,0.0,0.0,False,True,47
-groundtruth_ssh,29,true,quiet,0.547,0.0,0.0,False,True,42
-groundtruth_ssh,30,echo x,quiet,0.547,0.015,0.015,False,True,47
-groundtruth_ssh,1,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,2,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,3,true,prompt,0.015,0.015,0.015,False,True,42
-groundtruth_ssh,4,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,5,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,6,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,7,true,prompt,0.016,0.016,0.016,False,True,42
-groundtruth_ssh,8,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,9,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,10,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,11,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,12,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,13,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,14,echo x,prompt,0.016,0.016,0.016,False,True,47
-groundtruth_ssh,15,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,16,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,17,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,18,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,19,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,20,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,21,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,22,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,23,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,24,echo x,prompt,0.015,0.015,0.015,False,True,47
-groundtruth_ssh,25,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,26,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,27,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,28,echo x,prompt,0.0,0.0,0.0,False,True,47
-groundtruth_ssh,29,true,prompt,0.0,0.0,0.0,False,True,42
-groundtruth_ssh,30,echo x,prompt,0.0,0.0,0.0,False,True,47
-cowrie,1,true,quiet,0.578,0.031,0.031,False,True,29
-cowrie,2,echo x,quiet,0.562,0.015,0.015,False,True,34
-cowrie,3,true,quiet,0.578,0.016,0.016,False,True,29
-cowrie,4,echo x,quiet,0.547,0.016,0.016,False,True,34
-cowrie,5,true,quiet,0.578,0.016,0.016,False,True,29
-cowrie,6,echo x,quiet,0.594,0.047,0.047,False,True,34
-cowrie,7,true,quiet,0.547,0.0,0.016,False,True,29
-cowrie,8,echo x,quiet,0.562,0.016,0.016,False,True,34
-cowrie,9,true,quiet,0.579,0.016,0.016,False,True,29
-cowrie,10,echo x,quiet,0.562,0.0,0.0,False,True,34
-cowrie,11,true,quiet,0.578,0.016,0.016,False,True,29
-cowrie,12,echo x,quiet,0.563,0.0,0.0,False,True,34
-cowrie,13,true,quiet,0.578,0.015,0.015,False,True,29
-cowrie,14,echo x,quiet,0.562,0.0,0.015,False,True,34
-cowrie,15,true,quiet,0.563,0.0,0.0,False,True,29
-cowrie,16,echo x,quiet,0.562,0.015,0.015,False,True,34
-cowrie,17,true,quiet,0.61,0.047,0.047,False,True,29
-cowrie,18,echo x,quiet,0.562,0.0,0.015,False,True,34
-cowrie,19,true,quiet,0.578,0.016,0.016,False,True,29
-cowrie,20,echo x,quiet,0.563,0.0,0.0,False,True,34
-cowrie,21,true,quiet,0.547,0.0,0.0,False,True,29
+groundtruth_ssh,27,true,quiet,0.547,0.0,0.0,False,True,42
+groundtruth_ssh,28,echo x,quiet,0.547,0.0,0.0,False,True,47
+groundtruth_ssh,29,true,quiet,0.563,0.0,0.0,False,True,42
+groundtruth_ssh,30,echo x,quiet,0.546,0.0,0.0,False,True,47
+groundtruth_ssh,1,true,prompt,0.015475,0.006353,0.006394,False,True,42
+groundtruth_ssh,2,echo x,prompt,0.015737,0.005041,0.005086,False,True,47
+groundtruth_ssh,3,true,prompt,0.015887,0.004542,0.005321,False,True,42
+groundtruth_ssh,4,echo x,prompt,0.016269,0.003824,0.003862,False,True,47
+groundtruth_ssh,5,true,prompt,0.015301,0.002621,0.002643,False,True,42
+groundtruth_ssh,6,echo x,prompt,0.015839,0.003118,0.003143,False,True,47
+groundtruth_ssh,7,true,prompt,0.015241,0.003266,0.003286,False,True,42
+groundtruth_ssh,8,echo x,prompt,0.016261,0.002385,0.002402,False,True,47
+groundtruth_ssh,9,true,prompt,0.015345,0.002761,0.002783,False,True,42
+groundtruth_ssh,10,echo x,prompt,0.016334,0.003022,0.003039,False,True,47
+groundtruth_ssh,11,true,prompt,0.016077,0.001968,0.002137,False,True,42
+groundtruth_ssh,12,echo x,prompt,0.01591,0.003017,0.003083,False,True,47
+groundtruth_ssh,13,true,prompt,0.015647,0.003796,0.003816,False,True,42
+groundtruth_ssh,14,echo x,prompt,0.015933,0.002785,0.002801,False,True,47
+groundtruth_ssh,15,true,prompt,0.015825,0.003275,0.003293,False,True,42
+groundtruth_ssh,16,echo x,prompt,0.015652,0.003417,0.003435,False,True,47
+groundtruth_ssh,17,true,prompt,0.015926,0.003729,0.003771,False,True,42
+groundtruth_ssh,18,echo x,prompt,0.015039,0.003474,0.003493,False,True,47
+groundtruth_ssh,19,true,prompt,0.015416,0.00566,0.006106,False,True,42
+groundtruth_ssh,20,echo x,prompt,0.01603,0.005731,0.005767,False,True,47
+groundtruth_ssh,21,true,prompt,0.015995,0.005353,0.005386,False,True,42
+groundtruth_ssh,22,echo x,prompt,0.015036,0.003922,0.005519,False,True,47
+groundtruth_ssh,23,true,prompt,0.016168,0.002128,0.002275,False,True,42
+groundtruth_ssh,24,echo x,prompt,0.015708,0.00243,0.002717,False,True,47
+groundtruth_ssh,25,true,prompt,0.015658,0.002798,0.003075,False,True,42
+groundtruth_ssh,26,echo x,prompt,0.015696,0.002628,0.002882,False,True,47
+groundtruth_ssh,27,true,prompt,0.016075,0.001601,0.001798,False,True,42
+groundtruth_ssh,28,echo x,prompt,0.016177,0.001666,0.001905,False,True,47
+groundtruth_ssh,29,true,prompt,0.015877,0.002824,0.002842,False,True,42
+groundtruth_ssh,30,echo x,prompt,0.015727,0.002939,0.002957,False,True,47
+cowrie,1,true,quiet,0.547,0.016,0.016,False,True,29
+cowrie,2,echo x,quiet,0.563,0.016,0.016,False,True,34
+cowrie,3,true,quiet,0.562,0.015,0.015,False,True,29
+cowrie,4,echo x,quiet,0.563,0.016,0.016,False,True,34
+cowrie,5,true,quiet,0.578,0.015,0.031,False,True,29
+cowrie,6,echo x,quiet,0.562,0.016,0.016,False,True,34
+cowrie,7,true,quiet,0.547,0.0,0.0,False,True,29
+cowrie,8,echo x,quiet,0.578,0.016,0.016,False,True,34
+cowrie,9,true,quiet,0.547,0.0,0.0,False,True,29
+cowrie,10,echo x,quiet,0.563,0.016,0.016,False,True,34
+cowrie,11,true,quiet,0.578,0.015,0.015,False,True,29
+cowrie,12,echo x,quiet,0.562,0.0,0.0,False,True,34
+cowrie,13,true,quiet,0.563,0.016,0.016,False,True,29
+cowrie,14,echo x,quiet,0.547,0.016,0.016,False,True,34
+cowrie,15,true,quiet,0.562,0.015,0.015,False,True,29
+cowrie,16,echo x,quiet,0.578,0.016,0.016,False,True,34
+cowrie,17,true,quiet,0.547,0.0,0.0,False,True,29
+cowrie,18,echo x,quiet,0.578,0.016,0.016,False,True,34
+cowrie,19,true,quiet,0.563,0.0,0.016,False,True,29
+cowrie,20,echo x,quiet,0.562,0.016,0.016,False,True,34
+cowrie,21,true,quiet,0.579,0.016,0.016,False,True,29
 cowrie,22,echo x,quiet,0.562,0.015,0.015,False,True,34
 cowrie,23,true,quiet,0.563,0.016,0.016,False,True,29
 cowrie,24,echo x,quiet,0.562,0.015,0.015,False,True,34
-cowrie,25,true,quiet,0.578,0.016,0.016,False,True,29
-cowrie,26,echo x,quiet,0.563,0.016,0.016,False,True,34
-cowrie,27,true,quiet,0.562,0.015,0.015,False,True,29
-cowrie,28,echo x,quiet,0.563,0.0,0.016,False,True,34
-cowrie,29,true,quiet,0.547,0.0,0.0,False,True,29
-cowrie,30,echo x,quiet,0.562,0.015,0.015,False,True,34
-cowrie,1,true,prompt,0.016,0.016,0.016,False,True,29
-cowrie,2,echo x,prompt,0.015,0.0,0.015,False,True,34
-cowrie,3,true,prompt,0.0,0.0,0.0,False,True,29
-cowrie,4,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,5,true,prompt,0.016,0.016,0.016,False,True,29
-cowrie,6,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,7,true,prompt,0.015,0.015,0.015,False,True,29
-cowrie,8,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,9,true,prompt,0.016,0.0,0.016,False,True,29
-cowrie,10,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,11,true,prompt,0.0,0.0,0.0,False,True,29
-cowrie,12,echo x,prompt,0.016,0.016,0.016,False,True,34
-cowrie,13,true,prompt,0.0,0.0,0.0,False,True,29
-cowrie,14,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,15,true,prompt,0.015,0.015,0.015,False,True,29
-cowrie,16,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,17,true,prompt,0.016,0.0,0.016,False,True,29
-cowrie,18,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,19,true,prompt,0.0,0.0,0.0,False,True,29
-cowrie,20,echo x,prompt,0.016,0.016,0.016,False,True,34
-cowrie,21,true,prompt,0.0,0.0,0.0,False,True,29
-cowrie,22,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,23,true,prompt,0.015,0.015,0.015,False,True,29
-cowrie,24,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,25,true,prompt,0.016,0.016,0.016,False,True,29
-cowrie,26,echo x,prompt,0.0,0.0,0.0,False,True,34
-cowrie,27,true,prompt,0.0,0.0,0.0,False,True,29
-cowrie,28,echo x,prompt,0.015,0.015,0.015,False,True,34
-cowrie,29,true,prompt,0.0,0.0,0.0,False,True,29
-cowrie,30,echo x,prompt,0.016,0.016,0.016,False,True,34
+cowrie,25,true,quiet,0.547,0.016,0.016,False,True,29
+cowrie,26,echo x,quiet,0.578,0.016,0.016,False,True,34
+cowrie,27,true,quiet,0.563,0.0,0.0,False,True,29
+cowrie,28,echo x,quiet,0.578,0.015,0.015,False,True,34
+cowrie,29,true,quiet,0.562,0.0,0.0,False,True,29
+cowrie,30,echo x,quiet,0.563,0.0,0.016,False,True,34
+cowrie,1,true,prompt,0.015716,0.010587,0.010614,False,True,29
+cowrie,2,echo x,prompt,0.015466,0.009386,0.010372,False,True,34
+cowrie,3,true,prompt,0.015819,0.006191,0.009196,False,True,29
+cowrie,4,echo x,prompt,0.015569,0.008663,0.009903,False,True,34
+cowrie,5,true,prompt,0.015167,0.004283,0.005049,False,True,29
+cowrie,6,echo x,prompt,0.015177,0.00628,0.007332,False,True,34
+cowrie,7,true,prompt,0.015517,0.00429,0.005081,False,True,29
+cowrie,8,echo x,prompt,0.015567,0.009647,0.010316,False,True,34
+cowrie,9,true,prompt,0.015322,0.006755,0.007701,False,True,29
+cowrie,10,echo x,prompt,0.015237,0.007763,0.008696,False,True,34
+cowrie,11,true,prompt,0.015485,0.007017,0.007843,False,True,29
+cowrie,12,echo x,prompt,0.0319,0.011145,0.01212,False,True,34
+cowrie,13,true,prompt,0.031061,0.012762,0.013245,False,True,29
+cowrie,14,echo x,prompt,0.020766,0.011341,0.012051,False,True,34
+cowrie,15,true,prompt,0.01525,0.00874,0.009096,False,True,29
+cowrie,16,echo x,prompt,0.03131,0.011006,0.012283,False,True,34
+cowrie,17,true,prompt,0.01505,0.009402,0.00953,False,True,29
+cowrie,18,echo x,prompt,0.015552,0.00942,0.010492,False,True,34
+cowrie,19,true,prompt,0.015127,0.007208,0.008847,False,True,29
+cowrie,20,echo x,prompt,0.015877,0.005047,0.005951,False,True,34
+cowrie,21,true,prompt,0.015619,0.00568,0.006165,False,True,29
+cowrie,22,echo x,prompt,0.015474,0.007003,0.007154,False,True,34
+cowrie,23,true,prompt,0.01521,0.005004,0.005433,False,True,29
+cowrie,24,echo x,prompt,0.015524,0.005783,0.006811,False,True,34
+cowrie,25,true,prompt,0.015474,0.006308,0.00733,False,True,29
+cowrie,26,echo x,prompt,0.016816,0.00843,0.010005,False,True,34
+cowrie,27,true,prompt,0.015069,0.007844,0.009501,False,True,29
+cowrie,28,echo x,prompt,0.031165,0.010032,0.011991,False,True,34
+cowrie,29,true,prompt,0.018051,0.011168,0.011667,False,True,29
+cowrie,30,echo x,prompt,0.031545,0.010886,0.011618,False,True,34

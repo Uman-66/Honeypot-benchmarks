@@ -1,0 +1,27 @@
+{
+  "cowrie": {
+    "quiet": {
+      "n": 36,
+      "min": 0.546,
+      "median": 0.562,
+      "p95": 0.578,
+      "max": 0.657
+    },
+    "prompt": {
+      "n": 36,
+      "min": 0.015013,
+      "median": 0.015579,
+      "p95": 0.031567,
+      "max": 0.147852
+    },
+    "prompt_first_byte": {
+      "n": 36,
+      "min": 0.004768,
+      "median": 0.00769,
+      "p95": 0.014442,
+      "max": 0.129609
+    },
+    "prompt_stale_bytes_max": 0,
+    "prompt_without_echo_rows": 0
+  }
+}

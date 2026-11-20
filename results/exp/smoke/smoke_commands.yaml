@@ -1,0 +1,22 @@
+# Five commands for the Stage 2 smoke test (task limit: max 5 per mode).
+commands:
+  - id: whoami
+    text: whoami
+    category: recon
+    host_specific: false
+  - id: id
+    text: id
+    category: recon
+    host_specific: false
+  - id: pwd
+    text: pwd
+    category: recon
+    host_specific: false
+  - id: uname_a
+    text: uname -a
+    category: recon
+    host_specific: true
+  - id: ls
+    text: ls
+    category: files
+    host_specific: false

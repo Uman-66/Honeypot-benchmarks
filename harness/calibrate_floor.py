@@ -115,18 +115,21 @@ def _measure(
     sock = transport = chan = None
     try:
         sock, transport, chan = _open_shell(target, timeout)
+        # Prompt mode measures on perf_counter; quiet mode keeps monotonic so the
+        # calibration matches what the published batch actually did.
+        clock = time.perf_counter if timing == "prompt" else time.monotonic
         for index in range(count):
             command = TRIVIAL_COMMANDS[index % len(TRIVIAL_COMMANDS)]
-            started = time.monotonic()
+            started = clock()
             chan.sendall((command + "\n").encode("utf-8"))
             read = _read_command_output(chan, timeout, timing, started=started)
-            elapsed = time.monotonic() - started
+            elapsed = clock() - started
             rows.append({
                 "target": target["name"],
                 "index": index + 1,
                 "command": command,
                 "timing": timing,
-                "latency_s": round(elapsed, 4),
+                "latency_s": round(elapsed, 6),
                 "t_first_byte": read["t_first_byte"],
                 "t_prompt": read["t_prompt"],
                 "timed_out": read["timed_out"],
