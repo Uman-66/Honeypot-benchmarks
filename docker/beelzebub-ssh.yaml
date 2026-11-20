@@ -4,7 +4,11 @@ address: ":2222"
 description: "LLM SSH honeypot – Fireworks / Beelzebub twin of DECEIVE"
 
 # SSH server version string advertised during the handshake.
-# Note: gliderlabs/ssh automatically prepends "SSH-2.0-", so omit the prefix here.
+# UNVERIFIED: this value assumes gliderlabs/ssh prepends "SSH-2.0-" itself, so the
+# prefix is omitted here. The on-wire banner was never recorded in either batch
+# (results/raw/*.jsonl stores the session MOTD, not the SSH identification string,
+# and results/ssh_fingerprints.json holds only a vellmes entry), so the advertised
+# string is UNVERIFIED rather than measured. Do not cite it as an observation.
 serverVersion: "OpenSSH_8.2p1 Ubuntu-4ubuntu0.3"
 
 # Shell prompt username label shown in the interactive terminal.
