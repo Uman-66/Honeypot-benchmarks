@@ -1,0 +1,1 @@
+{"target": "advshellm", "run": 1, "cmd_id": "", "text": "", "raw_output": "", "cleaned_output": "", "latency_s": 0.0, "timed_out": false, "bytes": 0, "prompt": null, "literal_escape_text_present": false, "trap_markers_found": [], "error": "OSError: OSError('Socket is closed')", "error_stage": "run", "exception_type": "OSError", "error_message": "OSError('Socket is closed')"}

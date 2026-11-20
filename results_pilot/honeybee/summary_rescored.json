@@ -1,0 +1,37 @@
+{
+  "by_generator": {
+    "docker_compose": {
+      "n": 6,
+      "produced_output": "6/6",
+      "clean_ok": "6/6",
+      "length_limited": "0/6"
+    },
+    "dockerfile": {
+      "n": 6,
+      "produced_output": "5/6",
+      "clean_ok": "4/6",
+      "length_limited": "2/6"
+    },
+    "nuclei": {
+      "n": 6,
+      "produced_output": "3/6",
+      "clean_ok": "3/6",
+      "length_limited": "3/6"
+    }
+  },
+  "by_case": {
+    "grafana_multi_misconfig": {
+      "n": 9,
+      "produced_output": "9/9",
+      "clean_ok": "9/9",
+      "length_limited": "0/9"
+    },
+    "postgresql_no_password": {
+      "n": 9,
+      "produced_output": "5/9",
+      "clean_ok": "4/9",
+      "length_limited": "5/9"
+    }
+  },
+  "note": "n=3 per cell means no confidence statements."
+}

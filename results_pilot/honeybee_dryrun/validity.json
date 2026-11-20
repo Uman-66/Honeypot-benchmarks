@@ -1,0 +1,92 @@
+[
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "docker_compose",
+    "attempts": 0,
+    "finish_reasons": [],
+    "completion_tokens": [],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Compose document has no services"
+    ],
+    "files": 1,
+    "dry_run": true
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "dockerfile",
+    "attempts": 0,
+    "finish_reasons": [],
+    "completion_tokens": [],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Missing FROM in dry-run.yaml"
+    ],
+    "files": 1,
+    "dry_run": true
+  },
+  {
+    "case_id": "postgresql_no_password",
+    "run": "run01",
+    "generator": "nuclei",
+    "attempts": 0,
+    "finish_reasons": [],
+    "completion_tokens": [],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Nuclei template is not a mapping"
+    ],
+    "files": 1,
+    "dry_run": true
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "docker_compose",
+    "attempts": 0,
+    "finish_reasons": [],
+    "completion_tokens": [],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Compose document has no services"
+    ],
+    "files": 1,
+    "dry_run": true
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "dockerfile",
+    "attempts": 0,
+    "finish_reasons": [],
+    "completion_tokens": [],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Missing FROM in dry-run.yaml"
+    ],
+    "files": 1,
+    "dry_run": true
+  },
+  {
+    "case_id": "grafana_multi_misconfig",
+    "run": "run01",
+    "generator": "nuclei",
+    "attempts": 0,
+    "finish_reasons": [],
+    "completion_tokens": [],
+    "valid": true,
+    "semantic_ok": false,
+    "errors": [
+      "Nuclei template is not a mapping"
+    ],
+    "files": 1,
+    "dry_run": true
+  }
+]

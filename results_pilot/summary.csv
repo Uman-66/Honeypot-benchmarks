@@ -1,0 +1,9 @@
+target,kind,track,latency_mean_s,latency_p95_s,n_timeouts,n_empty_outputs,literal_escape_cmds,think_cmds,fence_cmds,ai_refusal_cmds,fidelity_comparable_mean_sim,fidelity_exact_rate,determinism_mean,exit_closes_session_rate
+advshellm,llm,ssh,2.838,5.262,0,20,0,0,0,0,0.6141,0.4808,0.803,1.0
+beelzebub,llm,ssh,3.615,6.79,0,2,0,0,0,0,0.3334,0.1538,0.5399,1.0
+cowrie,baseline,ssh,0.576,0.595,0,40,0,0,0,0,0.5874,0.4615,0.9904,1.0
+deceive,llm,ssh,3.316,8.148,13,28,0,0,0,0,0.4681,0.3269,0.3931,0.75
+groundtruth_ssh,groundtruth,ssh,0.561,0.594,0,35,0,0,0,0,,,,1.0
+llmhoneypot,detector,ssh,0.56,0.578,0,30,0,0,0,0,,,,1.0
+galah,llm,http,3.067,6.936,,,,,,,,,0.2212,
+groundtruth_http,groundtruth,http,0.013,0.031,,,,,,,,,1.0,

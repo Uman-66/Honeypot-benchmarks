@@ -1,0 +1,15 @@
+# Grafana data source provisioning - no authentication configured.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    # MISCONFIGURATION: No basicAuth, no custom HTTP headers, no TLS/CA certificate.
+    # Anyone with network access to Prometheus can query it anonymously.
+    editable: true # MISCONFIGURATION: Data source can be modified from the UI by any user.
+    jsonData:
+      timeInterval: 5s
+      httpMethod: POST

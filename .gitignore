@@ -22,8 +22,7 @@ trap_test.txt
 /results_bak_*/
 
 # ── kept, but not published ───────────────────────────────────────────────────
-# The pilot batch is superseded by the final batch and is not published.
-/results_pilot/
+# The pilot batch is published for comparison; BENCHMARK.md explains the differences.
 # Pilot LaTeX source and internal review notes. The published report source is
 # report/honeypot_report.tex.
 report/main.tex

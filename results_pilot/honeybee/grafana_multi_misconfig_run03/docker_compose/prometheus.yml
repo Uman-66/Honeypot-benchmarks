@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+# MISCONFIGURATION: No authentication, no TLS, and no reverse proxy in front of Prometheus.
+# Combined with '--web.enable-admin-api' in docker-compose.yaml, remote users can invoke
+# administrative endpoints (e.g., /api/v1/admin/tsdb/delete_series) without credentials.

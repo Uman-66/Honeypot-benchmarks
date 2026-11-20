@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    container_name: insecure-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      # MISCONFIGURATION: No POSTGRES_PASSWORD is set.
+      # POSTGRES_HOST_AUTH_METHOD=trust suppresses the image's mandatory
+      # password check and enables passwordless "trust" authentication.
+      POSTGRES_DB: appdb
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"  # MISCONFIGURATION: DB published on ALL host interfaces
+    volumes:
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - db_data:/var/lib/postgresql/data
+    # MISCONFIGURATION: Custom config forces listen_addresses = '*'
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

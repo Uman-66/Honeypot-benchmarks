@@ -1,0 +1,27 @@
+# =====================================================================
+# Grafana data source provisioning with INTENTIONAL misconfiguration.
+# FOR EDUCATIONAL/TESTING PURPOSES ONLY - DO NOT USE IN PRODUCTION.
+# =====================================================================
+apiVersion: 1
+
+# MISCONFIGURATION: No data source authentication
+# The Prometheus data source below is provisioned without:
+#   - basicAuthUser / basicAuthPassword
+#   - a bearer token or custom auth header (secureJSONData)
+#   - TLS / withCredentials settings
+# Impact: any request Grafana proxies to the backend is made without
+# credentials, so anyone with UI access (including anonymous Admins)
+# can run arbitrary queries against the metrics store.
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    # NOTE: no `basicAuth`, no `jsonData.httpHeaderName1`, no TLS config.
+    # The data source is completely unauthenticated.
+    jsonData:
+      timeInterval: 5s

@@ -1,0 +1,10 @@
+# Prometheus configuration with no authentication or TLS in front of it.
+# Combined with the exposed port 9090, anyone on the network can query metrics,
+# run queries against the TSDB, or modify the configuration.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

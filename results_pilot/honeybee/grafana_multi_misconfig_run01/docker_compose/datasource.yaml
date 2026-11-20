@@ -1,0 +1,19 @@
+apiVersion: 1
+
+# MISCONFIGURATION: Data source provisioned with no authentication of any kind.
+# No basicAuth credentials, no tokens/secureJsonData, no TLS — plain HTTP to the backend.
+datasources:
+  - name: Prometheus-Insecure
+    type: prometheus
+    access: proxy
+    orgId: 1
+    url: http://prometheus:9090
+    isDefault: true
+    # No basicAuthUser / basicAuthPassword set
+    # No secureJsonData (API keys, HTTP headers, TLS certs)
+    jsonData:
+      httpMethod: GET
+      timeInterval: 15s
+    # MISCONFIGURATION: Editable by any user, so even low-privileged accounts
+    # can repoint this data source to an arbitrary host (SSRF/data exfiltration)
+    editable: true

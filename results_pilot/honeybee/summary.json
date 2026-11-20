@@ -1,0 +1,31 @@
+{
+  "by_generator": {
+    "docker_compose": {
+      "success_rate": 1.0,
+      "n": 6,
+      "valid": 6
+    },
+    "dockerfile": {
+      "success_rate": 0.8333,
+      "n": 6,
+      "valid": 5
+    },
+    "nuclei": {
+      "success_rate": 0.5,
+      "n": 6,
+      "valid": 3
+    }
+  },
+  "by_case": {
+    "grafana_multi_misconfig": {
+      "success_rate": 1.0,
+      "n": 9,
+      "valid": 9
+    },
+    "postgresql_no_password": {
+      "success_rate": 0.5556,
+      "n": 9,
+      "valid": 5
+    }
+  }
+}

@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      # MISCONFIGURATION: Weak, easily guessable password
+      POSTGRES_PASSWORD: admin123
+      # MISCONFIGURATION: POSTGRES_HOST_AUTH_METHOD=trust allows the container to initialize
+      # and run with NO password verification at all
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: appdb
+    ports:
+      # MISCONFIGURATION: Binds to 0.0.0.0 (all host interfaces), exposing PostgreSQL
+      # to the entire network / internet if the host firewall permits
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # MISCONFIGURATION: Custom configuration files that override secure defaults
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    # Command forces PostgreSQL to use the insecure custom configuration files
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
+
+volumes:
+  db_data:
