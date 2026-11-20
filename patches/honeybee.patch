@@ -1,3 +1,11 @@
+# patches/honeybee.patch
+#
+# Derivative work of HoneyBee, https://github.com/yaaras/honeybee
+# Upstream commit patched: dbf62c42604eeae2cfbfd4d36b99bef65555c303
+# Licence: Apache License, Version 2.0. Full text: LICENSES/honeybee-Apache-2.0.txt
+# Revisions of this patch remain under Apache-2.0 and must retain this header and
+# the upstream copyright/licence information (Apache-2.0 section 4).
+#
 diff --git "a/honeybee/1_\360\237\220\235_app.py" "b/honeybee/1_\360\237\220\235_app.py"
 index 95df6fb..4aa5b56 100644
 --- "a/honeybee/1_\360\237\220\235_app.py"

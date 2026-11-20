@@ -1,3 +1,12 @@
+# patches/vellmes.patch
+#
+# Derivative work of VelLMes (clone directory VelLMes-AI-Deception-Framework).
+# Upstream commit patched: 192fa5084df84b38a16f6581939fd3143c350181
+# Licence: GNU General Public License, version 2. Full text: LICENSES/VelLMes-GPL-2.0.txt
+# This file is a derivative work of VelLMes.py and therefore stays under GPL-2.0:
+# redistributing it, or a binary built from it, is governed by that licence and may
+# not add restrictions beyond it. No warranty, as stated in GPL-2.0 sections 11-12.
+#
 diff --git a/VelLMes.py b/VelLMes.py
 index 4e68e73..5c29667 100644
 --- a/VelLMes.py

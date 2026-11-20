@@ -200,4 +200,6 @@ backs up and reruns an existing pair. Do not run `down -v` before copying logs.
 - Latencies at the timeout are censored observations, not measured completion
   times; reported latency medians and p95 values use completed commands only.
 - HoneyBee one-click deployment is disabled. Never execute generated files.
-- License: TBD.
+- License: MIT for this project's own harness, Docker configuration and docs (see
+  `LICENSE`). The benchmarked third-party tools keep their upstream licences; the
+  texts are in `LICENSES/` and the per-tool table is in `THIRD_PARTY_NOTICES.md`.
