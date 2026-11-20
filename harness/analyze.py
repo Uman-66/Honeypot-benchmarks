@@ -10,6 +10,7 @@ Standard library + PyYAML only.  No pandas / numpy / matplotlib.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import difflib
 import glob
@@ -22,7 +23,7 @@ import re
 import statistics
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import yaml
 
@@ -66,6 +67,89 @@ _SECRET_PATTERNS = ["AKIAIOSFODNN7EXAMPLE", "EXAMPLE"]
 
 def _strip_ansi(s: str) -> str:
     return _LIT_RE.sub('', _ANSI_RE.sub('', s))
+
+# ── Cross-target masking (Stage 2) ────────────────────────────────────────────
+#
+# Reviewer point (c): ground-truth determinism was never reported, and nothing was
+# masked, so a 0.98 on the ground truth and a 0.47 on a honeypot were not measured
+# on the same basis.  These rules remove the parts of an output that *must* differ
+# between two honest shells because they change between runs, and keep the parts
+# that should be stable (command semantics, wording, layout).
+
+MASK_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    # ISO / RFC3339 dates first, so the clock-time rule cannot eat them piecemeal.
+    ("<DATE>", re.compile(
+        r"\b\d{4}-\d{2}-\d{2}"
+        r"(?:[T ]\d{1,2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?)?\b")),
+    # `date` output: "Thu Nov  6 14:03:19 UTC 2026"
+    ("<DATE>", re.compile(
+        r"\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[,]?\s+"
+        r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}"
+        r"(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?(?:\s+[A-Z]{2,5})?(?:\s+\d{4})?\b")),
+    # `ls -l` style: "Nov  6 14:03"
+    ("<TIME>", re.compile(
+        r"\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+"
+        r"\d{1,2}:\d{2}(?::\d{2})?\b")),
+    # Bare clock times; the lookbehind keeps "127.0.0.1:8080" out of this rule.
+    ("<TIME>", re.compile(r"(?<![\d.:])\b\d{1,2}:\d{2}(?::\d{2})?(?:\.\d+)?\b")),
+    ("<UPTIME>", re.compile(
+        r"\bup\s+\d+\s+(?:days?|hours?|minutes?|mins?)[^,\n]*", re.IGNORECASE)),
+    ("<LOAD>", re.compile(r"load averages?:[^\n]*", re.IGNORECASE)),
+    ("<PID>", re.compile(r"\bpid[=:\s]+\d+\b", re.IGNORECASE)),
+    ("<PID>", re.compile(r"\bPID\s+\d+\b")),
+    ("<TTY>", re.compile(r"\bpts/\d+\b")),
+    # Ports: 4-5 digits after a colon covers the ephemeral range without touching
+    # service ports such as :22 or :80.
+    ("<EPHEMERAL_PORT>", re.compile(r"(?<=[0-9]):\d{4,5}\b")),
+)
+
+
+def mask_text(text: str, hostnames: Iterable[str] = ()) -> str:
+    """Return *text* with the volatile fields above replaced by placeholders."""
+    if not text:
+        return text
+    masked = text
+    for placeholder, pattern in MASK_RULES:
+        masked = pattern.sub(placeholder, masked)
+    # Hostnames are masked literally, and only the ones actually observed in this
+    # batch, so a target's invented hostname is removed without guessing at shapes.
+    for hostname in sorted(hostnames, key=len, reverse=True):
+        if hostname and hostname in masked:
+            masked = masked.replace(hostname, "<HOST>")
+    return masked
+
+
+def _collect_hostnames(records_by_target: dict[str, list[dict[str, Any]]]) -> set[str]:
+    """Hostnames observed via `hostname` output or a `user@host:` prompt."""
+    names: set[str] = set()
+    for records in records_by_target.values():
+        for record in records:
+            text = record.get("cleaned_output") or ""
+            if record.get("cmd_id") == "hostname" and text.strip():
+                first = text.strip().splitlines()[0].strip()
+                if " " not in first and 2 <= len(first) <= 64:
+                    names.add(first)
+            for match in re.finditer(r"[\w.-]+@([\w.-]+):", text):
+                names.add(match.group(1))
+    names.discard("")
+    return names
+
+
+def _mask_records(
+    records_by_target: dict[str, list[dict[str, Any]]],
+    hostnames: Iterable[str] | None = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Return a masked copy of *records_by_target* (only cleaned_output changes)."""
+    names = set(hostnames) if hostnames is not None else _collect_hostnames(records_by_target)
+    masked: dict[str, list[dict[str, Any]]] = {}
+    for target, records in records_by_target.items():
+        masked[target] = []
+        for record in records:
+            copy = dict(record)
+            if isinstance(copy.get("cleaned_output"), str):
+                copy["cleaned_output"] = mask_text(copy["cleaned_output"], names)
+            masked[target].append(copy)
+    return masked
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 
@@ -202,6 +286,7 @@ def _analyze_ssh_target(
     gt_records: list[dict[str, Any]] | None,
     kind: str,
     cmd_map: dict[str, dict],
+    determinism_kinds: set[str] | None = None,
 ) -> dict[str, Any]:
     """Compute per-target SSH metrics."""
     out: dict[str, Any] = {"target": tname, "kind": kind}
@@ -439,7 +524,9 @@ def _analyze_ssh_target(
     }
 
     # ── LLM determinism (pairwise similarity across runs) ─────────────────────
-    if kind in ("llm", "baseline"):
+    # Stage 2 adds "groundtruth" here when the caller asks for it, so the baseline
+    # and the honeypots are measured on the same basis.
+    if kind in (determinism_kinds or {"llm", "baseline"}):
         _progress(tname, "determinism")
         det: dict[str, float] = {}
         for r in cmd_records:
@@ -1232,9 +1319,260 @@ def _build_audit(
     return "\n".join(lines) + "\n"
 
 
+# ── Stage-2 masked comparison output ──────────────────────────────────────────
+
+_V2_MASK_TABLE: tuple[tuple[str, str, str], ...] = (
+    ("ISO dates / RFC3339 timestamps", "2026-11-06T14:03:19Z", "<DATE>"),
+    ("`date`-style dates", "Thu Nov  6 14:03:19 UTC 2026", "<DATE>"),
+    ("Clock times", "14:03:19", "<TIME>"),
+    ("Uptime", "up 3 days,  2:14", "<UPTIME>"),
+    ("Load average", "load average: 0.00, 0.01, 0.05", "<LOAD>"),
+    ("PIDs", "pid=4711 / PID 4711", "<PID>"),
+    ("TTY handles", "pts/3", "<TTY>"),
+    ("Ports", "127.0.0.1:54321", "127.0.0.1<EPHEMERAL_PORT>"),
+    ("Observed hostnames", "ubuntu-vbox, taken from hostname output and prompts", "<HOST>"),
+)
+
+_V2_FIELDS = [
+    "target", "kind", "det_unmasked", "det_masked", "det_delta",
+    "det_commands", "fidelity_raw_text", "fidelity_masked", "fidelity_delta",
+    "fidelity_n", "ci_raw_text", "ci_masked",
+]
+
+
+def _ci_text(interval: Any) -> str:
+    if not interval or len(interval) != 2:
+        return ""
+    return f"{interval[0]:.4f}-{interval[1]:.4f}"
+
+
+def _v2_rows(
+    ssh_data: dict[str, list[dict[str, Any]]],
+    gt_records: list[dict[str, Any]],
+    cmd_map: dict[str, dict],
+    target_meta: dict[str, dict],
+) -> tuple[list[dict[str, Any]], set[str]]:
+    """Compute determinism and fidelity twice: raw text, then masked."""
+    hostnames = _collect_hostnames(ssh_data)
+    masked_data = _mask_records(ssh_data, hostnames)
+    gt_masked = _mask_records({"groundtruth_ssh": gt_records}, hostnames).get(
+        "groundtruth_ssh", []
+    )
+    determinism_kinds = {"llm", "baseline", "groundtruth"}
+
+    def analyse(
+        data: dict[str, list[dict[str, Any]]],
+        gt: list[dict[str, Any]],
+    ) -> dict[str, dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        for tname in sorted(data):
+            kind = target_meta.get(tname, {}).get("kind", "unknown")
+            result = _analyze_ssh_target(
+                tname, data[tname],
+                gt if tname != "groundtruth_ssh" else None,
+                kind, cmd_map,
+                determinism_kinds=determinism_kinds,
+            )
+            result["kind"] = kind
+            results.append(result)
+        _add_shared_fidelity(results, data, gt, cmd_map)
+        return {result["target"]: result for result in results}
+
+    raw = analyse(ssh_data, gt_records)
+    masked = analyse(masked_data, gt_masked)
+
+    rows: list[dict[str, Any]] = []
+    for tname in sorted(raw):
+        raw_result, masked_result = raw[tname], masked[tname]
+        det_raw = (raw_result.get("determinism") or {}).get("overall_mean")
+        det_masked = (masked_result.get("determinism") or {}).get("overall_mean")
+        fid_raw = (raw_result.get("fidelity_shared") or {}).get("mean_sim")
+        fid_masked = (masked_result.get("fidelity_shared") or {}).get("mean_sim")
+        rows.append({
+            "target": tname,
+            "kind": raw_result.get("kind"),
+            "det_unmasked": det_raw,
+            "det_masked": det_masked,
+            "det_delta": (
+                round(det_masked - det_raw, 4)
+                if det_raw is not None and det_masked is not None else None
+            ),
+            "det_commands": len(
+                (raw_result.get("determinism") or {}).get("per_command") or {}
+            ),
+            "fidelity_raw_text": fid_raw,
+            "fidelity_masked": fid_masked,
+            "fidelity_delta": (
+                round(fid_masked - fid_raw, 4)
+                if fid_raw is not None and fid_masked is not None else None
+            ),
+            "fidelity_n": (raw_result.get("fidelity_shared") or {}).get("n"),
+            "ci_raw_text": _ci_text(
+                (raw_result.get("fidelity_shared") or {}).get("bootstrap_95_ci")
+            ),
+            "ci_masked": _ci_text(
+                (masked_result.get("fidelity_shared") or {}).get("bootstrap_95_ci")
+            ),
+        })
+    return rows, hostnames
+
+
+def _render_v2(rows: list[dict[str, Any]], hostnames: set[str]) -> str:
+    fmt = _fmt
+    lines: list[str] = [
+        "# Stage 2 - masked determinism and fidelity",
+        "",
+        "Generated by `python harness/analyze.py --masked-report results/exp` from the",
+        "**published** raw batch (`results/raw`). Nothing under `results/` was rewritten;",
+        "`results/summary.md` and `results/summary.csv` are untouched.",
+        "",
+        "## Why this file exists",
+        "",
+        "The published determinism table compares outputs character by character, so a",
+        "target whose `date`, `uptime`, `ps` or prompt output embeds a clock value looks",
+        "unstable even when it answers the same way every run. The ground truth has the",
+        "same problem, but its determinism was never reported, so there was no common",
+        "baseline. Every number below is computed twice: once on raw text (the published",
+        "method) and once after the masking in `harness/analyze.py`.",
+        "",
+        "## What masking removes",
+        "",
+        "| Volatile field | Example | Replaced with |",
+        "|---|---|---|",
+    ]
+    for label, example, placeholder in _V2_MASK_TABLE:
+        lines.append(f"| {label} | `{example}` | `{placeholder}` |")
+    lines += [
+        "",
+        f"Observed hostnames masked in this batch ({len(hostnames)}): "
+        + (", ".join(f"`{name}`" for name in sorted(hostnames)) or "none"),
+        "",
+        "## Determinism, all targets, same basis",
+        "",
+        "Mean pairwise difflib similarity across the five runs of each command, capped",
+        "at the first 4,000 characters exactly as in the published analysis.",
+        "",
+        "| Target | Kind | Determinism, raw text | Determinism, masked | Delta | Commands |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['target']} | {row['kind']} | {fmt(row['det_unmasked'], 4)} | "
+            f"{fmt(row['det_masked'], 4)} | {fmt(row['det_delta'], 4)} | "
+            f"{row['det_commands']} |"
+        )
+    lines += [
+        "",
+        "## Fidelity vs ground truth, raw text and masked",
+        "",
+        "`raw-text fidelity` is the published metric (`fidelity_shared.mean_sim`):",
+        "difflib similarity of each cleaned output against the ground-truth output for",
+        "the same command, averaged over the commands every compared target completed",
+        "without a timeout. `masked fidelity` repeats it after the masking above.",
+        "The 95% interval resamples commands (the analyzer's existing bootstrap), so it",
+        "is too narrow for cell-to-cell comparisons - see docs/STAGE2_NOTES.md.",
+        "",
+        "| Target | Kind | Raw-text fidelity | Masked fidelity | Delta | Shared cmds | 95% CI (raw) | 95% CI (masked) |",
+        "|---|---|---:|---:|---:|---:|---|---|",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['target']} | {row['kind']} | {fmt(row['fidelity_raw_text'], 4)} | "
+            f"{fmt(row['fidelity_masked'], 4)} | {fmt(row['fidelity_delta'], 4)} | "
+            f"{row['fidelity_n'] if row['fidelity_n'] is not None else '-'} | "
+            f"{row['ci_raw_text'] or '-'} | {row['ci_masked'] or '-'} |"
+        )
+    lines += [
+        "",
+        "`groundtruth_ssh` has no fidelity row by construction: it is the reference.",
+        "It does have a determinism row, which is the point of this file.",
+        "",
+        "## What persona differences do to fidelity",
+        "",
+        "Raw-text fidelity compares a target's output with the ground truth's output",
+        "character by character, and difflib cannot tell an invented file from a wrong",
+        "one. All four SSH LLM targets (DECEIVE, Beelzebub, AdvancedshelLM, VelLMes)",
+        "are instructed to act as a video-game developer's Ubuntu box and to include",
+        "realistic game source and asset files in directory listings; the ground truth is",
+        "a plain Ubuntu container with no such instruction. A persona-following target",
+        "therefore loses similarity for doing",
+        "what its prompt asks, and a target that ignores its persona scores higher than",
+        "one that obeys it. The measured gap is thus persona plus shell fidelity, and",
+        "the two cannot be separated without a persona-matched cell. Masking does not",
+        "fix this - it removes only the run-to-run noise both sides share, so the masked",
+        "column is the cleaner instrument but still not a capability score. Reading it as",
+        "one would penalise the most faithful honeypots. The persona-controlled cell is",
+        "E5c in `NEXT_EXPERIMENT.md`; until it runs, quote this column as a fidelity",
+        "proxy and not as a ranking.",
+        "",
+        "## Still not comparable",
+        "",
+        "- Masking equalises clock, PID, uptime, port and hostname noise, not file names,",
+        "  permissions, package lists or tool versions. Two honest Ubuntu images still",
+        "  differ there.",
+        "- The HTTP track (galah, groundtruth_http) is out of scope here: it is not a",
+        "  shell transcript and has no per-command determinism.",
+        "- `llmhoneypot` is a detector target and is excluded from fidelity by the",
+        "  analyzer; its determinism row is still shown.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _write_masked_report(
+    out_dir: Path,
+    ssh_data: dict[str, list[dict[str, Any]]],
+    gt_records: list[dict[str, Any]],
+    cmd_map: dict[str, dict],
+    target_meta: dict[str, dict],
+) -> int:
+    rows, hostnames = _v2_rows(ssh_data, gt_records, cmd_map, target_meta)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    summary_csv = out_dir / "summary_v2.csv"
+    with open(summary_csv, "w", newline="", encoding=ENCODING) as fh:
+        writer = csv.DictWriter(fh, fieldnames=_V2_FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+    det_csv = out_dir / "determinism_v2.csv"
+    with open(det_csv, "w", newline="", encoding=ENCODING) as fh:
+        writer = csv.DictWriter(
+            fh,
+            fieldnames=["target", "kind", "det_unmasked", "det_masked",
+                        "det_delta", "det_commands"],
+            extrasaction="ignore",
+        )
+        writer.writeheader()
+        writer.writerows(rows)
+
+    summary_md = out_dir / "summary_v2.md"
+    summary_md.write_text(_render_v2(rows, hostnames), encoding=ENCODING)
+
+    print(f"Written: {summary_md}")
+    print(f"Written: {summary_csv}")
+    print(f"Written: {det_csv}")
+    print("Left untouched: results/summary.md, results/summary.csv")
+    return 0
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Analyze benchmark raw data",
+    )
+    parser.add_argument(
+        "--masked-report",
+        metavar="DIR",
+        default=None,
+        help=(
+            "Write the Stage-2 masked comparison into DIR (e.g. results/exp) and "
+            "stop. Nothing under results/ is written in this mode."
+        ),
+    )
+    args = parser.parse_args(argv)
+
     # Load metadata
     try:
         with open(COMMANDS_YAML, encoding=ENCODING) as fh:
@@ -1265,6 +1603,14 @@ def main() -> int:
     # Ground-truth lookups
     gt_ssh_records  = ssh_data.get("groundtruth_ssh", [])
     gt_http_records = http_data.get("groundtruth_http", [])
+
+    # Stage-2 masked comparison: a separate output directory, so the published
+    # summary files are never overwritten by the experiment. If this argument is
+    # absent the behaviour below is exactly the published pipeline.
+    if args.masked_report:
+        return _write_masked_report(
+            Path(args.masked_report), ssh_data, gt_ssh_records, cmd_map, target_meta
+        )
 
     # ── Analyze SSH ───────────────────────────────────────────────────────────
     ssh_results: list[dict[str, Any]] = []

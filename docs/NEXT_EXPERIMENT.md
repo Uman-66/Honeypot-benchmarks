@@ -8,6 +8,32 @@ verification) are not optional; the rest of the document assumes both passed.
 
 ---
 
+## Stage 2 status (branch `stage2-measurement`, not pushed)
+
+Stage 2 fixed the measurement layer before any more API calls are spent. Read this
+section first: two of the rules below have changed.
+
+| Reviewer point | Status after Stage 2 |
+|---|---|
+| (a) the 0.5 s quiet period dominates real-server latency | **measured.** `groundtruth_ssh` quiet median 0.547 s / p95 0.563 s; cowrie 0.563 s / 0.587 s. Under `--timing prompt` both fall to 0.000 s median (p95 0.016 s). The published 0.56 s is the harness. See `results/exp/floor.md`. |
+| (b) no per-request API timing | **tooling ready, not yet run.** `harness/api_proxy.py` logs one JSONL row per request (duration, status, size, token usage, request SHA-256; never headers or bodies). Wiring per target is in `docs/STAGE2_NOTES.md`. No API calls were made in Stage 2. |
+| (c) ground-truth determinism never reported after masking | **done on the existing batch.** `results/exp/summary_v2.md` reports determinism for `groundtruth_ssh` and every target, raw text and masked, side by side. `groundtruth_ssh` = 0.9746 raw / 0.9841 masked; cowrie 0.9874 / 0.9957. |
+| (d) fidelity mixes persona with shell errors | **partly addressed.** A masked fidelity column and an explicit persona note were added; separating the two still needs E5c. |
+
+Other changes that affect the phases below:
+
+- **Phase 3 Step 3.0 is out of date.** `harness/analyze.py` now accepts
+  `--masked-report DIR`, which writes `summary_v2.md` / `summary_v2.csv` /
+  `determinism_v2.csv` into `DIR` and touches nothing under `results/`. With no
+  argument it still writes `results/summary.md` exactly as before.
+- **"Do not touch `harness/*.py`" no longer applies on this branch.** `run_ssh.py`
+  gained `--timing prompt` and `--no-mask-credentials`; `run_http.py` gained
+  `--no-mask-credentials`; `analyze.py` gained masking and the flag above. Defaults
+  are unchanged, so the published batch stays reproducible.
+- **Latency comparisons must subtract the floor.** Any new cell run in the default
+  timing mode carries ~0.55 s of harness wait. Run E12c and the mechanism cells with
+  `--timing prompt`, or report both modes.
+
 ## 0. What this round is for
 
 The current report is a descriptive snapshot. Determinism spans 0.4664–0.8364 against a Cowrie
@@ -103,6 +129,10 @@ every cell is one command you can re-run.
 
 **Do not touch:** `harness/run_ssh.py`, `harness/run_http.py`, `harness/analyze.py`,
 `harness/api_probe.py`, any Dockerfile, `.env`, or anything under `results/`.
+
+> Stage 2 exception (branch `stage2-measurement`): `run_ssh.py`, `run_http.py` and
+> `analyze.py` were deliberately changed there to add prompt timing, write-time
+> credential masking and the masked comparison. Their default behaviour is unchanged.
 
 ---
 

@@ -14,6 +14,8 @@ Options:
     --timeout   Per-command timeout in seconds (default: 90)
     --dry-run   Validate YAML only, do not connect
     --target    Comma-separated target names to run (default: all ssh targets)
+    --timing    quiet | prompt  (default: quiet = published-batch behaviour)
+    --no-mask-credentials       Write output verbatim (pre-Stage-2 behaviour)
 """
 
 from __future__ import annotations
@@ -37,6 +39,12 @@ from typing import Any
 
 import paramiko
 import yaml
+
+# `masking` is a sibling module. run_ssh.py is normally executed as a script, so
+# its own directory is already on sys.path; this keeps `import masking` working
+# when a test imports the module by path instead.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from masking import mask_record  # noqa: E402
 
 try:
     csv.field_size_limit(2**31 - 1)
@@ -233,6 +241,86 @@ def _read_until_prompt(
 
 # ── SSH "none" authentication ─────────────────────────────────────────────────
 
+def _read_command_output(
+    chan: paramiko.Channel,
+    timeout: float,
+    timing: str = "quiet",
+    started: float | None = None,
+) -> dict[str, Any]:
+    """
+    Read one command's output to completion.
+
+    timing="quiet"  — the published-batch rule: stop QUIET_PERIOD seconds after
+                      the last chunk that contained a prompt. This is why the
+                      measured latency of a sub-millisecond command is ~0.5 s.
+    timing="prompt" — stop the moment the prompt regex matches the end of the
+                      buffer (no quiet wait). Opt-in, so the published batch
+                      stays reproducible.
+
+    Returns raw_output, timed_out, prompt, elapsed, t_first_byte and t_prompt
+    (the last two measured from *started*).
+    """
+    start = time.monotonic() if started is None else started
+    raw_buf = ""
+    timed_out = False
+    deadline_abs = start + timeout
+    prompt_found: str | None = None
+    prompt_found_at: float | None = None
+    last_prompt_at: float | None = None
+    first_byte_at: float | None = None
+    chan.settimeout(0.0)
+
+    while True:
+        now = time.monotonic()
+        if now > deadline_abs:
+            timed_out = True
+            break
+
+        try:
+            chunk = chan.recv(RECV_CHUNK)
+        except socket.timeout:
+            chunk = b""
+        except Exception:
+            timed_out = True
+            break
+
+        if chunk:
+            if first_byte_at is None:
+                first_byte_at = now
+            raw_buf += chunk.decode(ENCODING, ENCODING_ERRORS)
+            candidate = _detect_prompt(raw_buf)
+            if candidate:
+                prompt_found = candidate
+                prompt_found_at = now
+                last_prompt_at = now
+                if timing == "prompt":
+                    break
+        else:
+            if timing == "quiet" and last_prompt_at is not None:
+                if (now - last_prompt_at) >= QUIET_PERIOD:
+                    break
+            remaining = min(deadline_abs - now, QUIET_PERIOD)
+            if remaining > 0:
+                try:
+                    select.select([chan], [], [], min(0.1, remaining))
+                except Exception:
+                    pass
+
+    end = time.monotonic()
+    return {
+        "raw_output": raw_buf,
+        "timed_out": timed_out,
+        "prompt": prompt_found,
+        "elapsed": end - start,
+        "t_first_byte": (
+            None if first_byte_at is None else round(first_byte_at - start, 4)
+        ),
+        "t_prompt": (
+            None if prompt_found_at is None else round(prompt_found_at - start, 4)
+        ),
+    }
+
+
 def _auth_none(transport: paramiko.Transport, username: str) -> bool:
     """
     Attempt SSH 'none' authentication via Transport.auth_none().
@@ -293,6 +381,9 @@ def _run_once(
     commands: list[dict[str, Any]],
     run_index: int,
     timeout: float,
+    timing: str = "quiet",
+    timing_explicit: bool = False,
+    mask_credentials_enabled: bool = True,
 ) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
     """
     Connect to *target*, execute all commands, disconnect.
@@ -493,6 +584,7 @@ def _run_once(
             continue
 
         t_send = time.monotonic()
+        t_send_wall = time.time()
         chan.sendall((cmd_text + "\n").encode(ENCODING))
 
         if is_exit:
@@ -522,7 +614,7 @@ def _run_once(
                 time.sleep(0.05)
 
             latency = time.monotonic() - t_send
-            results.append({
+            exit_record: dict[str, Any] = {
                 "target":   target["name"],
                 "run":      run_index,
                 "cmd_id":   cmd_id,
@@ -540,56 +632,29 @@ def _run_once(
                 ),
                 "exit_closes_session": exit_closed,
                 "exit_status": exit_status,
-            })
+            }
+            if timing_explicit:
+                exit_record["timing_mode"]  = timing
+                exit_record["t_send"]       = round(t_send_wall, 6)
+                exit_record["t_first_byte"] = None
+                exit_record["t_prompt"]     = None
+            results.append(
+                mask_record(exit_record, enabled=mask_credentials_enabled)
+            )
             break  # no more commands after exit
 
-        # Normal command: read until prompt or timeout
-        raw_buf = ""
-        timed_out = False
-        deadline_abs = time.monotonic() + timeout
-        last_recv = time.monotonic()
-        prompt_found: str | None = None
-        prompt_found_at: float | None = None
-        chan.settimeout(0.0)
+        # Normal command: read until prompt (+ quiet period) or timeout
+        read = _read_command_output(chan, timeout, timing, started=t_send)
+        raw_buf      = read["raw_output"]
+        timed_out    = read["timed_out"]
+        prompt_found = read["prompt"]
 
-        while True:
-            now = time.monotonic()
-            if now > deadline_abs:
-                timed_out = True
-                break
-
-            try:
-                chunk = chan.recv(RECV_CHUNK)
-            except socket.timeout:
-                chunk = b""
-            except Exception:
-                timed_out = True
-                break
-
-            if chunk:
-                raw_buf += chunk.decode(ENCODING, ENCODING_ERRORS)
-                last_recv = now
-                candidate = _detect_prompt(raw_buf)
-                if candidate:
-                    prompt_found = candidate
-                    prompt_found_at = now
-            else:
-                if prompt_found_at is not None:
-                    if (now - prompt_found_at) >= QUIET_PERIOD:
-                        break
-                remaining = min(deadline_abs - now, QUIET_PERIOD)
-                if remaining > 0:
-                    try:
-                        select.select([chan], [], [], min(0.1, remaining))
-                    except Exception:
-                        pass
-
-        latency = time.monotonic() - t_send
+        latency = read["elapsed"]
         current_prompt = prompt_found or current_prompt
 
         cleaned = _clean_output(raw_buf, cmd_text, prompt_found)
 
-        results.append({
+        record: dict[str, Any] = {
             "target":   target["name"],
             "run":      run_index,
             "cmd_id":   cmd_id,
@@ -605,7 +670,15 @@ def _run_once(
                 [m for m in TRAP_MARKERS if m in raw_buf]
                 if kind == "detector" else []
             ),
-        })
+        }
+        # Timing fields are only written when --timing was passed explicitly, so
+        # a default invocation still produces the published-batch record shape.
+        if timing_explicit:
+            record["timing_mode"]     = timing
+            record["t_send"]          = round(t_send_wall, 6)
+            record["t_first_byte"]    = read["t_first_byte"]
+            record["t_prompt"]        = read["t_prompt"]
+        results.append(mask_record(record, enabled=mask_credentials_enabled))
 
     # ── Teardown ─────────────────────────────────────────────────────────────
     try:
@@ -746,7 +819,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Comma-separated target names (default: all SSH targets)",
     )
-    return p.parse_args(argv)
+    p.add_argument(
+        "--timing",
+        choices=("quiet", "prompt"),
+        default="quiet",
+        help=(
+            "Command-completion rule. 'quiet' (default, the published-batch "
+            "behaviour) waits QUIET_PERIOD=0.5 s of silence after a prompt; "
+            "'prompt' stops as soon as the prompt regex matches the end of the "
+            "output. Only 'prompt' removes the ~0.5 s harness floor."
+        ),
+    )
+    p.add_argument(
+        "--no-mask-credentials",
+        dest="mask_credentials",
+        action="store_false",
+        help=(
+            "Write captured output verbatim (pre-Stage-2 behaviour). The default "
+            "masks credential-like strings and stores their SHA-256 beside the "
+            "masked text, so the raw file can be published without tripping "
+            "secret scanning."
+        ),
+    )
+    args = p.parse_args(argv)
+    argv_list = list(sys.argv[1:] if argv is None else argv)
+    args.timing_explicit = any(
+        item == "--timing" or item.startswith("--timing=") for item in argv_list
+    )
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -836,7 +936,10 @@ def main(argv: list[str] | None = None) -> int:
 
             try:
                 cmd_results, fp, run_meta = _run_once(
-                    target, all_commands, run_idx, args.timeout
+                    target, all_commands, run_idx, args.timeout,
+                    timing=args.timing,
+                    timing_explicit=args.timing_explicit,
+                    mask_credentials_enabled=args.mask_credentials,
                 )
             except Exception as exc:
                 _failure_meta(run_meta := {}, exc, "run")

@@ -1,0 +1,8 @@
+target,kind,det_unmasked,det_masked,det_delta,det_commands,fidelity_raw_text,fidelity_masked,fidelity_delta,fidelity_n,ci_raw_text,ci_masked
+advshellm,llm,0.7836,0.8034,0.0198,36,0.5947,0.5992,0.0045,26,0.4336-0.7386,0.4390-0.7447
+beelzebub,llm,0.68,0.6815,0.0015,36,0.3737,0.3797,0.006,26,0.2319-0.5239,0.2392-0.5323
+cowrie,baseline,0.9874,0.9957,0.0083,36,0.5877,0.5975,0.0098,26,0.4203-0.7438,0.4306-0.7529
+deceive,llm,0.4664,0.5038,0.0374,36,0.4731,0.475,0.0019,26,0.3493-0.5858,0.3506-0.5876
+groundtruth_ssh,groundtruth,0.9746,0.9841,0.0095,36,,,,,,
+llmhoneypot,detector,,,,0,,,,,,
+vellmes,llm,0.8364,0.8472,0.0108,36,0.607,0.6074,0.0004,26,0.4601-0.7506,0.4596-0.7509

@@ -14,6 +14,7 @@ Options:
     --timeout   Per-request timeout in seconds (default: 30)
     --dry-run   Validate YAML only, do not connect
     --target    Comma-separated target names to run (default: all http targets)
+    --no-mask-credentials       Write response bodies verbatim (pre-Stage-2 behaviour)
 """
 
 from __future__ import annotations
@@ -32,6 +33,10 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+# `masking` is a sibling module; see the same note in run_ssh.py.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from masking import mask_record  # noqa: E402
 
 try:
     csv.field_size_limit(2**31 - 1)
@@ -76,6 +81,17 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--target",
         default=None,
         help="Comma-separated target names (default: all HTTP targets)",
+    )
+    p.add_argument(
+        "--no-mask-credentials",
+        dest="mask_credentials",
+        action="store_false",
+        help=(
+            "Write the response body verbatim (pre-Stage-2 behaviour). The default "
+            "masks credential-like strings and stores their SHA-256 beside the "
+            "masked text, so the raw file can be published without tripping "
+            "secret scanning."
+        ),
     )
     return p.parse_args(argv)
 
@@ -342,7 +358,11 @@ def main(argv: list[str] | None = None) -> int:
                 rec = _do_request(host, port, req, args.timeout)
                 rec["target"] = tname
                 rec["run"]    = run_idx
-                run_records.append(rec)
+                # Credential masking happens here, before the record is written
+                # and before the CSV snippet is derived from rec["body"].
+                run_records.append(
+                    mask_record(rec, enabled=args.mask_credentials)
+                )
 
             elapsed = time.monotonic() - t0
             n_err = sum(1 for r in run_records if r.get("error"))

@@ -68,3 +68,6 @@ honeybee/**/.qhistory
 /results_pilot/raw_http/galah_run04.jsonl
 /results_pilot/raw_http/galah_run05.jsonl
 /results_pilot/honeypot_logs/galah/
+
+# Stage 2 harness venv (paramiko + pytest)
+.venv-harness/

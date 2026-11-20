@@ -1,0 +1,8 @@
+target,kind,det_unmasked,det_masked,det_delta,det_commands
+advshellm,llm,0.7836,0.8034,0.0198,36
+beelzebub,llm,0.68,0.6815,0.0015,36
+cowrie,baseline,0.9874,0.9957,0.0083,36
+deceive,llm,0.4664,0.5038,0.0374,36
+groundtruth_ssh,groundtruth,0.9746,0.9841,0.0095,36
+llmhoneypot,detector,,,,0
+vellmes,llm,0.8364,0.8472,0.0108,36
