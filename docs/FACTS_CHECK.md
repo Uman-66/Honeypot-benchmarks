@@ -64,6 +64,10 @@ UNVERIFIED.
 | `patches/*.patch` | Yes | HoneyBee and VelLMes patch files present |
 | `tests/` | Yes | Present |
 
+Nine galah HTTP raw bodies are deliberately not tracked; their paths, sizes and SHA-256
+values are recorded in `docs/WITHHELD_FILES.md`. Their absence here is the reason the
+galah rows in `results/summary.md` cannot be recomputed from this repository alone.
+
 ## d) Third-Party Clone Commit Hashes and Licenses
 
 | Clone | Has `.git` | Commit | License |

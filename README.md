@@ -200,6 +200,10 @@ backs up and reruns an existing pair. Do not run `down -v` before copying logs.
 - Latencies at the timeout are censored observations, not measured completion
   times; reported latency medians and p95 values use completed commands only.
 - HoneyBee one-click deployment is disabled. Never execute generated files.
+- Nine galah HTTP raw bodies are withheld from this repository: they contain
+  model-fabricated credential-like strings that GitHub secret scanning rejects, and their
+  provenance cannot be certified. Paths, sizes and SHA-256 values are listed in
+  `docs/WITHHELD_FILES.md`; the files are available to reviewers on request.
 - License: MIT for this project's own harness, Docker configuration and docs (see
   `LICENSE`). The benchmarked third-party tools keep their upstream licences; the
   texts are in `LICENSES/` and the per-tool table is in `THIRD_PARTY_NOTICES.md`.

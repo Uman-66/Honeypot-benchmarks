@@ -6,6 +6,10 @@ pilot batch.**
 **Data**: `results/raw/`, `results/raw_http/`, `results/summary.md`,
 `results/summary.csv`, and local HoneyBee summaries.
 
+**Withheld**: nine galah HTTP raw bodies are not published because they contain
+model-fabricated credential-like strings; see [`docs/WITHHELD_FILES.md`](docs/WITHHELD_FILES.md)
+for their paths, sizes and SHA-256 values. The galah counts below derive from those files.
+
 ## Summary
 
 The final batch used five runs per SSH and HTTP target with scripted inputs.
