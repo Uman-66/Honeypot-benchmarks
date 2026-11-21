@@ -414,6 +414,48 @@ The quiet mode was split from the prompt mode as a separate code path
 \texttt{harness/run\_ssh.py}), so the published batch is unaffected. The
 default remains quiet mode.
 
+\subsection{Floor estimate from the published batch}
+\label{sec:floor-estimate}
+
+\textbf{ESTIMATE: published latency minus measured quiet floor; polling
+granularity not removed.} This is a subtraction on already published numbers,
+not a re-measurement. \texttt{results/exp/latency\_floor\_estimate.md} derives
+every value below from \texttt{results/raw/*.jsonl} (the same five runs,
+\texttt{exit} and timed-out rows excluded) and the 0.547\,s quiet median in
+Table~\ref{tab:floor}. No file outside \texttt{results/exp/} was written and
+no run was repeated.
+
+\begin{table}[ht]
+\centering
+\caption{ESTIMATE: published latency minus the measured 0.547\,s quiet floor;
+polling granularity not removed (from
+\texttt{results/exp/latency\_floor\_estimate.md}).}
+\label{tab:floor-estimate}
+\scriptsize
+\begin{tabularx}{\textwidth}{l l r r r r r r}
+\toprule
+Target & Kind & n & Median (s) & p95 (s) & EST.\ median (s) & EST.\ p95 (s) & Ratio med/p95 \\
+\midrule
+groundtruth\_ssh & groundtruth & 180 & 0.562 & 0.579 & 0.015 & 0.032 & 1.0/1.0 \\
+cowrie & baseline & 180 & 0.563 & 0.610 & 0.016 & 0.063 & 1.1/4.2 \\
+advshellm & llm & 180 & 1.922 & 4.504 & 1.375 & 3.957 & 91.7/263.8 \\
+vellmes & llm & 171 & 1.687 & 4.874 & 1.140 & 4.327 & 76.0/288.5 \\
+deceive & llm & 175 & 1.984 & 10.361 & 1.437 & 9.814 & 95.8/654.3 \\
+beelzebub & llm & 164 & 5.023 & 31.656 & 4.476 & 31.109 & 298.4/2073.9 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The ratio denominator is the ground-truth estimate, $0.562-0.547=0.015$\,s.
+\textbf{The Cowrie and ground-truth estimates are therefore 0.016\,s and
+0.015\,s, i.e.\ about 0.0--0.02\,s, so the ratios are very sensitive to the
+floor value:} substituting the floor's own p95 (0.563\,s) makes the
+denominator $-0.001$\,s and every ratio undefined or sign-flipped. Quiet mode
+also resolves completion in \texttt{select} slices of up to 0.1\,s, so up to
+one slice of quantisation remains in each published latency. These ratios are
+a sensitivity check on the published numbers; they are not floor-corrected
+latencies, and no cause is assigned to any difference.
+
 \subsection{Prompt-mode validation on LLM SSH targets}
 \label{sec:prompt-val}
 
@@ -577,6 +619,41 @@ same command, matched one-to-one) was \textbf{0.045\,s} (min 0.026\,s, max
 bookkeeping. This is an \textbf{observed gap on 5 commands, one target, one
 run}; it is a wiring proof, not a generalizable measurement. Full data are in
 \texttt{results/exp/smoke/}.
+
+The same join was then applied to the four-target validation log: command row
+matched when $t_{\text{send}} \le t_{\text{request}} \le t_{\text{send}} +
+\text{latency}$, first unused entry wins, so each proxy entry is used at most
+once. Of 452 log entries, 432 matched a command row and 20 were unmatched
+(session-banner calls and requests falling outside every command window); all
+432 matched requests returned status 200. Passes A, B and C are \textbf{pooled}
+per target in Table~\ref{tab:api-dur}; the per-pass split and the full limits
+are in \texttt{results/exp/api\_duration\_validation.md}.
+
+\begin{table}[ht]
+\centering
+\caption{API duration per matched command, validation passes pooled per target
+(from \texttt{results/exp/api\_duration\_validation.md}). The last column is the
+prompt pass alone, where the 0.5\,s quiet period is absent.}
+\label{tab:api-dur}
+\scriptsize
+\begin{tabular}{l r r r r r r}
+\toprule
+Target & n & Median API (s) & p95 API (s) & Median harness (s) & Median gap (s) & Gap, prompt pass (s) \\
+\midrule
+deceive & 108 & 2.023 & 7.974 & 2.476 & 0.586 & 0.060 \\
+beelzebub & 108 & 1.586 & 4.099 & 1.977 & 0.563 & 0.044 \\
+vellmes & 108 & 1.735 & 4.836 & 2.250 & 0.577 & 0.045 \\
+advshellm & 108 & 1.609 & 3.536 & 2.117 & 0.578 & 0.049 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Limits: one session per pass (three passes, so 108 command rows per target, 36
+scored commands each), one shared remote endpoint for all four targets, and
+pooled passes. The pooled median gap is dominated by the two quiet passes,
+whose 0.5\,s quiet period sits inside it; the prompt pass isolates transport
+and wrapper overhead. The gap cannot be split further from this log, and no
+cause is assigned to any difference.
 
 \section{Findings}
 
