@@ -631,10 +631,10 @@ def _join_proxy(
         ]
         proxy_in_window[(rn, pos)] = window_rows
 
-    # Command records for this target
+    # Command records for this target. SSH rows use cmd_id; HTTP rows use id.
     cmd_records = [
         r for r in records
-        if r.get("cmd_id") and r.get("cmd_id") != "exit"
+        if (r.get("cmd_id") or r.get("id")) and r.get("cmd_id") != "exit"
     ]
 
     matched = 0
@@ -655,7 +655,7 @@ def _join_proxy(
             api_durations.append(dur_ms)
             gaps.append(max(0.0, harness_ms - dur_ms))
             matched += 1
-            cid = r.get("cmd_id", "")
+            cid = r.get("cmd_id") or r.get("id") or ""
             per_cmd.setdefault(cid, []).append(dur_ms)
         else:
             unmatched += 1
@@ -681,6 +681,20 @@ def _join_proxy(
 
 # ── Quiet-check comparison ─────────────────────────────────────────────────────
 
+def _validation_file(validation_dir: Path, target: str,
+                     pass_letter: str) -> Path | None:
+    """Stage 2 validation JSONL for one pass.
+
+    The validation batches use two naming styles; accept both.
+    """
+    for name in (f"{target}_pass{pass_letter}_quiet.jsonl",
+                 f"{target}_{pass_letter}_quiet.jsonl"):
+        cand = validation_dir / name
+        if cand.exists():
+            return cand
+    return None
+
+
 def _quiet_check(
     prompt_records: list[dict[str, Any]],
     quiet_records: list[dict[str, Any]],
@@ -694,9 +708,9 @@ def _quiet_check(
     """
     # Compute quiet-vs-quiet noise floor from validation data if available
     noise_floor: dict[str, float] = {}
-    val_a_path = validation_dir / f"{target}_A_quiet.jsonl"
-    val_c_path = validation_dir / f"{target}_C_quiet.jsonl"
-    if val_a_path.exists() and val_c_path.exists():
+    val_a_path = _validation_file(validation_dir, target, "A")
+    val_c_path = _validation_file(validation_dir, target, "C")
+    if val_a_path and val_c_path:
         a_recs = _load_jsonl(val_a_path)
         c_recs = _load_jsonl(val_c_path)
         a_map = {r.get("cmd_id"): r.get("cleaned_output") or "" for r in a_recs}
