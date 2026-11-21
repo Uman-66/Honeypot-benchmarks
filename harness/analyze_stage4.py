@@ -38,9 +38,53 @@ import yaml
 
 ENCODING = "utf-8"
 DEFAULT_STAGE4_DIR = Path("results/exp/stage4")
+# Must match harness/run_stage4.QUIET_SUBDIR: quiet-check rows live in their own
+# directory so they never overwrite the prompt JSONL.
+QUIET_SUBDIR       = "raw_quiet"
 BOOTSTRAP_N        = 10_000
 BOOTSTRAP_SEED     = 20261106
 VALIDATION_DIR     = Path("results/exp/validation")
+
+# ── Console-safe output -------------------------------------------------------
+
+def _safe_print(*args: Any, **kwargs: Any) -> None:
+    """print() that can never raise UnicodeEncodeError (Windows cp1252 consoles)."""
+    stream = kwargs.pop("file", None) or sys.stdout
+    sep = kwargs.pop("sep", " ")
+    end = kwargs.pop("end", "\n")
+    flush = kwargs.pop("flush", False)
+    text = sep.join(str(a) for a in args) + end
+    encoding = getattr(stream, "encoding", None) or "utf-8"
+    try:
+        text.encode(encoding, "strict")
+    except (UnicodeEncodeError, LookupError):
+        try:
+            text = text.encode(encoding, "replace").decode(encoding, "replace")
+        except LookupError:
+            text = text.encode("ascii", "replace").decode("ascii")
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        try:
+            stream.write(text.encode("ascii", "replace").decode("ascii"))
+        except Exception:
+            return
+    except Exception:
+        return
+    if flush:
+        try:
+            stream.flush()
+        except Exception:
+            pass
+
+
+def _reconfigure_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
 
 # ── Statistics helpers ────────────────────────────────────────────────────────
 
@@ -956,21 +1000,39 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _reconfigure_stdio()
     args = parse_args(argv)
     stage4_dir = Path(args.stage4_dir)
     val_dir    = Path(args.validation_dir)
 
-    raw_dir  = stage4_dir / "raw"
-    rawh_dir = stage4_dir / "raw_http"
+    raw_dir   = stage4_dir / "raw"
+    rawh_dir  = stage4_dir / "raw_http"
+    quiet_dir = stage4_dir / QUIET_SUBDIR
     proxy_log = stage4_dir / "api_proxy_log.jsonl"
 
     if not stage4_dir.exists():
-        print(f"ERROR: stage4-dir {stage4_dir} does not exist.", file=sys.stderr)
+        _safe_print(f"ERROR: stage4-dir {stage4_dir} does not exist.", file=sys.stderr)
         return 1
 
-    print(f"[analyze_stage4] Loading SSH data from {raw_dir}...")
-    ssh_data  = _load_all_ssh(raw_dir) if raw_dir.exists() else {}
-    print(f"[analyze_stage4] Loading HTTP data from {rawh_dir}...")
+    _safe_print(f"[analyze_stage4] Loading SSH data from {raw_dir}...")
+    ssh_prompt_data = _load_all_ssh(raw_dir) if raw_dir.exists() else {}
+    quiet_data = _load_all_ssh(quiet_dir) if quiet_dir.exists() else {}
+    # Quiet-check rows are kept in their own directory by the driver (so they can
+    # never overwrite the prompt JSONL). They are excluded from the prompt-mode
+    # statistics but used for the prompt-vs-quiet comparison below.
+    all_ssh: dict[str, list[dict[str, Any]]] = {
+        t: list(recs) for t, recs in ssh_prompt_data.items()
+    }
+    for tname, recs in quiet_data.items():
+        all_ssh.setdefault(tname, []).extend(recs)
+    ssh_data = {
+        t: [r for r in recs if r.get("s4_timing_mode") != "quiet"]
+        for t, recs in all_ssh.items()
+    }
+    n_quiet_rows = sum(1 for recs in quiet_data.values() for _ in recs)
+    if quiet_data:
+        _safe_print(f"[analyze_stage4] Quiet-check rows from {quiet_dir}: {n_quiet_rows}")
+    _safe_print(f"[analyze_stage4] Loading HTTP data from {rawh_dir}...")
     http_data = _load_all_http(rawh_dir) if rawh_dir.exists() else {}
 
     gt_records  = ssh_data.get("groundtruth_ssh", [])
@@ -988,33 +1050,33 @@ def main(argv: list[str] | None = None) -> int:
             for r in recs if r.get("s4_run", r.get("run")) is not None
         })
 
-    print("[analyze_stage4] Analyzing SSH targets...")
+    _safe_print("[analyze_stage4] Analyzing SSH targets...")
     ssh_stats: dict[str, dict[str, Any]] = {}
     for tname, records in ssh_data.items():
         runs = runs_by_target.get(tname, [])
         ssh_stats[tname] = _analyze_ssh_target_s4(tname, records, gt_records, runs)
 
-    print("[analyze_stage4] Analyzing HTTP targets...")
+    _safe_print("[analyze_stage4] Analyzing HTTP targets...")
     http_stats: dict[str, dict[str, Any]] = {}
     for tname, records in http_data.items():
         http_stats[tname] = _analyze_http_target_s4(tname, records, gt_h_records)
 
-    print("[analyze_stage4] Drift checks...")
+    _safe_print("[analyze_stage4] Drift checks...")
     drift_checks: dict[str, dict[str, Any]] = {}
     for tname in ("cowrie", "groundtruth_ssh"):
         if tname in ssh_data:
             drift_checks[tname] = _drift_check(ssh_data[tname], tname)
 
-    print("[analyze_stage4] Order effects...")
+    _safe_print("[analyze_stage4] Order effects...")
     order_effects: dict[str, dict[str, Any]] = {}
     for tname in LLM_SSH_TARGETS:
-        if tname in ssh_data:
+        if ssh_data.get(tname):
             order_effects[tname] = _order_effect(ssh_data[tname], manifest, tname)
 
-    print("[analyze_stage4] Proxy join...")
+    _safe_print("[analyze_stage4] Proxy join...")
     proxy_joins: dict[str, dict[str, Any]] = {}
     for tname in list(LLM_SSH_TARGETS) + list(LLM_SSH_TARGETS & set(ssh_data)):
-        if tname in ssh_data:
+        if ssh_data.get(tname):
             proxy_joins[tname] = _join_proxy(
                 ssh_data[tname], list(proxy_rows), list(boundaries), tname
             )
@@ -1024,31 +1086,34 @@ def main(argv: list[str] | None = None) -> int:
                 http_data[tname], list(proxy_rows), list(boundaries), tname
             )
 
-    print("[analyze_stage4] Quiet-check comparison...")
+    _safe_print("[analyze_stage4] Quiet-check comparison...")
     quiet_checks: dict[str, dict[str, Any]] = {}
     for tname in LLM_SSH_TARGETS:
         if tname in ssh_data:
-            # Prompt records: s4_timing_mode == "prompt"
-            prompt_recs = [r for r in ssh_data[tname] if r.get("s4_timing_mode") == "prompt"]
-            quiet_recs  = [r for r in ssh_data[tname] if r.get("s4_timing_mode") == "quiet"]
+            # Prompt records: s4_timing_mode == "prompt" (raw/),
+            # quiet records: raw_quiet/
+            prompt_recs = [r for r in all_ssh.get(tname, [])
+                           if r.get("s4_timing_mode") == "prompt"]
+            quiet_recs  = [r for r in all_ssh.get(tname, [])
+                           if r.get("s4_timing_mode") == "quiet"]
             if prompt_recs or quiet_recs:
                 quiet_checks[tname] = _quiet_check(prompt_recs, quiet_recs, val_dir, tname)
 
-    print("[analyze_stage4] Extra vs ground truth...")
+    _safe_print("[analyze_stage4] Extra vs ground truth...")
     extra_vs_gt_map: dict[str, dict[str, Any]] = {}
     for tname, records in ssh_data.items():
         if tname != "groundtruth_ssh" and gt_records:
             extra_vs_gt_map[tname] = _extra_vs_gt(records, gt_records, tname)
 
     # Build Markdown
-    print("[analyze_stage4] Writing analysis.md...")
+    _safe_print("[analyze_stage4] Writing analysis.md...")
     md = _build_analysis_md(
         ssh_stats, http_stats, drift_checks, order_effects,
         proxy_joins, quiet_checks, extra_vs_gt_map, stage4_dir,
     )
     analysis_path = stage4_dir / "analysis.md"
     analysis_path.write_text(md, encoding=ENCODING)
-    print(f"Written: {analysis_path}")
+    _safe_print(f"Written: {analysis_path}")
 
     # Write CSVs
     _write_csvs(stage4_dir, ssh_stats, http_stats, drift_checks,
@@ -1087,7 +1152,7 @@ def _write_csvs(
                 "ci_latency_lo": ci[0],
                 "ci_latency_hi": ci[1],
             })
-    print(f"Written: {lat_path}")
+    _safe_print(f"Written: {lat_path}")
 
     # determinism.csv
     det_path = stage4_dir / "determinism.csv"
@@ -1106,7 +1171,7 @@ def _write_csvs(
                 "ci_det_hi": ci[1],
                 "fidelity_masked": s.get("fidelity_masked"),
             })
-    print(f"Written: {det_path}")
+    _safe_print(f"Written: {det_path}")
 
     # drift.csv
     drift_path = stage4_dir / "drift.csv"
@@ -1128,7 +1193,7 @@ def _write_csvs(
                 "rho_vs_wall": wv.get("rho"),
                 "p_vs_wall": wv.get("p"),
             })
-    print(f"Written: {drift_path}")
+    _safe_print(f"Written: {drift_path}")
 
     # extra vs gt
     extra_path = stage4_dir / "extra_vs_gt.csv"
@@ -1146,7 +1211,7 @@ def _write_csvs(
                 "ci_lo": ci[0],
                 "ci_hi": ci[1],
             })
-    print(f"Written: {extra_path}")
+    _safe_print(f"Written: {extra_path}")
 
     # proxy_join.csv
     proxy_path = stage4_dir / "proxy_join.csv"
@@ -1165,7 +1230,7 @@ def _write_csvs(
                 "api_duration_p95_ms": pj.get("api_duration_p95_ms"),
                 "gap_median_ms": pj.get("gap_median_ms"),
             })
-    print(f"Written: {proxy_path}")
+    _safe_print(f"Written: {proxy_path}")
 
 
 if __name__ == "__main__":
