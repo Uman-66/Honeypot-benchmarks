@@ -50,7 +50,8 @@ observed data show target-specific determinism, command-specific timeouts,
 large outputs, and differing HTTP response consistency. HoneyBee was evaluated
 as an LLM generator rather than as a honeypot. Version 2 adds: a measured
 harness-floor estimate showing that every published latency and ratio
-includes a 0.5-second quiet-period floor; a masked-determinism table showing
+includes a 0.5-second quiet-period floor, with floor-subtracted extra seconds
+reported in place of ratios; a masked-determinism table showing
 that clock and PID noise accounts for at most 0.04 of the observed determinism
 gap; an API proxy feasibility check on one target (5 commands); and
 prompt-mode validation on all four LLM SSH targets. These are pilot-scale,
@@ -267,11 +268,13 @@ is the shared-command interval over 26 commands. The detector target is shown
 for accounting and leakage, but its fidelity and determinism are excluded.
 
 \textbf{Latency note:} the median and p95 values in Table~\ref{tab:ssh} and
-the 3.0x--8.9x ratios relative to the 0.562-second ground-truth median were
+the 3.0x--8.9x ratios (as published) relative to the 0.562-second ground-truth
+median were
 all measured with the harness's 0.5-second quiet period included. That floor
 is a property of the harness rule, not of the servers. Section~\ref{sec:floor}
-gives the measured non-LLM floor. All of these latency values and ratios
-include the 0.5-second quiet period and \textbf{will be recomputed}; no
+gives the measured non-LLM floor. Section~\ref{sec:floor-estimate} reports
+these latencies as floor-subtracted extra seconds rather than unstable ratios;
+the published values are left unchanged, and no
 floor-corrected latency figure is reported here.
 
 \begin{table}[ht]
@@ -374,9 +377,10 @@ only after 0.5 seconds of silence following the last received prompt. This
 \emph{quiet period} is a property of the harness, not of the server. Every
 latency and ratio in Table~\ref{tab:ssh} therefore includes a 0.5-second
 harness floor, so the 3.0x (VelLMes), 3.4x (AdvancedshelLM), 3.5x (DECEIVE),
-and 8.9x (Beelzebub) ratios relative to the ground-truth median are ratios
-of harness-floor-inflated values, not of server response times, and will be
-recomputed before any latency claim is made.
+and 8.9x (Beelzebub) published ratios are ratios of harness-floor-inflated
+values, not of server response times. Section~\ref{sec:floor-estimate}
+restates them as floor-subtracted extra seconds, because a ratio of
+floor-subtracted values is unstable.
 
 The measured floor on two non-LLM containers is shown in
 Table~\ref{tab:floor}. The ground-truth servers themselves reply in 3--9 ms
@@ -432,29 +436,33 @@ polling granularity not removed (from
 \texttt{results/exp/latency\_floor\_estimate.md}).}
 \label{tab:floor-estimate}
 \scriptsize
-\begin{tabularx}{\textwidth}{l l r r r r r r}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l l r r r r r r r@{}}
 \toprule
-Target & Kind & n & Median (s) & p95 (s) & EST.\ median (s) & EST.\ p95 (s) & Ratio med/p95 \\
+Target & Kind & n & Median (s) & p95 (s) & EST.\ median (s) & EST.\ p95 (s) & Extra med.\ (s) & Extra p95 (s) \\
 \midrule
-groundtruth\_ssh & groundtruth & 180 & 0.562 & 0.579 & 0.015 & 0.032 & 1.0/1.0 \\
-cowrie & baseline & 180 & 0.563 & 0.610 & 0.016 & 0.063 & 1.1/4.2 \\
-advshellm & llm & 180 & 1.922 & 4.504 & 1.375 & 3.957 & 91.7/263.8 \\
-vellmes & llm & 171 & 1.687 & 4.874 & 1.140 & 4.327 & 76.0/288.5 \\
-deceive & llm & 175 & 1.984 & 10.361 & 1.437 & 9.814 & 95.8/654.3 \\
-beelzebub & llm & 164 & 5.023 & 31.656 & 4.476 & 31.109 & 298.4/2073.9 \\
+groundtruth\_ssh & groundtruth & 180 & 0.562 & 0.579 & 0.015 & 0.032 & 0.000 & 0.000 \\
+cowrie & baseline & 180 & 0.563 & 0.610 & 0.016 & 0.063 & 0.001 & 0.031 \\
+advshellm & llm & 180 & 1.922 & 4.504 & 1.375 & 3.957 & 1.360 & 3.925 \\
+vellmes & llm & 171 & 1.687 & 4.874 & 1.140 & 4.327 & 1.125 & 4.295 \\
+deceive & llm & 175 & 1.984 & 10.361 & 1.437 & 9.814 & 1.422 & 9.782 \\
+beelzebub & llm & 164 & 5.023 & 31.656 & 4.476 & 31.109 & 4.461 & 31.077 \\
 \bottomrule
-\end{tabularx}
+\end{tabular}
 \end{table}
 
-The ratio denominator is the ground-truth estimate, $0.562-0.547=0.015$\,s.
-\textbf{The Cowrie and ground-truth estimates are therefore 0.016\,s and
-0.015\,s, i.e.\ about 0.0--0.02\,s, so the ratios are very sensitive to the
-floor value:} substituting the floor's own p95 (0.563\,s) makes the
-denominator $-0.001$\,s and every ratio undefined or sign-flipped. Quiet mode
-also resolves completion in \texttt{select} slices of up to 0.1\,s, so up to
-one slice of quantisation remains in each published latency. These ratios are
-a sensitivity check on the published numbers; they are not floor-corrected
-latencies, and no cause is assigned to any difference.
+The \textbf{extra} columns are the target's published value minus the ground
+truth's published value ($0.562$\,s median, $0.579$\,s p95). \textbf{The floor
+cancels in this difference if it is equal across targets}, and that is the
+assumption here: one harness rule (\texttt{\_read\_quiet},
+\texttt{QUIET\_PERIOD} $=0.5$\,s) sends and times every command on every
+target. Ratios of the floor-subtracted values are deliberately not reported:
+the ground-truth denominator, $0.562-0.547=0.015$\,s, is below the 15.6\,ms
+Windows clock resolution, and the floor's own p95 (0.563\,s) makes it
+$-0.001$\,s, so such a ratio is unstable. The 3.0x--8.9x ratios quoted earlier
+are the published v1 values; they include the floor in both numerator and
+denominator. Polling granularity (a \texttt{select} slice of up to 0.1\,s) is
+not removed by the subtraction, and no cause is assigned to any difference.
 
 \subsection{Prompt-mode validation on LLM SSH targets}
 \label{sec:prompt-val}
@@ -653,7 +661,11 @@ scored commands each), one shared remote endpoint for all four targets, and
 pooled passes. The pooled median gap is dominated by the two quiet passes,
 whose 0.5\,s quiet period sits inside it; the prompt pass isolates transport
 and wrapper overhead. The gap cannot be split further from this log, and no
-cause is assigned to any difference.
+cause is assigned to any difference. In the prompt-mode passes the median
+non-API gap was 0.044--0.060\,s against median API durations of
+1.59--2.02\,s, observed for four targets with one session per pass. The
+timeouts observed in the published batch are not explained by these durations;
+their cause is UNVERIFIED.
 
 \section{Findings}
 
@@ -674,10 +686,14 @@ characters.
 3/5 each; and DECEIVE \texttt{cpuinfo} and \texttt{ps\_aux} in runs 1 and 4.
 \item Median LLM SSH latency was reported as 3.0x for VelLMes, 3.4x for
 AdvancedshelLM, 3.5x for DECEIVE, and 8.9x for Beelzebub relative to the
-0.562-second ground-truth median. \textbf{These ratios include the 0.5-second
-harness quiet-period floor in every term and will be recomputed;} no
-floor-corrected latency figure is reported. The median non-API gap is 0.045\,s
-on AdvancedshelLM over 5 commands (Section~\ref{sec:proxy}).
+0.562-second ground-truth median; \textbf{those are the published v1 ratios and
+include the 0.5-second quiet-period floor in numerator and denominator.} In
+extra seconds over the ground truth (Table~\ref{tab:floor-estimate}) the
+medians are +1.125\,s (VelLMes), +1.360\,s (AdvancedshelLM), +1.422\,s
+(DECEIVE) and +4.461\,s (Beelzebub), and the p95 values +4.295, +3.925,
++9.782 and +31.077\,s. Floor-subtracted ratios are not reported
+(Section~\ref{sec:floor-estimate}). The median non-API gap is 0.045\,s on
+AdvancedshelLM over 5 commands (Section~\ref{sec:proxy}).
 \item The llm-honeypot injected strings were visible after ANSI stripping.
 \item The ground-truth service determinism (0.9746 raw, 0.9841 masked) had
 not previously been reported; previous LLM comparisons were therefore against
@@ -729,15 +745,16 @@ The scripted observations do not establish attacker detectability, HoneyBee
 output security, or behavior beyond this model, endpoint, and sample.
 
 \textbf{Latency floor (Stage 2):} every published latency value and every
-ratio in this report (including the 3.0x--8.9x figures) was measured with the
-harness's 0.5-second quiet-period floor included. The floor is a property of
-the harness measurement rule, not of the servers. The ground-truth median
+ratio in this report, including the 3.0x--8.9x figures, was measured with the
+harness's 0.5-second quiet-period floor included; those ratios are the
+published v1 values. The floor is a property of the harness measurement
+rule, not of the servers. The ground-truth median
 (0.562\,s) consists almost entirely of this floor; the actual server reply
 time was 3--9\,ms. The measured non-LLM floor is 0.547--0.563\,s in quiet mode
 and about 16\,ms in prompt mode, the latter limited by the 15.6\,ms Windows
 timer tick. Published latencies and the 3.0x--8.9x ratios include the 0.5\,s
-quiet period and will be recomputed; no floor-corrected latency figure is
-reported here. Interpretations that compare LLM latencies with ground-truth
+quiet period; Table~\ref{tab:floor-estimate} reports floor-subtracted extra
+seconds instead, and no ratio of those values is reported here. Interpretations that compare LLM latencies with ground-truth
 latency without noting the floor are comparing harness overhead with harness
 overhead plus model time.
 
