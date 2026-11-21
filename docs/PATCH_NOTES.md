@@ -45,6 +45,10 @@ git -C honeybee status --short
 
 Source notes: `Changes/CHANGES.md`, `Changes/FIX_CHANGES.md`, `Changes/SLIM_CHANGES.md`
 
+Upstream: `https://github.com/splunk/DECEIVE` (resolves; `coverflex-tech/DECEIVE` is not a
+repository). At upstream HEAD `cce98f3` the tracked template is `SSH/config.ini.TEMPLATE`,
+so the clone's `SSH/config.ini` derives from that file.
+
 ### 1.1 `DECEIVE/SSH/ssh_server.py`
 
 | Change | Why |

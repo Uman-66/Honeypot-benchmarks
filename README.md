@@ -29,7 +29,7 @@ See [BENCHMARK.md](BENCHMARK.md) and [results/summary.md](results/summary.md).
 
 | Tool | Status | Protocol | LLM-based | Host port | Notes |
 |---|---|---:|:---:|---:|---|
-| [DECEIVE](https://github.com/coverflex-tech/DECEIVE) | Done | SSH | Yes | 8022 | LangChain-based |
+| [DECEIVE](https://github.com/splunk/DECEIVE) | Done | SSH | Yes | 8022 | LangChain-based |
 | [Beelzebub](https://github.com/mariocandela/beelzebub) | Done | SSH | Yes | 2222 | Go-based |
 | [shelLM / AdvancedshelLM](https://github.com/stratosphereips/AdvancedShelLM) | Done | SSH | Yes | 2224 | Subprocess wrapper |
 | [VelLMes](https://github.com/stratosphereips/VelLMes-AI-Deception-Framework) | Done | SSH | Yes | 2228 | Commit `192fa5084df84b38a16f6581939fd3143c350181` |
@@ -80,7 +80,7 @@ OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
 ### 2. Clone dependencies
 
 ```powershell
-git clone https://github.com/coverflex-tech/DECEIVE DECEIVE
+git clone https://github.com/splunk/DECEIVE DECEIVE
 git clone https://github.com/mariocandela/beelzebub beelzebub
 git clone https://github.com/stratosphereips/AdvancedShelLM shelLM
 git clone https://github.com/0x4D31/galah galah

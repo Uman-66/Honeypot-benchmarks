@@ -154,10 +154,20 @@ clone commit is UNVERIFIED (no \texttt{.git} in the local clone).} There is no
 and cannot read a DECEIVE commit. An earlier draft of this report printed
 \texttt{28c17f895e84895391e0a82729e50c414b82cd95} as the ``DECEIVE clone
 commit''; that hash is this benchmark repository's own commit (\texttt{28c17f8},
-the Stage 2 harness commit), not a DECEIVE commit. On 21 November 2026 a fresh
-clone of \texttt{https://github.com/coverflex-tech/DECEIVE} was attempted on
-this host and returned ``Repository not found'', so no comparison against
-upstream commits was possible.
+the Stage 2 harness commit), not a DECEIVE commit.
+
+The upstream repository is \texttt{https://github.com/splunk/DECEIVE}; the
+\texttt{coverflex-tech} location used in earlier drafts does not resolve
+(``Repository not found'', checked 21 November 2026). A fresh clone of
+\texttt{splunk/DECEIVE} on the same date has HEAD
+\texttt{cce98f3dcd9de74f32f683998e95aa19b795724e} (2026-05-13, MIT licence).
+No upstream revision of \texttt{SSH/ssh\_server.py} is byte-identical to the
+local file: the closest is that HEAD revision (\texttt{1351d54}, 75 changed
+lines, matching the ten hunks recorded in \texttt{docs/PATCH\_NOTES.md}~\S1),
+and the two \texttt{LICENSE} files are identical in text. The upstream template
+is \texttt{SSH/config.ini.TEMPLATE}; the local \texttt{SSH/config.ini} differs
+from it only in \texttt{model\_name}. Because no revision matches byte for byte
+and the clone kept no \texttt{.git}, the exact clone commit stays UNVERIFIED.
 Other clone commit hashes are omitted here. The ground-truth services are
 benchmark-created services, not third-party source repositories.
 
