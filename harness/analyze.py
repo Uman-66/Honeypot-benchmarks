@@ -1571,7 +1571,57 @@ def main(argv: list[str] | None = None) -> int:
             "stop. Nothing under results/ is written in this mode."
         ),
     )
+    parser.add_argument(
+        "--raw-dir",
+        metavar="DIR",
+        default=None,
+        help=(
+            "SSH JSONL input directory (default: results/raw). "
+            "Does not change the default output locations."
+        ),
+    )
+    parser.add_argument(
+        "--http-dir",
+        metavar="DIR",
+        default=None,
+        help=(
+            "HTTP JSONL input directory (default: results/raw_http). "
+            "Does not change the default output locations."
+        ),
+    )
+    parser.add_argument(
+        "--out-dir",
+        metavar="DIR",
+        default=None,
+        help=(
+            "Output directory for summary.md, summary.csv, summary_by_run.csv and "
+            "ANALYSIS_AUDIT.md (default: results/). Has no effect when --masked-report "
+            "is used."
+        ),
+    )
+    parser.add_argument(
+        "--timing-label",
+        metavar="LABEL",
+        default=None,
+        help=(
+            "Optional label appended to the report header (e.g. 'prompt-mode stage4'). "
+            "Has no effect on computed statistics."
+        ),
+    )
     args = parser.parse_args(argv)
+
+    # Resolve input directories (override module constants only inside main(),
+    # so imports and tests that touch the constants directly are unaffected).
+    global RAW_SSH_DIR, RAW_HTTP_DIR  # noqa: PLW0603
+    _orig_ssh_dir  = RAW_SSH_DIR
+    _orig_http_dir = RAW_HTTP_DIR
+    if args.raw_dir is not None:
+        RAW_SSH_DIR = Path(args.raw_dir)
+    if args.http_dir is not None:
+        RAW_HTTP_DIR = Path(args.http_dir)
+
+    # Resolve output directory
+    _out_dir: Path | None = Path(args.out_dir) if args.out_dir else None
 
     # Load metadata
     try:
@@ -1599,6 +1649,10 @@ def main(argv: list[str] | None = None) -> int:
     # Load data
     ssh_data  = _load_all_ssh()
     http_data = _load_all_http()
+
+    # Restore module constants so repeated calls are independent
+    RAW_SSH_DIR  = _orig_ssh_dir
+    RAW_HTTP_DIR = _orig_http_dir
 
     # Ground-truth lookups
     gt_ssh_records  = ssh_data.get("groundtruth_ssh", [])
@@ -1658,10 +1712,24 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     # ── Write outputs ─────────────────────────────────────────────────────────
-    SUMMARY_MD.parent.mkdir(parents=True, exist_ok=True)
+    # When --out-dir is provided, redirect all four output files there.
+    # When omitted, the paths default to the published locations (results/).
+    _results_base = _out_dir if _out_dir is not None else Path("results")
+    _summary_md   = _results_base / "summary.md"
+    _summary_csv  = _results_base / "summary.csv"
+    _run_csv      = _results_base / "summary_by_run.csv"
+    _audit_md     = _results_base / "ANALYSIS_AUDIT.md"
+    _summary_md.parent.mkdir(parents=True, exist_ok=True)
 
     run_rows = _build_run_rows(ssh_data, http_data, cmd_map)
     md_text = _build_markdown(ssh_results, http_results)
+    # Append optional timing label to the report header line
+    if args.timing_label:
+        md_text = md_text.replace(
+            "# Honeypot Benchmark — Summary Report",
+            f"# Honeypot Benchmark — Summary Report ({args.timing_label})",
+            1,
+        )
     md_text += "\n## Per-run accounting\n\n"
     md_text += "| Target | Run | Track | Timeouts | Empty outputs | State checks passed | Valid denominator |\n"
     md_text += "|---|---:|---|---:|---:|---:|---:|\n"
@@ -1671,19 +1739,18 @@ def main(argv: list[str] | None = None) -> int:
             f"{row['empty_outputs']} | {row['state_checks_passed']} | "
             f"{row['state_checks_valid']} |\n"
         )
-    with open(SUMMARY_MD, "w", encoding=ENCODING) as fh:
+    with open(_summary_md, "w", encoding=ENCODING) as fh:
         fh.write(md_text)
-    print(f"Written: {SUMMARY_MD}")
+    print(f"Written: {_summary_md}")
 
     csv_rows = _build_csv_rows(ssh_results, http_results)
-    with open(SUMMARY_CSV, "w", newline="", encoding=ENCODING) as fh:
+    with open(_summary_csv, "w", newline="", encoding=ENCODING) as fh:
         writer = csv.DictWriter(fh, fieldnames=_CSV_SUMMARY_FIELDS, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(csv_rows)
-    print(f"Written: {SUMMARY_CSV}")
+    print(f"Written: {_summary_csv}")
 
-    run_path = Path("results/summary_by_run.csv")
-    with run_path.open("w", newline="", encoding=ENCODING) as fh:
+    with _run_csv.open("w", newline="", encoding=ENCODING) as fh:
         writer = csv.DictWriter(
             fh,
             fieldnames=["target", "run", "track", "timeouts", "empty_outputs",
@@ -1691,11 +1758,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         writer.writeheader()
         writer.writerows(run_rows)
-    print(f"Written: {run_path}")
+    print(f"Written: {_run_csv}")
 
-    audit_path = Path("results/ANALYSIS_AUDIT.md")
-    audit_path.write_text(_build_audit(ssh_data, target_meta, cmd_map), encoding=ENCODING)
-    print(f"Written: {audit_path}")
+    _audit_md.write_text(_build_audit(ssh_data, target_meta, cmd_map), encoding=ENCODING)
+    print(f"Written: {_audit_md}")
 
     return 0
 
