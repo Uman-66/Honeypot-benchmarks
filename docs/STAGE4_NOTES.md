@@ -234,10 +234,17 @@ before each galah slot. This removes the `galah_logs` named volume, which
 contains both the event log and the cache DB. On the subsequent `docker up`
 the volume is recreated empty.
 
-**Verification:** after the container starts, the driver executes
-`docker exec <cid> stat -c%s /galah/logs/cache.db`; a size < 4096 bytes
-(zero or fresh SQLite header only) is considered empty. This is logged to
-`driver.log`.
+**Verification:** galah creates `cache.db` (with its schema) at startup, so a
+fresh DB is ~12 KB and its size cannot show whether the cache holds entries.
+After the container starts the driver instead compares the volume's
+`docker volume inspect galah_galah_logs --format '{{.CreatedAt}}'` timestamp
+with the slot start: a volume created at/after the slot start proves the
+`down --volumes` above removed the old one. The `cache.db` size is still
+logged, as information only. Both values are written to `driver.log`
+(`galah cache check: ... fresh=True ...`).
+
+**Second check:** galah made exactly 20 upstream calls to the proxy for the 20
+HTTP requests in the smoke slot, i.e. no request was served from cache.
 
 **Proxy feasibility for galah:**
 galah reads `LLM_SERVER_URL` via `docker/galah-entrypoint.sh` (which maps
