@@ -1,0 +1,9 @@
+# docker/beelzebub.proxy.yaml
+# Overlay: points Beelzebub at the local api_proxy instead of Fireworks directly.
+# beelzebub-ssh.yaml has host: "" so the env var OPENAI_BASE_URL is taken.
+# Usage:
+#   docker compose -f docker/beelzebub.compose.yaml -f docker/beelzebub.proxy.yaml up --build
+services:
+  beelzebub-ssh:
+    environment:
+      OPENAI_BASE_URL: "http://host.docker.internal:11435/inference/v1"

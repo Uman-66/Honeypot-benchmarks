@@ -1,0 +1,10 @@
+# docker/advshellm.proxy.yaml
+# Overlay: points AdvancedshelLM at the local api_proxy instead of Fireworks directly.
+# OPENAI_BASE_URL is read at import time by shelLM/openai_client.py, so the
+# container must be recreated (not just restarted) when this overlay is added.
+# Usage:
+#   docker compose -f docker/advshellm.compose.yaml -f docker/advshellm.proxy.yaml up --build --force-recreate
+services:
+  advshellm:
+    environment:
+      OPENAI_BASE_URL: "http://host.docker.internal:11435/inference/v1"

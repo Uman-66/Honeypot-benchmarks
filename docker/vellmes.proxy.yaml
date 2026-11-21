@@ -1,0 +1,9 @@
+# docker/vellmes.proxy.yaml
+# Overlay: points VelLMes at the local api_proxy instead of Fireworks directly.
+# OPENAI_BASE_URL is read by VelLMes.py at startup via os.environ.
+# Usage:
+#   docker compose -f docker/vellmes.compose.yaml -f docker/vellmes.proxy.yaml up --build
+services:
+  vellmes:
+    environment:
+      OPENAI_BASE_URL: "http://host.docker.internal:11435/inference/v1"

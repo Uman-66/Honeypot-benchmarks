@@ -1,0 +1,9 @@
+# docker/deceive.proxy.yaml
+# Overlay: points DECEIVE at the local api_proxy instead of Fireworks directly.
+# OPENAI_BASE_URL is read by DECEIVE/SSH/ssh_server.py at startup.
+# Usage:
+#   docker compose -f docker/deceive.compose.yaml -f docker/deceive.proxy.yaml up --build
+services:
+  deceive:
+    environment:
+      OPENAI_BASE_URL: "http://host.docker.internal:11435/inference/v1"
