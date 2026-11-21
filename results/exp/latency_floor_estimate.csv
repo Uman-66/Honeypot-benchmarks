@@ -1,0 +1,7 @@
+target,kind,n_completed,published_median_s,published_p95_s,estimate_median_s,estimate_p95_s,estimate_median_floor_max_s,estimate_p95_floor_max_s,ratio_median,ratio_p95,denominator_max_floor_s
+groundtruth_ssh,groundtruth,180,0.562,0.579,0.015,0.032,-0.001,0.016,1.00 (denominator),1.00 (denominator),
+cowrie,baseline,180,0.563,0.61,0.016,0.063,0.0,0.047,1.1,4.2,-0.001
+advshellm,llm,180,1.922,4.504,1.375,3.957,1.359,3.941,91.7,263.8,-0.001
+vellmes,llm,171,1.687,4.874,1.14,4.327,1.124,4.311,76.0,288.5,-0.001
+deceive,llm,175,1.984,10.361,1.437,9.814,1.421,9.798,95.8,654.3,-0.001
+beelzebub,llm,164,5.023,31.656,4.476,31.109,4.46,31.093,298.4,2073.9,-0.001
