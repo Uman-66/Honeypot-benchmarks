@@ -66,11 +66,19 @@ UNVERIFIED against upstream commit.
 
 ### 1.2 `DECEIVE/SSH/config.ini`
 
+Upstream tracks `SSH/config.ini.TEMPLATE`; the clone's `SSH/config.ini` is derived from it.
+
+**Working clone (`DECEIVE/SSH/config.ini`)** — one line differs from the upstream template:
+
 | Change | Why |
 |--------|-----|
 | `model_name` changed from `gpt-4o` to `accounts/fireworks/models/glm-5p3-flash` | Use the benchmark model via Fireworks |
-| Added commented-out `base_url` example pointing to Fireworks | Documentation; actual base URL supplied via `OPENAI_BASE_URL` env var |
-| Added `tiktoken_model_name = gpt-4o` in `[llm]` section | Paired with code change above |
+
+The commented-out `base_url` example and the `tiktoken_model_name = gpt-4o` key are **not**
+in the working clone; they exist only in `recovered/deceive_app/SSH/config.ini`, the copy taken
+from the built application. In the clone the same value comes from the code default at
+`ssh_server.py:420` (`config['llm'].get("tiktoken_model_name", "gpt-4o")`), so both resolve
+to `gpt-4o` at run time.
 
 UNVERIFIED against upstream commit.
 
