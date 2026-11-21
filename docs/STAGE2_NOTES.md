@@ -256,3 +256,78 @@ without it produces exactly the published record shape.
 - Masking does not equalise file names, permissions, package lists or tool versions,
   and `results/summary.md` was not regenerated, so it still carries the one stale
   `pwd` Run 4 line found in the Stage 1 audit.
+
+## 11. LLM target prompt-mode validation (Nov 2026)
+
+Full A/B/C prompt-mode validation on DECEIVE, Beelzebub, VelLMes, and
+AdvancedshelLM. Three passes per target (quiet A, prompt B, quiet C), fresh
+container per pass, all via the api_proxy. 452 API calls total.
+Results in `results/exp/validation/`; summary in
+`results/exp/validation/validation_summary.md`.
+
+### Key findings
+
+| Target | B timeouts | B prompt_without_echo | Transcript leak inside B | Cmds flagged by the script rule |
+|--------|------------|----------------------|--------------------------|---------------------------------|
+| DECEIVE | 1 | **0** | 0 | 13 |
+| Beelzebub | 0 | **0** | 0 | 10 |
+| VelLMes | 2 | **0** | 0 | 5 (inc. 2 timeout flips) |
+| AdvancedshelLM | 0 | **0** | 0 | 4 |
+
+`prompt_without_echo = 0` on all four targets in prompt mode means the read
+never ended on a stale prompt or a prompt-only buffer. No early cut was
+observed in 37 commands x 1 pass per target. No transcript leakage occurred in
+any prompt-mode output, so the Beelzebub leakage case (14/180 in the published
+batch) was not exercised by this validation.
+
+### A-vs-B against the A-vs-C baseline (recomputed)
+
+Recomputed from `results/exp/validation/{target}_comparison.csv`. 36 commands
+checked per target, 144 in total:
+
+| Target | Checked | sim_AB < sim_AC | of those, drop > 0.10 | of those, B shorter than A |
+|---|---:|---:|---:|---:|
+| DECEIVE | 36 | 13 | 12 | 7 |
+| Beelzebub | 36 | 14 | 12 | 2 |
+| VelLMes | 36 | 9 | 0 | 0 |
+| AdvancedshelLM | 36 | 6 | 2 | 2 |
+
+Every one of the 26 commands with a drop above 0.10 has `prompt` set and
+`prompt_without_echo = False`, no timed-out pass B, and no prompt-like line
+inside the output, so none shows the early-cut signature. Fifteen of the 26 had
+a *longer* pass-B output than pass A; for the five DECEIVE `state_*` commands
+both quiet passes were empty and pass B returned content. The A-vs-C baseline is
+a single quiet-vs-quiet comparison per command and so does not bound LLM
+variance: no command is shown to be a prompt-mode artefact, and whether the
+residual differences are artefacts or LLM variation is UNVERIFIED.
+
+### Latency summary (medians, non-timeout commands)
+
+| Target | quiet A (s) | prompt B (s) | quiet C (s) |
+|--------|------------|-------------|------------|
+| DECEIVE | 2.704 | 2.041 | 2.563 |
+| Beelzebub | 2.110 | 1.697 | 2.039 |
+| VelLMes | 2.156 | 1.920 | 2.360 |
+| AdvancedshelLM | 2.203 | 1.692 | 2.172 |
+
+Pass medians and both differences, unpaired (each pass has its own n, and a
+timeout removes a command from one pass only):
+
+| Target | A median (s) | B median (s) | C median (s) | A − B | A − C |
+|---|---:|---:|---:|---:|---:|
+| DECEIVE | 2.7040 | 2.0410 | 2.5630 | 0.6630 | 0.1410 |
+| Beelzebub | 2.1095 | 1.6970 | 2.0390 | 0.4125 | 0.0705 |
+| VelLMes | 2.1560 | 1.9200 | 2.3600 | 0.2360 | −0.2040 |
+| AdvancedshelLM | 2.2030 | 1.6920 | 2.1720 | 0.5110 | 0.0310 |
+
+No interpretation is attached to the A − B column. It is not offered as the
+harness floor: the only measured floor is the non-LLM one in §3 (quiet
+0.547–0.563 s, prompt about 16 ms, limited by the Windows 15.6 ms timer tick).
+
+### Status of "Still unverified" items (§10)
+
+- ~~Prompt mode unverified on LLM targets~~ — **Now verified** on all four.
+- ~~Proxy only seen AdvancedshelLM traffic~~ — **Now tested** on all four LLM targets.
+- 15.5 ms floor on Linux: still untested.
+- HoneyBee and galah prompt-mode behaviour: still untested.
+
