@@ -7,24 +7,41 @@ and timed-out rows excluded) and the floor measured in `results/exp/floor.md`
 (groundtruth quiet median 0.547 s, max 0.563 s).
 Nothing under `results/` outside `results/exp/` was written and no run was repeated.
 
-| Target | Kind | Completed | Median (s) | p95 (s) | ESTIMATE median (s) | ESTIMATE p95 (s) | Ratio (median) | Ratio (p95) |
+| Target | Kind | Completed | Median (s) | p95 (s) | ESTIMATE median (s) | ESTIMATE p95 (s) | Extra median (s) | Extra p95 (s) |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| groundtruth_ssh | groundtruth | 180 | 0.562 | 0.579 | 0.015 | 0.032 | 1.00 (denominator) | 1.00 (denominator) |
-| cowrie | baseline | 180 | 0.563 | 0.610 | 0.016 | 0.063 | 1.1 | 4.2 |
-| advshellm | llm | 180 | 1.922 | 4.504 | 1.375 | 3.957 | 91.7 | 263.8 |
-| vellmes | llm | 171 | 1.687 | 4.874 | 1.140 | 4.327 | 76.0 | 288.5 |
-| deceive | llm | 175 | 1.984 | 10.361 | 1.437 | 9.814 | 95.8 | 654.3 |
-| beelzebub | llm | 164 | 5.023 | 31.656 | 4.476 | 31.109 | 298.4 | 2073.9 |
+| groundtruth_ssh | groundtruth | 180 | 0.562 | 0.579 | 0.015 | 0.032 | 0.000 | 0.000 |
+| cowrie | baseline | 180 | 0.563 | 0.610 | 0.016 | 0.063 | 0.001 | 0.031 |
+| advshellm | llm | 180 | 1.922 | 4.504 | 1.375 | 3.957 | 1.360 | 3.925 |
+| vellmes | llm | 171 | 1.687 | 4.874 | 1.140 | 4.327 | 1.125 | 4.295 |
+| deceive | llm | 175 | 1.984 | 10.361 | 1.437 | 9.814 | 1.422 | 9.782 |
+| beelzebub | llm | 164 | 5.023 | 31.656 | 4.476 | 31.109 | 4.461 | 31.077 |
+
+`Extra` = target published value minus the groundtruth published value (0.562 s median, 0.579 s p95). The floor cancels in this difference if it is equal across targets; the assumption is that it is, because the same harness rule
+(`_read_quiet`, QUIET_PERIOD = 0.5 s) times every command on every target.
+
+Ratios are not reported in the headline table. The floor-subtracted groundtruth denominator
+(0.562 - 0.547 = 0.015 s) is below the 15.6 ms Windows clock resolution, and using the floor's own p95 (0.563 s) makes it -0.001 s, so a ratio of floor-subtracted values is unstable. The published 3.0x-8.9x ratios include the floor in
+both numerator and denominator and are reported only as published v1 values.
+
+- Polling granularity is not removed: quiet mode resolves completion in `select` slices of
+  up to 0.1 s, so each published latency carries up to one slice of quantisation that this
+  subtraction cannot remove.
+- With floor 0.563 s the per-target estimates become: groundtruth_ssh -0.001, cowrie 0.000, advshellm 1.359, vellmes 1.124, deceive 1.421, beelzebub 4.460 s.
+- **Read this table as an estimate, not as floor-corrected latency.** No cause is assigned
+  to any difference.
+
+## Appendix: floor-subtracted ratios (unstable - do not quote)
+
+Kept only for traceability; these values are sensitive to a one-tick change in the floor
+and are not used anywhere in the report.
 
 Ratio denominator: groundtruth published median 0.562 s minus 0.547 s = 0.015 s.
 
-## Why the ratios must not be quoted as point values
-
-- The Cowrie and groundtruth estimates are 0.016 s and 0.015 s, i.e. about 0.0-0.02 s.
-- The denominator is therefore ~0.015 s, one quarter of a single 15.6 ms Windows timer tick.
-- Using the floor maximum (0.563 s) instead of the median makes the denominator -0.001 s, so every ratio flips sign or becomes undefined. The floor was measured on one host in one session; its own p95 is 0.563 s.
-- Polling granularity is not removed: quiet mode resolves completion in `select` slices of up to 0.1 s, so each published latency carries up to one slice of quantisation that this subtraction cannot remove.
-- With floor 0.563 s the per-target estimates become: groundtruth_ssh -0.001, cowrie 0.000, advshellm 1.359, vellmes 1.124, deceive 1.421, beelzebub 4.460 s.
-
-**Read this table as an order-of-magnitude sensitivity check, not as floor-corrected
-latency.** No cause is assigned to any difference.
+| Target | Ratio (median) | Ratio (p95) |
+|---|---:|---:|
+| groundtruth_ssh | 1.00 (denominator) | 1.00 (denominator) |
+| cowrie | 1.1 | 4.2 |
+| advshellm | 91.7 | 263.8 |
+| vellmes | 76.0 | 288.5 |
+| deceive | 95.8 | 654.3 |
+| beelzebub | 298.4 | 2073.9 |
