@@ -74,6 +74,29 @@ def test_reconfigure_stdio_is_safe():
     s4._reconfigure_stdio()  # must not raise, even under pytest capture
 
 
+def test_subprocess_calls_decode_as_utf8():
+    """Docker/git output must never be decoded with the cp1252 locale codec.
+
+    A UTF-8 byte in a docker build log killed subprocess' reader thread with
+    UnicodeDecodeError mid-run.
+    """
+    import re
+    src = (ROOT / "harness" / "run_stage4.py").read_text(encoding="utf-8")
+    bad = []
+    for m in re.finditer(r"subprocess\.(?:run|Popen)\(", src):
+        depth, i = 1, m.end()
+        while i < len(src) and depth:
+            if src[i] == "(":
+                depth += 1
+            elif src[i] == ")":
+                depth -= 1
+            i += 1
+        block = src[m.end():i]
+        if "text=True" in block and "encoding=" not in block:
+            bad.append(" ".join(block.split())[:70])
+    assert not bad, "subprocess without explicit encoding: " + "; ".join(bad)
+
+
 # ── Per-mode slot layout (quiet rows must not share the prompt file) ─────────
 
 def test_quiet_rows_get_their_own_directory(tmp_path):
@@ -87,6 +110,18 @@ def test_quiet_rows_get_their_own_directory(tmp_path):
         s4._mode_jsonl_path(quiet_dir, "vellmes", 1)
 
 
+def test_galah_volume_freshness_predicate():
+    import datetime
+    slot = datetime.datetime(2026, 11, 21, 20, 24, tzinfo=datetime.timezone.utc)
+    fresh = datetime.datetime(2026, 11, 21, 20, 31, tzinfo=datetime.timezone.utc)
+    stale = datetime.datetime(2026, 11, 20, 20, 0, tzinfo=datetime.timezone.utc)
+    assert s4._volume_is_fresh(fresh, slot) is True
+    assert s4._volume_is_fresh(stale, slot) is False
+    # a volume created moments before the slot is still treated as fresh
+    near = slot - datetime.timedelta(seconds=2)
+    assert s4._volume_is_fresh(near, slot) is True
+
+
 def test_completeness_is_per_mode(tmp_path):
     prompt_dir = s4._mode_output_dir(tmp_path, "advshellm", "prompt")
     quiet_dir = s4._mode_output_dir(tmp_path, "advshellm", "quiet")
@@ -97,6 +132,34 @@ def test_completeness_is_per_mode(tmp_path):
 
     assert s4._is_complete_ssh(prompt_dir, "advshellm", 1, "prompt") is True
     assert s4._is_complete_ssh(quiet_dir, "advshellm", 1, "quiet") is False
+
+
+def test_run_ssh_defaults_keep_published_csv_dir():
+    """run_ssh/run_http must keep writing to results/ unless asked otherwise."""
+    import run_ssh
+    import run_http
+    assert run_ssh.parse_args([]).csv_dir == "results"
+    assert run_ssh.parse_args(["--csv-dir", "out"]).csv_dir == "out"
+    assert run_http._parse_args([]).csv_dir == "results"
+    assert run_http._parse_args(["--csv-dir", "out"]).csv_dir == "out"
+
+
+def test_slot_passes_csv_dir_into_run_dir(monkeypatch, tmp_path):
+    """The driver must not rewrite the published results/*.csv aggregates."""
+    import logging
+    captured = {}
+
+    def fake_main(argv):
+        captured["argv"] = list(argv)
+        return 0
+
+    monkeypatch.setattr(s4.run_ssh, "main", fake_main)
+    s4._run_ssh_slot({"name": "cowrie"}, 1, tmp_path, "prompt", 2026, 1,
+                     "abc1234", 120.0, "harness/targets.yaml",
+                     "harness/commands.yaml", logging.getLogger("test"))
+    argv = captured["argv"]
+    assert "--csv-dir" in argv
+    assert argv[argv.index("--csv-dir") + 1] == str(tmp_path)
 
 
 def test_status_keys_are_per_mode():

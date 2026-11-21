@@ -247,7 +247,7 @@ def _git_head() -> str:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True, text=True, check=True,
+            capture_output=True, text=True, encoding=ENCODING, errors="replace", check=True,
         )
         return result.stdout.strip()
     except Exception:
@@ -319,7 +319,7 @@ def _docker_down(target: str, log: logging.Logger) -> None:
     """Bring down compose project for *target* without touching volumes."""
     cmd = _compose_cmd(target, use_proxy=False) + ["down", "--remove-orphans"]
     log.debug("docker down: %s", " ".join(cmd))
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding=ENCODING, errors="replace")
     if result.returncode != 0:
         log.warning("docker down warning for %s: %s", target, result.stderr.strip())
 
@@ -330,7 +330,7 @@ def _docker_up(target: str, log: logging.Logger, use_proxy: bool = True) -> None
         "up", "-d", "--force-recreate",
     ]
     log.debug("docker up: %s", " ".join(cmd))
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding=ENCODING, errors="replace")
     if result.returncode != 0:
         raise RuntimeError(
             f"docker up failed for {target}: {result.stderr.strip()}"
@@ -342,20 +342,20 @@ def _get_image_id(target: str) -> str:
     # Service name may differ from target name (e.g. beelzebub-ssh)
     # We ask docker compose for the container id, then inspect it.
     cmd = _compose_cmd(target, use_proxy=False) + ["ps", "-q"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding=ENCODING, errors="replace")
     cid = result.stdout.strip().split()[0] if result.stdout.strip() else ""
     if not cid:
         return "unknown"
     r2 = subprocess.run(
         ["docker", "inspect", "--format", "{{.Image}}", cid],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding=ENCODING, errors="replace",
     )
     return r2.stdout.strip() or "unknown"
 
 
 def _get_container_name(target: str) -> str:
     cmd = _compose_cmd(target, use_proxy=False) + ["ps", "--format", "{{.Name}}"]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, encoding=ENCODING, errors="replace")
     return result.stdout.strip().split()[0] if result.stdout.strip() else "unknown"
 
 
@@ -374,38 +374,75 @@ def _clear_galah_cache(log: logging.Logger) -> str:
     cmd_down = ["docker", "compose", "-f", "docker/galah.compose.yaml",
                  "down", "--volumes", "--remove-orphans"]
     log.info("Clearing galah cache: %s", " ".join(cmd_down))
-    r = subprocess.run(cmd_down, capture_output=True, text=True)
+    r = subprocess.run(cmd_down, capture_output=True, text=True, encoding=ENCODING, errors="replace")
     if r.returncode != 0:
         log.warning("galah down --volumes warning: %s", r.stderr.strip())
     return f"galah_logs volume removed (rc={r.returncode})"
 
 
-def _verify_galah_cache_empty(log: logging.Logger) -> bool:
-    """
-    Confirm that /galah/logs/cache.db does not exist in the running galah container
-    (i.e., galah has not yet written a cache entry since startup).
+GALAH_VOLUME = "galah_galah_logs"
 
-    Returns True if the cache is absent or empty (< 4096 bytes, freshly created).
-    """
+
+def _galah_volume_created_utc() -> datetime.datetime | None:
+    """Creation time of the galah_logs volume, or None if it is missing."""
+    r = subprocess.run(
+        ["docker", "volume", "inspect", GALAH_VOLUME, "--format", "{{.CreatedAt}}"],
+        capture_output=True, text=True, encoding=ENCODING, errors="replace",
+    )
+    raw = r.stdout.strip()
+    if not raw:
+        return None
+    try:
+        return datetime.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _volume_is_fresh(created_utc: datetime.datetime,
+                     slot_start_utc: datetime.datetime,
+                     tolerance_s: float = 5.0) -> bool:
+    """True when the volume was created at (or after) the slot start."""
+    return created_utc >= slot_start_utc - datetime.timedelta(seconds=tolerance_s)
+
+
+def _galah_cache_db_size(log: logging.Logger) -> str:
     cmd = _compose_cmd("galah", use_proxy=False) + ["ps", "-q"]
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding=ENCODING,
+                       errors="replace")
     cid = r.stdout.strip().split()[0] if r.stdout.strip() else ""
     if not cid:
-        log.warning("galah container not found during cache check")
-        return False
+        return "container-not-found"
     r2 = subprocess.run(
         ["docker", "exec", cid, "sh", "-c",
          "test -f /galah/logs/cache.db && stat -c%s /galah/logs/cache.db || echo 0"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding=ENCODING, errors="replace",
     )
-    size_str = r2.stdout.strip()
-    try:
-        size = int(size_str)
-    except ValueError:
-        size = -1
-    empty = size < 4096  # fresh SQLite DB is 0 bytes or very small header
-    log.info("galah cache.db size after recreate: %d bytes (empty=%s)", size, empty)
-    return empty
+    return f"{r2.stdout.strip()} bytes"
+
+
+def _verify_galah_cache_empty(
+    log: logging.Logger,
+    slot_start_utc: datetime.datetime | None = None,
+) -> tuple[bool, str]:
+    """Confirm the galah_logs volume was recreated for this slot.
+
+    galah creates cache.db (with its schema) at startup, so a fresh DB is ~12 KB
+    and a size test cannot show whether the cache holds entries. The volume's
+    creation time can: `docker compose down --volumes` removes the volume, and
+    the next `up` creates a new one after the slot started.
+    """
+    created = _galah_volume_created_utc()
+    if created is None:
+        log.warning("galah volume %s not found", GALAH_VOLUME)
+        return False, "volume not found"
+    start = slot_start_utc or datetime.datetime.now(datetime.timezone.utc)
+    age_s = (datetime.datetime.now(datetime.timezone.utc) - created).total_seconds()
+    fresh = _volume_is_fresh(created, start)
+    detail = (f"volume created {created.isoformat()} ({age_s:.0f} s ago, "
+              f"slot start {start.isoformat()}), fresh={fresh}, "
+              f"cache.db={_galah_cache_db_size(log)}")
+    return fresh, detail
+
 
 
 # ── Port readiness check ──────────────────────────────────────────────────────
@@ -458,6 +495,8 @@ def _start_proxy(log_path: Path, log: logging.Logger) -> subprocess.Popen[str]: 
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding=ENCODING,
+        errors="replace",
     )
     # Give it a moment to bind
     time.sleep(1.5)
@@ -645,6 +684,7 @@ def _run_ssh_slot(
         "--timing", timing,
         "--target", tname,
         "--force",
+        "--csv-dir", str(out_dir),
     ]
     log.debug("run_ssh.main argv: %s", argv)
 
@@ -714,6 +754,7 @@ def _run_http_slot(
         "--timeout", str(int(timeout)),
         "--target", tname,
         "--force",
+        "--csv-dir", str(out_dir),
     ]
     log.debug("run_http.main argv: %s", argv)
 
@@ -773,7 +814,7 @@ def preflight(out_dir: Path, log: logging.Logger) -> bool:
     _safe_print("\n-- Stage 4 Preflight --------------------------------------------------")
 
     # 1. Docker daemon
-    r = subprocess.run(["docker", "info"], capture_output=True, text=True)
+    r = subprocess.run(["docker", "info"], capture_output=True, text=True, encoding=ENCODING, errors="replace")
     if r.returncode != 0:
         _safe_print("FAIL  Docker daemon not reachable. Start Docker Desktop.")
         ok = False
@@ -810,7 +851,7 @@ def preflight(out_dir: Path, log: logging.Logger) -> bool:
     # Check images exist for a few key targets
     r2 = subprocess.run(
         ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding=ENCODING, errors="replace",
     )
     images = set(r2.stdout.splitlines())
     # We only warn if no honeypot-related images exist at all
@@ -846,7 +887,7 @@ def preflight(out_dir: Path, log: logging.Logger) -> bool:
     try:
         r3 = subprocess.run(
             ["wmic", "OS", "get", "FreePhysicalMemory", "/Value"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True, encoding=ENCODING, errors="replace", timeout=10,
         )
         m = re.search(r"FreePhysicalMemory=(\d+)", r3.stdout)
         if m:
@@ -1085,6 +1126,8 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                     continue
 
                 slot_key_primary = _slot_key(target, run, modes_to_run[0])
+                slot_start = time.monotonic()
+                wall_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
                 # ── Manifest entry ──────────────────────────────────────────
                 manifest_entry = {
@@ -1190,11 +1233,15 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                     if not banner_ok:
                         log.warning("SSH banner not seen on %s:%d; continuing anyway.", target, port)
 
-                # For galah: verify cache is empty
+                # For galah: verify the cache volume was recreated for this slot
                 if target == "galah":
-                    cache_empty = _verify_galah_cache_empty(log)
-                    if not cache_empty:
-                        log.warning("galah cache not empty after recreate; proceeding anyway")
+                    cache_ok, cache_detail = _verify_galah_cache_empty(
+                        log, datetime.datetime.fromisoformat(wall_start)
+                    )
+                    log.info("galah cache check: %s", cache_detail)
+                    if not cache_ok:
+                        log.warning("galah_logs volume does not look fresh; "
+                                    "proceeding anyway")
 
                 # ── Record image ID ─────────────────────────────────────────
                 image_id = _get_image_id(target)
