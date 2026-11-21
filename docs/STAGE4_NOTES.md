@@ -76,11 +76,20 @@ Branch: `stage4-driver` (from `stage2-measurement`). All output goes under
 Re-run the **same command**. The driver:
 
 1. Reads `status.json` from `--out`.
-2. For each slot, checks whether the JSONL file has 37 lines (SSH) or 20 lines
-   (HTTP) **and** whether `status[slot_key]` is `"complete"`.
-3. Skips any slot that passes both checks.
+2. For each **mode** of each slot (a slot in runs 1-2 can have both `prompt`
+   and `quiet`), checks that its JSONL has 37 lines (SSH) or 20 lines (HTTP)
+   **and** that `status[<target>:runNN:<mode>]` is `"complete"`.
+3. Skips a mode that passes both checks; a slot is skipped only when every one
+   of its modes is complete. A resumed slot re-runs only the missing modes
+   (recorded in the manifest as `modes_run` with `"resumed": true`).
 4. If the JSONL exists but has fewer than the expected number of lines
-   (partial write), renames it to `.partial.bak` and reruns the slot.
+   (partial write), renames it to `.partial.bak` and reruns that mode.
+
+Each mode has its own file: `raw/` for prompt (and non-LLM) sessions,
+`raw_quiet/` for quiet-check sessions, `raw_http/` for HTTP targets. This is
+required because `run_ssh.py --force` copies the existing file to `.bak` and
+rewrites the canonical name; sharing one name made the quiet session overwrite
+the prompt rows (they survived only as `.jsonl.bak`).
 
 The proxy is restarted with each invocation. It appends to the same
 `api_proxy_log.jsonl`, so the cumulative log is preserved.
@@ -111,6 +120,7 @@ are appended to, not overwritten.
 ```
 results/exp/stage4/
   raw/                      SSH JSONL files:  {target}_run{N:02d}.jsonl
+  raw_quiet/                quiet-check SSH JSONL files (runs 1-2)
   raw_http/                 HTTP JSONL files: {target}_run{N:02d}.jsonl
   manifest.jsonl            one line per slot (see §6)
   status.json               slot status map  {slot_key: "complete"|"..."}
@@ -151,7 +161,9 @@ One line per slot:
 | `run` | int | Run number |
 | `position` | int | Position-in-run (1-indexed) |
 | `target` | str | Target name |
-| `modes` | list[str] | Modes run in this slot ("prompt", optionally "quiet") |
+| `modes` | list[str] | Modes planned for this slot ("prompt", optionally "quiet") |
+| `modes_run` | list[str] | Modes actually executed in this invocation (differs from `modes` after a resume) |
+| `resumed` | bool | True when `modes_run != modes` |
 | `order_seed` | int | Shuffle seed |
 | `planned_start_utc` | str | UTC ISO-8601 timestamp when the slot was planned to start |
 
@@ -247,8 +259,9 @@ cannot prevent caching of requests that are identical within a single slot.
 AdvancedshelLM reads `OPENAI_BASE_URL` at Python import time in
 `shelLM/.../openai_client.py`. Restarting the container is insufficient;
 the container must be recreated (`--force-recreate`) so the new environment
-takes effect. The driver always passes `--force-recreate --no-build` to
-`docker compose up`.
+takes effect. The driver passes `--force-recreate` to `docker compose up`
+(without `--no-build`, so an image that was never built - galah, llmhoneypot -
+is built on first use instead of failing the slot).
 
 ---
 
@@ -256,14 +269,15 @@ takes effect. The driver always passes `--force-recreate --no-build` to
 
 When `--quiet-check-runs N` causes a run to execute both prompt and quiet
 modes, the driver runs them **sequentially in the same slot** (prompt first,
-then quiet). Both sessions write to the same output file
-(`{target}_run{N:02d}.jsonl` in `raw/`), because the second `run_ssh.main()`
-call uses `--force`, which overwrites the first. The `s4_timing_mode` field
-in each JSONL row distinguishes them. This design means the quiet-check rows
-are **appended** to the same file, not stored separately.
+then quiet), but writes them to **different directories**:
+`raw/{target}_run{N:02d}.jsonl` for prompt and
+`raw_quiet/{target}_run{N:02d}.jsonl` for quiet. A separate slot-boundary
+marker is written to the proxy log for each mode, and each mode has its own
+`status.json` key.
 
-For analysis, `analyze_stage4.py` splits the rows by `s4_timing_mode` to
-perform the prompt-vs-quiet comparison.
+`analyze_stage4.py` loads `raw_quiet/` separately, excludes those rows from
+the prompt-mode statistics, and uses them only for the prompt-vs-quiet
+comparison (`s4_timing_mode` also remains in every row).
 
 ---
 

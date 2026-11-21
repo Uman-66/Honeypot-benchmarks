@@ -128,6 +128,119 @@ _BANNER_CHECK_TIMEOUT = 15  # seconds to wait for SSH banner after port opens
 
 logger = logging.getLogger("stage4")
 
+# Subdirectory holding quiet-mode check rows. Quiet and prompt sessions must
+# never share a file name: run_ssh.py --force copies the old file to .bak and
+# rewrites the canonical name, which would silently move prompt rows into .bak.
+QUIET_SUBDIR = "raw_quiet"
+
+
+# -- Console-safe output -------------------------------------------------------
+#
+# A stray non-ASCII character in any print() raised UnicodeEncodeError on a
+# Windows cp1252 console and aborted the whole slot loop (skipping every
+# remaining slot). All driver output now goes through _safe_print(), and the
+# stdio streams are reconfigured with errors="replace" at start-up so prints
+# coming from run_ssh.py / run_http.py cannot abort a slot either.
+
+def _safe_print(*args: Any, **kwargs: Any) -> None:
+    """print() that can never raise UnicodeEncodeError."""
+    stream = kwargs.pop("file", None) or sys.stdout
+    sep = kwargs.pop("sep", " ")
+    end = kwargs.pop("end", "\n")
+    flush = kwargs.pop("flush", False)
+    text = sep.join(str(a) for a in args) + end
+    encoding = getattr(stream, "encoding", None) or "utf-8"
+    try:
+        text.encode(encoding, "strict")
+    except (UnicodeEncodeError, LookupError):
+        try:
+            text = text.encode(encoding, "replace").decode(encoding, "replace")
+        except LookupError:
+            text = text.encode("ascii", "replace").decode("ascii")
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        try:
+            stream.write(text.encode("ascii", "replace").decode("ascii"))
+        except Exception:
+            return
+    except Exception:
+        return
+    if flush:
+        try:
+            stream.flush()
+        except Exception:
+            pass
+
+
+def _reconfigure_stdio() -> None:
+    """Make stdout/stderr tolerate any unencodable character (cp1252 consoles)."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")  # type: ignore[attr-defined]
+        except Exception:
+            pass
+
+
+def _mode_output_dir(out_root: Path, target: str, mode: str) -> Path:
+    """Directory that holds the JSONL for (target, mode).
+
+    HTTP targets write to raw_http/; quiet-check SSH sessions write to
+    raw_quiet/; everything else writes to raw/.
+    """
+    if target in HTTP_TARGETS:
+        return out_root / "raw_http"
+    if mode == "quiet":
+        return out_root / QUIET_SUBDIR
+    return out_root / "raw"
+
+
+# -- Pure safety-stop predicates ----------------------------------------------
+#
+# Each returns the message to record in status.json["safety_stop"], or None when
+# the condition is not met. Pure so they can be unit-tested without Docker or
+# API access.
+
+def _cost_stop_message(cost_usd: float, cap: float, n_calls: int) -> str | None:
+    if cost_usd > cap:
+        return (f"cost_cap_exceeded: ${cost_usd:.4f} > ${cap} "
+                f"after {n_calls} calls")
+    return None
+
+
+def _disk_stop_message(free_gb: float) -> str | None:
+    if free_gb < SAFETY_DISK_MIN_GB:
+        return f"disk_too_low: {free_gb:.2f} GB < {SAFETY_DISK_MIN_GB} GB"
+    return None
+
+
+def _error_rate_stop_message(err_rate: float) -> str | None:
+    if err_rate > SAFETY_HTTP_ERR_RATE:
+        return f"high_fireworks_error_rate: {err_rate:.1%} > {SAFETY_HTTP_ERR_RATE:.0%}"
+    return None
+
+
+def _model_stop_message(bad_model: str | None) -> str | None:
+    if bad_model:
+        return f"unexpected_model: {bad_model!r}"
+    return None
+
+
+def _consec_timeout_stop(status: dict[str, Any], target: str,
+                         n_cmds: int, n_to: int) -> str | None:
+    """Update the consecutive-timeout counter; return a stop message if hit."""
+    if (target in LLM_SSH_TARGETS
+            and n_cmds > 0
+            and (n_to / n_cmds) > SAFETY_TIMEOUT_FRAC):
+        consec = int(status.get(f"_consec_timeout_{target}", 0) + 1)
+        status[f"_consec_timeout_{target}"] = consec
+        if consec >= SAFETY_CONSEC_SLOTS:
+            return (f"consec_timeout_stop: {target} has {consec} consecutive "
+                    f"slots above {SAFETY_TIMEOUT_FRAC:.0%} timeout rate")
+        return None
+    status[f"_consec_timeout_{target}"] = 0
+    return None
+
 # ── Helper: get git HEAD hash ─────────────────────────────────────────────────
 
 def _git_head() -> str:
@@ -170,6 +283,11 @@ def _slot_key(target: str, run: int, mode: str) -> str:
     return f"{target}:run{run:02d}:{mode}"
 
 
+def _mode_jsonl_path(mode_dir: Path, target: str, run: int) -> Path:
+    """JSONL path for one (target, run) inside its mode directory."""
+    return mode_dir / f"{target}_run{run:02d}.jsonl"
+
+
 # ── Shuffle ───────────────────────────────────────────────────────────────────
 
 def shuffle_targets(targets: list[str], seed: int, run: int) -> list[str]:
@@ -209,7 +327,7 @@ def _docker_down(target: str, log: logging.Logger) -> None:
 def _docker_up(target: str, log: logging.Logger, use_proxy: bool = True) -> None:
     """Start compose project for *target*, force-recreating the main service."""
     cmd = _compose_cmd(target, use_proxy=use_proxy) + [
-        "up", "-d", "--force-recreate", "--no-build",
+        "up", "-d", "--force-recreate",
     ]
     log.debug("docker up: %s", " ".join(cmd))
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -652,20 +770,20 @@ def preflight(out_dir: Path, log: logging.Logger) -> bool:
     Returns True if everything passes (may still warn).
     """
     ok = True
-    print("\n── Stage 4 Preflight ───────────────────────────────────────────")
+    _safe_print("\n-- Stage 4 Preflight --------------------------------------------------")
 
     # 1. Docker daemon
     r = subprocess.run(["docker", "info"], capture_output=True, text=True)
     if r.returncode != 0:
-        print("FAIL  Docker daemon not reachable. Start Docker Desktop.")
+        _safe_print("FAIL  Docker daemon not reachable. Start Docker Desktop.")
         ok = False
     else:
-        print("PASS  Docker daemon reachable.")
+        _safe_print("PASS  Docker daemon reachable.")
 
     # 2. .env present and key set (report only present/absent)
     env_path = Path(".env")
     if not env_path.exists():
-        print("FAIL  .env not found in current directory.")
+        _safe_print("FAIL  .env not found in current directory.")
         ok = False
     else:
         with open(env_path, encoding=ENCODING) as fh:
@@ -675,18 +793,18 @@ def preflight(out_dir: Path, log: logging.Logger) -> bool:
             # Verify it has a non-empty value (don't print it)
             m = re.search(r"OPENAI_API_KEY=(.+)", content)
             has_value = bool(m and m.group(1).strip())
-            print(f"{'PASS' if has_value else 'FAIL'}  OPENAI_API_KEY {'set' if has_value else 'empty'} in .env.")
+            _safe_print(f"{'PASS' if has_value else 'FAIL'}  OPENAI_API_KEY {'set' if has_value else 'empty'} in .env.")
             if not has_value:
                 ok = False
         else:
-            print("FAIL  OPENAI_API_KEY not found in .env.")
+            _safe_print("FAIL  OPENAI_API_KEY not found in .env.")
             ok = False
 
     # 3. Compose files and images
     for target, files in _COMPOSE_FILES.items():
         base = files.get("base", "")
         if base and not Path(base).exists():
-            print(f"FAIL  Missing compose file: {base}")
+            _safe_print(f"FAIL  Missing compose file: {base}")
             ok = False
 
     # Check images exist for a few key targets
@@ -700,9 +818,9 @@ def preflight(out_dir: Path, log: logging.Logger) -> bool:
         kw in i for kw in ("honeypot", "cowrie", "galah", "beelzebub", "advshellm")
     )]
     if not hpot_images:
-        print("WARN  No honeypot images found. Run docker compose build for each target first.")
+        _safe_print("WARN  No honeypot images found. Run docker compose build for each target first.")
     else:
-        print(f"PASS  At least {len(hpot_images)} honeypot-related image(s) present.")
+        _safe_print(f"PASS  At least {len(hpot_images)} honeypot-related image(s) present.")
 
     # 4. Ports free (none of the target ports should be open before we start)
     busy_ports = []
@@ -713,16 +831,16 @@ def preflight(out_dir: Path, log: logging.Logger) -> bool:
         except OSError:
             pass
     if busy_ports:
-        print(f"WARN  These ports appear occupied (containers running?): {busy_ports}")
+        _safe_print(f"WARN  These ports appear occupied (containers running?): {busy_ports}")
     else:
-        print("PASS  All target ports free.")
+        _safe_print("PASS  All target ports free.")
 
     # 5. Proxy reachability (should NOT be running yet, or if it is, it's fine)
     # We just note whether port 11435 is already occupied
     if _proxy_reachable():
-        print("WARN  Port 11435 already in use. The driver will start its own proxy.")
+        _safe_print("WARN  Port 11435 already in use. The driver will start its own proxy.")
     else:
-        print("PASS  Proxy port 11435 free.")
+        _safe_print("PASS  Proxy port 11435 free.")
 
     # 6. Free RAM (psutil not required; use wmic on Windows)
     try:
@@ -734,31 +852,31 @@ def preflight(out_dir: Path, log: logging.Logger) -> bool:
         if m:
             free_mb = int(m.group(1)) / 1024
             warn = free_mb < 1500
-            print(f"{'WARN' if warn else 'PASS'}  Free RAM: {free_mb:.0f} MB"
+            _safe_print(f"{'WARN' if warn else 'PASS'}  Free RAM: {free_mb:.0f} MB"
                   + (" (< 1500 MB, may OOM during heavy LLM slots)" if warn else ""))
         else:
-            print("INFO  Could not read free RAM (wmic unavailable).")
+            _safe_print("INFO  Could not read free RAM (wmic unavailable).")
     except Exception:
-        print("INFO  Could not read free RAM.")
+        _safe_print("INFO  Could not read free RAM.")
 
     # 7. Free disk
     free_gb = _free_disk_gb(out_dir.parent if out_dir.exists() else Path("."))
     warn = free_gb < SAFETY_DISK_MIN_GB
-    print(f"{'WARN' if warn else 'PASS'}  Free disk: {free_gb:.1f} GB"
-          + (f" (< {SAFETY_DISK_MIN_GB} GB — safety stop would trigger)" if warn else ""))
+    _safe_print(f"{'WARN' if warn else 'PASS'}  Free disk: {free_gb:.1f} GB"
+          + (f" (< {SAFETY_DISK_MIN_GB} GB - safety stop would trigger)" if warn else ""))
 
     # 8. Sleep/hibernate timeouts — warn but do not run powercfg ourselves
-    print("\nINFO  To prevent sleep/hibernate during the run, execute these commands")
-    print("      in an elevated PowerShell before starting the driver:")
-    print("        powercfg /change standby-timeout-ac 0")
-    print("        powercfg /change hibernate-timeout-ac 0")
-    print("      To restore defaults afterwards:")
-    print("        powercfg /change standby-timeout-ac 30")
-    print("        powercfg /change hibernate-timeout-ac 180")
-    print("      Check current settings:")
-    print("        powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE")
+    _safe_print("\nINFO  To prevent sleep/hibernate during the run, execute these commands")
+    _safe_print("      in an elevated PowerShell before starting the driver:")
+    _safe_print("        powercfg /change standby-timeout-ac 0")
+    _safe_print("        powercfg /change hibernate-timeout-ac 0")
+    _safe_print("      To restore defaults afterwards:")
+    _safe_print("        powercfg /change standby-timeout-ac 30")
+    _safe_print("        powercfg /change hibernate-timeout-ac 180")
+    _safe_print("      Check current settings:")
+    _safe_print("        powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE")
 
-    print("────────────────────────────────────────────────────────────────\n")
+    _safe_print("----------------------------------------------------------------------\n")
     return ok
 
 
@@ -805,12 +923,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 # ── Main driver ───────────────────────────────────────────────────────────────
 
 def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for a driver)
+    _reconfigure_stdio()
     args = parse_args(argv)
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Logging: file + stderr
+    # Use errors="replace" on the stderr handler so Windows cp1252 consoles
+    # don't blow up on any stray unicode in messages.
     log_path = out_dir / "driver.log"
     logging.basicConfig(
         level=logging.DEBUG,
@@ -837,7 +958,7 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
         targets = list(DEFAULT_TARGETS)
 
     if args.dry_run:
-        print(f"Stage 4 dry-run: runs={args.runs}, seed={args.seed}, "
+        _safe_print(f"Stage 4 dry-run: runs={args.runs}, seed={args.seed}, "
               f"timing={args.timing}, targets={targets}")
         for run in range(args.start_run, args.runs + 1):
             order = shuffle_targets(targets, args.seed, run)
@@ -847,7 +968,7 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                 if run <= args.quiet_check_runs and t in LLM_SSH_TARGETS:
                     modes.append("quiet")
                 for m in modes:
-                    print(f"  run={run:02d} pos={pos+1:02d} target={t} mode={m}")
+                    _safe_print(f"  run={run:02d} pos={pos+1:02d} target={t} mode={m}")
         return 0
 
     # Run preflight automatically before the real pass
@@ -858,10 +979,12 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
              "timing=%s, out=%s", harness_ver, args.runs, args.seed, args.timing, out_dir)
 
     # Subdirectories
-    raw_dir  = out_dir / "raw"
-    rawh_dir = out_dir / "raw_http"
+    raw_dir   = out_dir / "raw"
+    rawh_dir  = out_dir / "raw_http"
+    quiet_dir = out_dir / QUIET_SUBDIR
     raw_dir.mkdir(parents=True, exist_ok=True)
     rawh_dir.mkdir(parents=True, exist_ok=True)
+    quiet_dir.mkdir(parents=True, exist_ok=True)
 
     manifest_path    = out_dir / "manifest.jsonl"
     status_path      = out_dir / "status.json"
@@ -934,27 +1057,34 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                         and target in LLM_SSH_TARGETS
                         and args.timing != "quiet"):
                     modes.append("quiet")  # quiet-check run AFTER the prompt run
+                def _mode_dir(mode: str) -> Path:
+                    return _mode_output_dir(out_dir, target, mode)
 
-                slot_key_primary = _slot_key(target, run, modes[0])
+                # Determine which modes still need to run. Each mode has its own
+                # file and its own status key, so a killed quiet session never
+                # hides a finished prompt session (and vice versa).
+                modes_to_run: list[str] = []
+                for mode in modes:
+                    key = _slot_key(target, run, mode)
+                    mdir = _mode_dir(mode)
+                    complete = (
+                        _is_complete_http(mdir, target, run) if is_http
+                        else _is_complete_ssh(mdir, target, run, mode)
+                    )
+                    if complete and status.get(key) == "complete":
+                        continue
+                    path = _mode_jsonl_path(mdir, target, run)
+                    if path.exists() and not complete:
+                        log.info("Backing up partial slot: %s", path)
+                        _backup_partial(path)
+                    modes_to_run.append(mode)
 
-                # ── Skip check ──────────────────────────────────────────────
-                primary_path = (rawh_dir if is_http else raw_dir) / f"{target}_run{run:02d}.jsonl"
-                primary_complete = (
-                    _is_complete_http(rawh_dir, target, run) if is_http
-                    else _is_complete_ssh(raw_dir, target, run, modes[0])
-                )
-                if primary_complete and status.get(slot_key_primary) == "complete":
-                    log.info("SKIP run=%d pos=%d target=%s mode=%s (complete)",
-                             run, pos + 1, target, modes[0])
+                if not modes_to_run:
+                    log.info("SKIP run=%d pos=%d target=%s modes=%s (complete)",
+                             run, pos + 1, target, modes)
                     continue
 
-                # ── Back up partial slot ────────────────────────────────────
-                if primary_path.exists() and not primary_complete:
-                    log.info("Backing up partial slot: %s", primary_path.name)
-                    _backup_partial(primary_path)
-
-                slot_start = time.monotonic()
-                wall_start = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                slot_key_primary = _slot_key(target, run, modes_to_run[0])
 
                 # ── Manifest entry ──────────────────────────────────────────
                 manifest_entry = {
@@ -962,19 +1092,20 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                     "position": pos + 1,
                     "target": target,
                     "modes": modes,
+                    "modes_run": modes_to_run,
+                    "resumed": modes_to_run != modes,
                     "order_seed": args.seed,
                     "planned_start_utc": wall_start,
                 }
                 _append_jsonl(manifest_path, manifest_entry)
 
-                log.info("── run=%d/%d  pos=%d/%d  target=%s  modes=%s",
+                log.info("-- run=%d/%d  pos=%d/%d  target=%s  modes=%s",
                          run, args.runs, pos + 1, len(order), target, modes)
 
                 # ── Safety checks (before starting containers) ──────────────
                 cost_usd, n_calls = _estimate_cost_from_proxy_log(proxy_log_path)
-                if cost_usd > args.cost_cap:
-                    msg = (f"cost_cap_exceeded: ${cost_usd:.4f} > ${args.cost_cap} "
-                           f"after {n_calls} calls")
+                msg = _cost_stop_message(cost_usd, args.cost_cap, n_calls)
+                if msg:
                     log.error("SAFETY STOP: %s", msg)
                     status["safety_stop"] = msg
                     _write_json_atomic(status_path, status)
@@ -983,8 +1114,8 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                     break
 
                 free_gb = _free_disk_gb(out_dir)
-                if free_gb < SAFETY_DISK_MIN_GB:
-                    msg = f"disk_too_low: {free_gb:.2f} GB < {SAFETY_DISK_MIN_GB} GB"
+                msg = _disk_stop_message(free_gb)
+                if msg:
                     log.error("SAFETY STOP: %s", msg)
                     status["safety_stop"] = msg
                     _write_json_atomic(status_path, status)
@@ -993,8 +1124,8 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                     break
 
                 err_rate = _recent_http_error_rate(proxy_log_path)
-                if err_rate > SAFETY_HTTP_ERR_RATE:
-                    msg = f"high_fireworks_error_rate: {err_rate:.1%} > {SAFETY_HTTP_ERR_RATE:.0%}"
+                msg = _error_rate_stop_message(err_rate)
+                if msg:
                     log.error("SAFETY STOP: %s", msg)
                     status["safety_stop"] = msg
                     _write_json_atomic(status_path, status)
@@ -1003,8 +1134,8 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                     break
 
                 bad_model = _unexpected_model_seen(proxy_log_path)
-                if bad_model:
-                    msg = f"unexpected_model: {bad_model!r}"
+                msg = _model_stop_message(bad_model)
+                if msg:
                     log.error("SAFETY STOP: %s", msg)
                     status["safety_stop"] = msg
                     _write_json_atomic(status_path, status)
@@ -1078,13 +1209,12 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                 })
                 _write_json_atomic(containers_path, containers_log)
 
-                # ── Write slot boundary to proxy log ────────────────────────
-                _write_slot_boundary(proxy_log_path, run, pos + 1, target, modes[0])
-
-                # ── Execute run(s) ──────────────────────────────────────────
+                # Execute run(s) - only the modes that are not complete yet
                 slot_result: dict[str, Any] = {}
+                log.info("slot modes to run: %s (planned %s)", modes_to_run, modes)
 
-                for mode in modes:
+                for mode in modes_to_run:
+                    _write_slot_boundary(proxy_log_path, run, pos + 1, target, mode)
                     if is_http:
                         result = _run_http_slot(
                             {"name": target},
@@ -1095,12 +1225,12 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                             log,
                         )
                     else:
-                        # For quiet-check, use a suffixed filename convention:
-                        # the quiet-check JSONL is saved to raw/ with same name
-                        # (run_ssh.py --force overwrites, driver injects s4_timing_mode)
+                        # quiet-check sessions write to raw_quiet/ so the prompt
+                        # JSONL in raw/ is never overwritten (run_ssh --force
+                        # copies the old file to .bak before rewriting).
                         result = _run_ssh_slot(
                             {"name": target},
-                            run, raw_dir,
+                            run, _mode_dir(mode),
                             mode,
                             args.seed, pos + 1, harness_ver,
                             args.timeout,
@@ -1111,29 +1241,21 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                     log.info("  mode=%s: rc=%d  cmds=%d  timeouts=%d",
                              mode, result["rc"], result["n_commands"], result["n_timeouts"])
 
-                # ── Consecutive timeout safety check ────────────────────────
-                primary_result = slot_result.get(modes[0], {})
+                primary_result = slot_result.get(modes_to_run[0], {})
                 n_cmds = primary_result.get("n_commands", 0)
                 n_to   = primary_result.get("n_timeouts", 0)
-                if (target in LLM_SSH_TARGETS
-                        and n_cmds > 0
-                        and (n_to / n_cmds) > SAFETY_TIMEOUT_FRAC):
-                    consec = status.get(f"_consec_timeout_{target}", 0) + 1
-                    status[f"_consec_timeout_{target}"] = consec
-                    if consec >= SAFETY_CONSEC_SLOTS:
-                        msg = (f"consec_timeout_stop: {target} has {consec} consecutive "
-                               f"slots above {SAFETY_TIMEOUT_FRAC:.0%} timeout rate")
-                        log.error("SAFETY STOP: %s", msg)
-                        status["safety_stop"] = msg
-                        _write_json_atomic(status_path, status)
-                        exit_code = 3
-                        _interrupted = True
-                        break
-                else:
-                    status[f"_consec_timeout_{target}"] = 0
+                stop_msg = _consec_timeout_stop(status, target, n_cmds, n_to)
+                if stop_msg:
+                    log.error("SAFETY STOP: %s", stop_msg)
+                    status["safety_stop"] = stop_msg
+                    _write_json_atomic(status_path, status)
+                    exit_code = 3
+                    _interrupted = True
+                    break
 
                 # ── Update status ───────────────────────────────────────────
-                status[slot_key_primary] = "complete"
+                for mode in modes_to_run:
+                    status[_slot_key(target, run, mode)] = "complete"
                 _write_json_atomic(status_path, status)
 
                 # ── ETA progress line ───────────────────────────────────────
@@ -1146,11 +1268,11 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                 )
                 eta_s = avg_slot * remaining_slots
                 eta_str = str(datetime.timedelta(seconds=int(eta_s)))
-                print(
+                _safe_print(
                     f"[run {run:02d}/{args.runs} pos {pos+1:02d}/{len(order)}] "
                     f"{target:<20s} to={n_to}/{n_cmds}  "
                     f"calls={n_calls}  est_cost=${cost_usd:.3f}  "
-                    f"slot={slot_elapsed:.0f}s  ETA≈{eta_str}",
+                    f"slot={slot_elapsed:.0f}s  ETA~{eta_str}",
                     flush=True,
                 )
 
