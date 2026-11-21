@@ -1,0 +1,12 @@
+# docker/galah.proxy.yaml
+# Overlay: points galah at the local api_proxy instead of Fireworks directly.
+# The galah-entrypoint.sh maps OPENAI_BASE_URL → LLM_SERVER_URL at startup,
+# so setting OPENAI_BASE_URL here is sufficient.
+# galah reads LLM_SERVER_URL at startup, so --force-recreate is required
+# (already done by the driver's docker up --force-recreate per slot).
+# Usage:
+#   docker compose -f docker/galah.compose.yaml -f docker/galah.proxy.yaml up -d --force-recreate --no-build
+services:
+  galah:
+    environment:
+      OPENAI_BASE_URL: "http://host.docker.internal:11435/inference/v1"
