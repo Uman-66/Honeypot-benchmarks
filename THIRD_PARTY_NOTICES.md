@@ -18,7 +18,7 @@ are reproduced verbatim in `LICENSES/`.
 |---|---|---|---|---|
 | HoneyBee | https://github.com/yaaras/honeybee | `dbf62c42604eeae2cfbfd4d36b99bef65555c303` | Apache-2.0 | **Yes** — `patches/honeybee.patch` (28 hunks across 9 files) |
 | VelLMes | Clone directory `VelLMes-AI-Deception-Framework/`; upstream URL UNVERIFIED (the clone contains no repository URL — the shelLM README references `https://github.com/stratosphereips/VelLMes-AI-Honeypot`) | `192fa5084df84b38a16f6581939fd3143c350181` | GPL-2.0 | **Yes** — `patches/vellmes.patch` (7 hunks, `VelLMes.py` only) |
-| DECEIVE | https://github.com/splunk/DECEIVE | UNVERIFIED (clone has no `.git`) | MIT | Yes, by hand — no patch file (see `docs/PATCH_NOTES.md` §1) |
+| DECEIVE | https://github.com/splunk/DECEIVE | UNVERIFIED (clone has no `.git`; nearest upstream revision `cce98f3`, 2026-05-13, 75 changed lines) | MIT (`LICENSE`, identical text to upstream `splunk/DECEIVE`) | Yes, by hand — no patch file (see `docs/PATCH_NOTES.md` §1) |
 | Beelzebub | https://github.com/beelzebub-labs/beelzebub | UNVERIFIED (clone has no `.git`) | GPL-3.0 | Yes, by hand — no patch file (§2) |
 | AdvancedshelLM | https://github.com/stratosphereips/shelLM | UNVERIFIED (clone has no `.git`) | CC BY-NC-SA 4.0 (NonCommercial) | Yes, by hand — no patch file (§3) |
 | galah | https://github.com/0x4d31/galah | UNVERIFIED (clone has no `.git`) | Apache-2.0 | Yes, by hand — no patch file (§4) |

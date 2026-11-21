@@ -74,7 +74,7 @@ galah rows in `results/summary.md` cannot be recomputed from this repository alo
 |---|---|---|---|
 | `honeybee` | Yes | `dbf62c42604eeae2cfbfd4d36b99bef65555c303` | LICENSE = Apache-2.0 (verified by reading the file) |
 | `VelLMes-AI-Deception-Framework` | Yes | `192fa5084df84b38a16f6581939fd3143c350181` | LICENSE = GPL-**2.0** (verified by reading the file; an earlier revision of this row said GPL-3.0, which was wrong) |
-| `DECEIVE` | No | UNVERIFIED | LICENSE = MIT (verified by reading the file; an earlier revision of this row said Apache-2.0, which was wrong) |
+| `DECEIVE` | No | UNVERIFIED (no `.git`; nearest upstream revision `cce98f3`, 2026-05-13) | LICENSE = MIT (verified by reading the file and against the upstream `splunk/DECEIVE` `LICENSE`, identical text; an earlier revision of this row said Apache-2.0, which was wrong) |
 | `beelzebub` | No | UNVERIFIED | LICENSE = GPL-3.0 (verified by reading the file) |
 | `shelLM` | No | UNVERIFIED | LICENSE = CC BY-NC-SA 4.0, NonCommercial (verified by reading the file) |
 | `galah` | No | UNVERIFIED | LICENSE = Apache-2.0 (verified by reading the file) |
@@ -84,6 +84,10 @@ galah rows in `results/summary.md` cannot be recomputed from this repository alo
 
 Licence texts are copied verbatim into `LICENSES/`; see `THIRD_PARTY_NOTICES.md` for the
 per-tool table, upstream URLs and which tools were modified.
+
+DECEIVE upstream URL, checked 2026-11-21: `https://github.com/splunk/DECEIVE` resolves;
+`https://github.com/coverflex-tech/DECEIVE` returns "Repository not found". The upstream
+repository tracks `SSH/config.ini.TEMPLATE`, not `SSH/config.ini`.
 
 ## e) Verified mismatches and source distinctions
 
