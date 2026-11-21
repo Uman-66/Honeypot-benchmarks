@@ -73,6 +73,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--requests", default="harness/http_requests.yaml")
     p.add_argument("--runs",     type=int, default=5)
     p.add_argument("--out",      default="results/raw_http")
+    p.add_argument("--csv-dir", default="results",
+                   help="Directory for http_requests_long.csv (default: results; "
+                        "point it at a run directory for new batches)")
     p.add_argument("--timeout",  type=float, default=30.0)
     p.add_argument("--dry-run",  action="store_true")
     p.add_argument("--force", action="store_true",
@@ -321,7 +324,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     out_dir  = Path(args.out)
-    csv_path = Path("results") / "http_requests_long.csv"
+    csv_path = Path(args.csv_dir) / "http_requests_long.csv"
     expected_records = len(all_requests)
     planned: list[tuple[str, int, str]] = []
     for target in http_targets:

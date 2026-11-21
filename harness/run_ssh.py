@@ -970,6 +970,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--commands", default="harness/commands.yaml")
     p.add_argument("--runs",     type=int, default=5)
     p.add_argument("--out",      default="results/raw")
+    p.add_argument("--csv-dir", default="results",
+                   help="Directory for ssh_commands_long.csv, ssh_fingerprints.json "
+                        "and errors.log (default: results; keep the default for the "
+                        "published batch, point it at a run directory for new batches)")
     p.add_argument("--timeout",  type=float, default=90.0)
     p.add_argument("--dry-run",  action="store_true")
     p.add_argument("--force", action="store_true",
@@ -1055,9 +1059,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     out_dir    = Path(args.out)
-    csv_path   = Path("results") / "ssh_commands_long.csv"
-    errors_path = Path("results") / "errors.log"
-    fp_path    = Path("results") / "ssh_fingerprints.json"
+    csv_dir    = Path(args.csv_dir)
+    csv_path   = csv_dir / "ssh_commands_long.csv"
+    errors_path = csv_dir / "errors.log"
+    fp_path    = csv_dir / "ssh_fingerprints.json"
     fingerprints: dict[str, Any] = {}
 
     # Suppress Paramiko logging noise
