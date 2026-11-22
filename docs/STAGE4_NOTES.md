@@ -64,7 +64,7 @@ Branch: `stage4-driver` (from `stage2-measurement`). All output goes under
 | `--preflight` | false | Run preflight checks and exit |
 | `--timeout S` | 120 | Per-command SSH timeout (seconds) |
 | `--http-timeout S` | 30 | Per-request HTTP timeout (seconds) |
-| `--cost-cap C` | 8.0 | Safety stop if estimated cost exceeds C USD |
+| `--cost-cap C` | 6.0 | Safety stop if estimated cost exceeds C USD |
 | `--targets-yaml P` | harness/targets.yaml | Targets YAML path |
 | `--commands-yaml P` | harness/commands.yaml | Commands YAML path |
 | `--requests-yaml P` | harness/http_requests.yaml | HTTP requests YAML |
@@ -213,8 +213,9 @@ The driver exits with code 3 and writes `status["safety_stop"]` to
 | Fireworks HTTP error rate | > 20% over last 50 requests | hardcoded |
 | Consecutive LLM SSH timeout slots | ≥ 3 above 50% timeout rate | hardcoded |
 | Free disk below | 5 GB | hardcoded |
-| Cumulative estimated cost | > `--cost-cap` USD | `--cost-cap` (default $8) |
+| Cumulative estimated cost | > `--cost-cap` USD | `--cost-cap` (default $6) |
 | Unexpected model string in proxy log | any model ≠ `glm-5p3-flash` | hardcoded |
+| Per-slot provider call count | > 80 (LLM SSH) / > 45 (galah) | hardcoded |
 
 To resume after a safety stop, fix the underlying issue, then re-run.
 The status file keeps `"safety_stop"` until you manually remove it
@@ -288,7 +289,70 @@ comparison (`s4_timing_mode` also remains in every row).
 
 ---
 
-## 11. UNVERIFIED items
+## 11. Bugs found after the first 20-run attempt (2026-11-22)
+
+The first 20-run pass (2026-11-21T20:55Z .. 2026-11-22T03:12Z) was aborted by
+the cost cap after 6.3 runs. Two driver bugs produced its numbers.
+
+### 11.1 Run multiplier (extra calls)
+
+`_run_ssh_slot` / `_run_http_slot` passed `--runs <run index>` to
+`run_ssh.py` / `run_http.py`, and those runners loop `range(1, runs+1)`.
+Run n therefore executed the whole command list n times inside one slot,
+writing `{target}_run01..runNN.jsonl`; the driver kept only the last file and
+`--force` overwrote the rest. Slot call counts scaled linearly with the run
+index (vellmes 38, 76, 114, 152, 190; galah 20, 40, 60, 79, 99), and the
+beelzebub container log shows 1/2/3/5/6 SSH sessions per prompt slot.
+
+**Fix:** `run_ssh.py` and `run_http.py` take `--run-index N` (requires
+`--runs 1`), which sets only the output-file suffix and the `run` field. The
+driver now calls `--runs 1 --run-index <run>`, so one slot is one execution
+and one session. Without `--run-index` the runners behave exactly as before
+(covered by a byte-comparison test).
+
+**Discarded data:** the contaminated batch was moved to
+`results/exp/stage4_discarded_multiplier_bug/` (with a README.txt) and must
+not be used for analysis. Nothing was deleted. `results/exp/stage4/` does not
+exist; the driver creates it.
+
+### 11.2 Cost overestimate (cached tokens)
+
+`_estimate_cost_from_proxy_log` billed every prompt token at $0.15/M, but
+46,645,388 of that batch's 48,801,496 prompt tokens (95.6%) were cache hits.
+The corrected model:
+
+| Component | Price |
+|---|---|
+| uncached prompt (`prompt_tokens - cached_tokens`) | $0.15/M |
+| cached prompt (`usage.prompt_tokens_details.cached_tokens`) | $0.03/M |
+| completion (`completion_tokens`, includes reasoning tokens) | $0.50/M |
+| row without a cached breakdown | whole prompt at $0.15/M (conservative) |
+
+For the discarded batch that gives $2.74 instead of $8.34, which matches the
+billing page (~$3 including earlier runs). The default cap is now $6. The
+cumulative estimate is logged at slot start (`slot start: calls=...
+est_cost=...`) and on the per-slot progress line.
+
+### 11.3 Per-slot call guard
+
+After each slot the driver counts proxy requests since the slot started and
+stops with exit 3 and `slot_call_anomaly: <target> <n> calls` when an LLM SSH
+slot exceeds 80 calls or a galah slot exceeds 45 (a clean slot measured 36-39
+and 20; prompt+quiet in runs 1-2 is ~76). Targets that never call the model
+(cowrie, llmhoneypot, groundtruth_*) are not guarded. This would have stopped
+the multiplier bug at run 2 (152 calls in one prompt+quiet slot).
+
+### 11.4 Live fix check
+
+`results/exp/stage4_fixcheck/` (untracked evidence, 2026-11-22): vellmes run 3
+in prompt mode made 38 calls (was 114), wrote `raw/vellmes_run03.jsonl` with
+37 rows and `run=3`, and exited 0; cowrie run 4 wrote `raw/cowrie_run04.jsonl`
+with 37 rows and `run=4`; the estimator matched the token arithmetic to the
+cent.
+
+---
+
+## 12. UNVERIFIED items
 
 The following have NOT been tested in Stage 4 and may need investigation:
 
@@ -325,3 +389,15 @@ The following have NOT been tested in Stage 4 and may need investigation:
 6. **galah proxy correctness.** The entrypoint mapping
    `OPENAI_BASE_URL → LLM_SERVER_URL` was verified by reading source; it
    has not been exercised end-to-end with the stage4 driver.
+
+7. **Graceful Ctrl+C teardown.** The SIGINT handler sets `_interrupted` and
+   the `finally` block stops the proxy and the last container, but that path
+   has not been exercised live since the fixes.
+
+8. **Live error-rate / unexpected-model / disk stops.** All three are unit
+   tested; only the cost stop and the slot call guard have been observed
+   live.
+
+9. **`--start-run` extension to 30 runs.** Runs 1..N are skipped through
+   `status.json`; extending a finished pass
+   (`--runs 30 --start-run 21`) has not been run end-to-end.
