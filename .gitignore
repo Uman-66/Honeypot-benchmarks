@@ -33,10 +33,11 @@ report/REPORT_REVIEW_NOTES.md
 /results/exp/stage4_fixcheck/
 /results/exp/stage4_discarded_multiplier_bug/
 /results/exp/lifetime_control/partial_attempt1/
+/results/exp/lifetime_control/console.out
 
-# ── stale report drafts (report/honeypot_report_v3.tex is the source) ─────────
+# ── stale report drafts (report/honeypot_report_v2.tex is the source) ─────────
+# The compiled PDF report/honeypot_report_v2.pdf IS published.
 /honeypot_report_v2.tex
-/report/honeypot_report_v2.pdf
 
 # ── verbose by-products (the scored data under results/raw* is tracked) ────────
 /logs/
