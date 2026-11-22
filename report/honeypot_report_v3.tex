@@ -1,0 +1,1000 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  citecolor=black
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.45em}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\title{\textbf{Benchmarking LLM-Based Honeypots with a Scripted Local Harness:
+Setup, Findings and Limitations (v3)}}
+\author{Muhammad Rumman Aslam}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+\textbf{Baseline batch: Nov 2026, 5 runs per target, 120\,s timeout, quiet
+timing, one long-lived container per target. Main results: Stage 4, Nov 2026,
+20 runs per target, prompt timing, fresh container per slot, shuffled order.
+Version 3 adds the 20-run Stage 4 pass, timeout attribution against the API
+proxy log, a per-target max-token check, and a single-container
+Beelzebub lifetime control.}
+\end{center}
+
+\begin{abstract}
+This report documents a scripted local benchmark of LLM-based SSH and HTTP
+honeypots, a static Cowrie baseline, ground-truth services, an ANSI-hidden
+prompt-injection detector target, and HoneyBee as a separate environment
+generator. It reports two batches. The baseline batch (v1) used five runs per
+target in quiet timing against one long-lived container per target. The main
+results come from Stage 4: twenty runs per target in prompt timing, a shuffled
+target order fixed by seed 2026, a fresh container for every slot, write-time
+credential masking, and a local API proxy that logged 3,699 requests at a
+corrected cost of \$2.02. Each SSH run sent 37 ordered commands, of which 36
+were scored; each HTTP run sent 20 requests; the runner timeout was 120\,s and
+timed-out observations are retained as censored events. In Stage 4 the LLM SSH
+targets had median latencies of 2.18--2.39\,s against 0.015\,s for the
+ground-truth service (values below 50\,ms are limited by the 15.6\,ms Windows
+clock tick), 0--45 timeouts out of 720 commands, masked determinism of
+0.509--0.848 against 0.992 for ground truth, and masked fidelity of
+0.433--0.637. Timeout attribution shows that 9 of the 86 timed-out rows were
+API-side (241--291\,s, all ending at exactly 65,536 completion tokens), 66 were
+target-side (the API answered in 1.5--7.8\,s but the reply never reached the
+harness), and 11 had no matching request. Observed completion tokens respect
+the documented caps (4,096 for AdvancedshelLM, 800 for VelLMes); the uncapped
+targets reach the model ceiling of 65,536. A Beelzebub container-lifetime
+control (ten sessions in one container) shows a rising median (3.88 to
+5.95\,s, Spearman $\rho=0.915$) and 6/360 timeouts, all in the three sessions
+that contained a 65,536-token generation. These are scripted measurements from
+one shared model and endpoint; they do not rank tools, establish causes, or
+generalise beyond the tested configurations.
+\end{abstract}
+
+\section{Introduction and goals}
+
+LLM-based honeypots can answer shell or HTTP interactions with outputs
+constructed by a language model rather than by a fixed emulation layer. A
+benchmark must therefore record both conventional service observations and
+properties specific to generated text: repeat consistency, output length,
+interior prompt leakage, empty or unexpected outputs, and timeout behaviour.
+This project uses a local harness to make those observations comparable across
+several SSH and HTTP targets.
+
+The study is pilot-scale. It uses a single shared model and API endpoint for
+the LLM targets, a fixed command/request corpus, and two batches whose
+protocols differ. The goal is measurement and reproducibility rather than a
+universal ranking. The ground-truth SSH service is Ubuntu 20.04 with OpenSSH,
+and the HTTP reference is Ubuntu 20.04 with nginx. Cowrie supplies a static SSH
+baseline. The llm-honeypot target is treated as a detector target and excluded
+from fidelity, similarity, determinism, and aggregate averages.
+
+Three practical goals shape the report: document the local setup and target
+configuration; state the metrics and accounting rules precisely, including the
+differences between the two batches; and preserve the limitations and
+unresolved questions that should guide a larger study. Every number below is
+traced to a file under \texttt{results/}; items the data cannot settle are
+marked UNVERIFIED.
+
+\section{Setup}
+
+\subsection{Targets and ports}
+
+All benchmark services were published on loopback ports. Table~\ref{tab:targets}
+summarises the target inventory. HoneyBee is deliberately listed as a
+generator: it produces Docker-oriented artifacts and is not an interactive
+honeypot in this benchmark.
+
+\begin{table}[ht]
+\centering
+\caption{Final target inventory. Source: \texttt{harness/targets.yaml};
+container identities in \texttt{results/exp/stage4/containers.json}.}
+\label{tab:targets}
+\small
+\begin{tabularx}{\textwidth}{l l r l Y}
+\toprule
+Target & Track & Port & Role & Recorded scope \\
+\midrule
+DECEIVE & SSH & 8022 & LLM honeypot & Scripted SSH responses \\
+Beelzebub & SSH & 2222 & LLM honeypot & Scripted SSH responses \\
+Cowrie & SSH & 2223 & Static baseline & Static emulation \\
+AdvancedshelLM & SSH & 2224 & LLM honeypot & Subprocess/wrapper path \\
+Ground truth SSH & SSH & 2225 & Reference & Ubuntu 20.04/OpenSSH \\
+llm-honeypot & SSH & 2227 & Detector target & ANSI-hidden marker detector \\
+VelLMes & SSH & 2228 & LLM honeypot & Scripted SSH responses \\
+galah & HTTP & 8088 & LLM HTTP responder & Scripted HTTP responses \\
+Ground truth HTTP & HTTP & 2226 & Reference & Ubuntu 20.04/nginx \\
+HoneyBee & generator & 2229 config & LLM generator & Output-quality evaluation \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Runtime and configuration}
+
+The documented reproduction environment is Windows 10/11 with Python 3.10+
+(tested with Python 3.12), Git, and Docker Desktop with WSL 2. Services are
+bound to loopback. The LLM targets use one shared model/API endpoint, while
+the configuration values that were explicitly recorded differ by target.
+Table~\ref{tab:config} preserves ``not recorded'' where the permitted
+documents did not specify a value. Sources: the compose files under
+\texttt{docker/}, \texttt{BENCHMARK.md} (target configuration table) and
+\texttt{docs/PATCH\_NOTES.md}.
+
+{\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{2.05cm}
+                    >{\raggedright\arraybackslash}p{3.15cm}
+                    >{\raggedright\arraybackslash}p{2.25cm}
+                    >{\raggedright\arraybackslash}p{1.35cm}
+                    >{\raggedright\arraybackslash}p{1.35cm}
+                    >{\raggedright\arraybackslash}p{4.45cm}@{}}
+\caption{Recorded target configuration. Sources: compose files under
+\texttt{docker/}, \texttt{BENCHMARK.md}, \texttt{docs/PATCH\_NOTES.md}.}
+\label{tab:config}\\
+\toprule
+Target & Stack & Model & Temp. & Max tokens & User/host and main configuration \\
+\midrule
+\endfirsthead
+\toprule
+Target & Stack & Model & Temp. & Max tokens & User/host and main configuration \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+DECEIVE & Python 3.11-slim + DECEIVE & glm-5p3-flash & 0.2 & no cap &
+guest / not recorded; output stripping, Fireworks env, exit sentinel \\
+Beelzebub & Go image + mounted YAML & glm-5p3-flash & not exposed & not exposed &
+guest / ubuntu; API-key and host fallback, benchmark YAML \\
+AdvancedshelLM & Python 3.11-slim + shelLM & glm-5p3-flash & 0.2 & 4096 &
+guest / not recorded; client, exit handling, env fallback, wrapper \\
+VelLMes & Python 3.11-slim + VelLMes & glm-5p3-flash & 0.2 & 800 &
+user / not recorded; SSH wrapper and benchmark config \\
+galah & Go 1.22 build + Debian slim & glm-5p3-flash & 0.2 & not recorded &
+not applicable / not recorded; response cleaning, entrypoint \\
+Cowrie & official image digest & not applicable & not applicable & not applicable &
+root / ubuntu; mounted config, no upstream source edit \\
+llm-honeypot & Cowrie v2.6.1 overlay & not applicable & not applicable & not applicable &
+root / not recorded; overlay Dockerfile and v2.6.1 pin \\
+Ground truth SSH & Ubuntu 20.04 + OpenSSH & not applicable & not applicable & not applicable &
+guest / ubuntu; PTY and PAM changes \\
+Ground truth HTTP & Ubuntu 20.04 + nginx 1.18.0 & not applicable & not applicable & not applicable &
+not applicable / not recorded; Dockerfile and compose \\
+HoneyBee & Python 3.11 + Streamlit & glm-5p3-flash & 0.2 & 8192 &
+not applicable; deploy path disabled \\
+\end{longtable}
+}
+
+Third-party source changes are documented as patches and notes. The verified
+third-party commit hashes are the HoneyBee clone
+\texttt{dbf62c42604eeae2cfbfd4d36b99bef65555c303} and the VelLMes clone
+\texttt{192fa5084df84b38a16f6581939fd3143c350181}. \textbf{The DECEIVE clone
+commit is UNVERIFIED (no \texttt{.git} in the local clone).} There is no
+\texttt{.git} directory in the local \texttt{DECEIVE/} working tree, so a
+\texttt{rev-parse} inside it resolves to this benchmark repository and cannot
+read a DECEIVE commit.
+
+The upstream repository cited in v1 was
+\texttt{https://github.com/coverflex-tech/DECEIVE}, which does not resolve
+(``Repository not found'', checked 21 November 2026); the upstream used here
+is \texttt{https://github.com/splunk/DECEIVE}. A fresh clone of
+\texttt{splunk/DECEIVE} on the same date has HEAD
+\texttt{cce98f3dcd9de74f32f683998e95aa19b795724e} (2026-05-13, MIT licence).
+No upstream revision of \texttt{SSH/ssh\_server.py} is byte-identical to the
+local file: the closest is that HEAD revision (\texttt{1351d54}, 75 changed
+lines, matching the ten hunks recorded in \texttt{docs/PATCH\_NOTES.md}~S1),
+and the two \texttt{LICENSE} files are identical in text. The upstream
+template is \texttt{SSH/config.ini.TEMPLATE}; the local \texttt{SSH/config.ini}
+differs from it only in \texttt{model\_name}. Because no revision matches byte
+for byte and the clone kept no \texttt{.git}, the exact clone commit stays
+UNVERIFIED. Other clone commit hashes are omitted here. The ground-truth
+services are benchmark-created services, not third-party source repositories.
+
+HoneyBee is not a honeypot in this study. It is a Streamlit application that
+uses an LLM to generate misconfigured Docker artifacts. The one-click deploy
+path is disabled, the image has no Docker CLI or Docker socket mount, and the
+evaluation reports generator validity rather than a honeypot security
+assessment.
+
+\subsection{DECEIVE configuration evidence}
+
+Four configuration items were checked in the local clone, and the two
+\texttt{config.ini} files in the repository were compared:
+\begin{itemize}[leftmargin=*]
+\item \texttt{DECEIVE/SSH/config.ini} line 32: \texttt{model\_name =
+  accounts/fireworks/models/glm-5p3-flash}; line 61: \texttt{temperature =
+  0.2}; line 67: \texttt{trimmer\_max\_tokens = 64000}.
+\item \texttt{recovered/deceive\_app/SSH/config.ini}, a copy taken from the
+  running DECEIVE application, carries the same \texttt{model\_name} (line 32)
+  and \texttt{temperature = 0.2} (line 72), and additionally sets
+  \texttt{tiktoken\_model\_name = gpt-4o} (line 43). The working clone omits
+  that key and relies on the code default: \texttt{ssh\_server.py} line 420
+  reads \texttt{config['llm'].get('tiktoken\_model\_name', 'gpt-4o')}, so both
+  files resolve to the same value in the API request.
+\item \texttt{DECEIVE/SSH/ssh\_server.py} line 429: \texttt{ChatOpenAI(**kwargs)}
+  is built from \texttt{model}, \texttt{temperature}, \texttt{api\_key} and
+  \texttt{tiktoken\_model\_name} (lines 421--428) with no \texttt{max\_tokens}
+  argument, so the model receives no output-length cap per request. This is
+  consistent with the oversized outputs observed in both batches
+  (Section~\ref{sec:s4-quality}).
+\item The clone is patched for this benchmark, as recorded in
+  \texttt{docs/PATCH\_NOTES.md}~S1: output stripping, \texttt{OPENAI\_API\_KEY}
+  and \texttt{OPENAI\_BASE\_URL} resolution, the \texttt{tiktoken\_model\_name}
+  key, exit-sentinel matching and lazy provider imports. The code reads the
+  model name only from \texttt{config.ini}; no environment variable overrides
+  it.
+\end{itemize}
+
+Which of the two \texttt{config.ini} files is byte-identical to the file that
+ran either batch is \textbf{UNVERIFIED}. Both name the same model and the same
+temperature and differ only in comments and in the
+\texttt{tiktoken\_model\_name} key, whose effective value is identical; no
+hashed copy of the application directory was retained for either batch.
+
+\section{Baseline batch (v1): protocol and results}
+
+\subsection{Protocol}
+
+The SSH manifest contains 37 ordered commands: 36 scored commands plus
+\texttt{exit}. Its observed categories are recon, files, process, errors,
+permissions, and state. Host-specific commands are excluded from fidelity
+scoring. The HTTP manifest contains 20 requests: 17 GET, one HEAD, one
+OPTIONS, and one POST, including three repeated \texttt{GET /} requests.
+
+The baseline batch collected five runs per SSH and HTTP target in the
+harness's default \emph{quiet} timing mode, with a 120-second runner timeout
+and a duplicate guard that skipped complete target/run pairs. Containers were
+started once with \texttt{scripts/up\_all.ps1} before the batch and were not
+restarted between runs, so all five runs of a target used one long-lived
+container (\texttt{docs/STAGE2\_NOTES.md}, published-batch section;
+\texttt{results/exp/stage4/analysis\_followup.md}~S3). Raw-file timestamps show
+a two-pass SSH order per run and galah collected after the first SSH pass.
+
+\subsection{SSH results}
+
+The scored SSH denominator is 180 commands per target.
+Table~\ref{tab:v1-ssh} reports completed observations separately from
+timeouts.
+
+\begin{table}[ht]
+\centering
+\caption{Baseline (v1) SSH results: 5 runs, quiet timing, 180 scored commands
+per target. Source: \texttt{results/summary.md}; determinism columns from
+\texttt{results/exp/summary\_v2.md}.}
+\label{tab:v1-ssh}
+\scriptsize
+\begin{tabularx}{\textwidth}{l r r r r l r l}
+\toprule
+Target & Median/p95 & Comple\-ted & Time\-outs & Empty & Fidelity (95\% CI) & Det. & Oversized \\
+\midrule
+Ground truth & 0.562/0.579 & 180 & 0 & 35 & --- & --- & 0 \\
+Cowrie & 0.563/0.610 & 180 & 0 & 40 & 0.5877 (0.4203--0.7438) & 0.9874 & 0 \\
+AdvancedshelLM & 1.922/4.504 & 180 & 0 & 26 & 0.5947 (0.4336--0.7386) & 0.7836 & 0 \\
+VelLMes & 1.687/4.874 & 171 & 9 & 25 & 0.6070 (0.4601--0.7506) & 0.8364 & 0 \\
+DECEIVE & 1.984/10.361 & 175 & 5 & 27 & 0.4731 (0.3493--0.5858) & 0.4664 & 2 \\
+Beelzebub & 5.023/31.656 & 164 & 16 & 16 & 0.3737 (0.2319--0.5239) & 0.6800 & 9 \\
+llm-honeypot & detector & 180 & 0 & 30 & excluded & excluded & 0 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Timeouts were command-specific. VelLMes \texttt{ps\_aux} timed out in 5/5 runs
+and \texttt{env} in 4/5. Beelzebub \texttt{state\_cat\_marker},
+\texttt{state\_echo\_marker}, and \texttt{state\_ls\_tmp\_3} each timed out in
+3/5 runs. DECEIVE \texttt{cpuinfo} and \texttt{ps\_aux} timed out in runs 1
+and 4. The Beelzebub rows total 17 because the table includes the run~1
+\texttt{exit} control row; the scored total is 16. DECEIVE totals 5 and VelLMes
+totals 9 (\texttt{docs/FACTS\_CHECK.md}).
+
+\subsection{HTTP results}
+
+Galah produced 11/100 5xx responses, six errors including three timeouts, six
+distinct \texttt{Server} header values, 12 header-name-set inconsistencies,
+0.2364 repeated-\texttt{GET /} similarity, 25/94 status agreements with nginx,
+five documentation-example secret hits, and 19 target-port mentions. Its
+latency median/p95 was 3.531/8.887 seconds. Ground-truth nginx produced zero
+5xx responses, a constant \texttt{Server} header, 1.0000 repeat similarity,
+and a 0.015-second median (\texttt{results/summary.md}).
+
+\textbf{Withheld raw bodies.} Nine galah HTTP raw response files from the
+baseline batch and the pilot are not published. They contain
+model-fabricated credential-like strings (for example Stripe-style
+\texttt{sk\_live\_...} values) that GitHub secret scanning flags, and their
+provenance cannot be certified: galah's responses are generated text, so the
+author cannot show whether a string is fabricated or memorised from training
+data. Publishing them would therefore be worse than withholding them, and
+rewriting the bodies would break the claim that the raw output is unmodified.
+Their paths, sizes and SHA-256 values are recorded in
+\texttt{docs/WITHHELD\_FILES.md}; the files are available to reviewers on
+request. Because of this, the galah counts of the baseline batch above cannot
+be recomputed from the repository alone. The Stage 4 galah files were
+collected with write-time credential masking, contain no such strings, and are
+published under \texttt{results/exp/stage4/raw\_http/}.
+
+\subsection{HoneyBee results}
+
+HoneyBee was evaluated with \texttt{glm-5p3-flash}, temperature 0.2, maximum
+8192 tokens, and three generations per generator/case cell, for 18
+generations. Docker Compose validity was 6/6 cases, Dockerfile validity 4/6,
+and Nuclei validity 3/6. Length-limited results were 5/18, all in the
+PostgreSQL case. Grafana was clean in 9/9 generations and PostgreSQL in 4/9.
+The scorer was revised after the first results; original outputs remain in the
+recorded validity file. These are generator-validity observations, not a
+security verdict.
+
+\section{Stage 2: measurement additions}
+
+Stage 2 added the measurement machinery that Stage 4 then used: an explicit
+prompt-timing mode, credential masking, a local API proxy, masked determinism,
+and a measured harness latency floor. Details are in
+\texttt{docs/STAGE2\_NOTES.md}.
+
+\subsection{Latency floor}
+\label{sec:floor}
+
+The harness's default command-completion rule records a command as finished
+only after 0.5 seconds of silence following the last received prompt. This
+\emph{quiet period} is a property of the harness, not of the server, so every
+latency in Table~\ref{tab:v1-ssh} and the 3.0x--8.9x published ratios include a
+0.5-second harness floor. The measured floor on the two non-LLM containers is
+shown in Table~\ref{tab:floor}; the ground-truth servers themselves reply in
+3--9\,ms.
+
+\begin{table}[ht]
+\centering
+\caption{Measured harness latency floor, 30 trivial commands per cell (from
+\texttt{results/exp/floor.md}). Values are quantised by the 15.6\,ms Windows
+timer tick.}
+\label{tab:floor}
+\scriptsize
+\begin{tabularx}{\textwidth}{l l r r r r r}
+\toprule
+Target & Timing mode & n & Min (s) & Median (s) & p95 (s) & Max (s) \\
+\midrule
+groundtruth\_ssh & quiet & 30 & 0.546 & 0.547 & 0.563 & 0.578 \\
+groundtruth\_ssh & prompt & 30 & 0.015 & 0.0158 & 0.0163 & 0.0163 \\
+cowrie & quiet & 30 & 0.547 & 0.563 & 0.578 & 0.579 \\
+cowrie & prompt & 30 & 0.015 & 0.0155 & 0.0314 & 0.0319 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The same runs in full 37-command form give a quiet median of 0.562\,s and a
+prompt median of 0.016\,s on both non-LLM targets
+(\texttt{results/exp/floor.md}, \texttt{results/exp/timing\_audit/}). Quiet and
+prompt timing are separate code paths (\texttt{\_read\_quiet} versus
+\texttt{\_read\_until\_prompt\_settled} in \texttt{harness/run\_ssh.py}), so the
+baseline batch is unaffected; quiet remains the default. Stage 4 uses prompt
+timing, so its latencies do not contain the 0.5\,s floor.
+
+\subsection{Prompt-mode validation on LLM SSH targets}
+\label{sec:prompt-val}
+
+Prompt mode was previously validated only on the two non-LLM targets. Stage 2
+ran the full 37-command list in three passes---quiet (A), prompt (B), quiet
+again (C)---on all four LLM SSH honeypots with fresh containers per pass, all
+via the API proxy. Total API calls: 452 out of a 500-call budget
+(\texttt{results/exp/validation/}).
+
+The key diagnostic metric is \texttt{prompt\_without\_echo}: this flag is set
+when the harness ends a read on a buffer that contains nothing but a prompt,
+the signature of a stale prompt or early cutoff. All four targets returned zero
+\texttt{prompt\_without\_echo} rows in pass~B, and no prompt-like line appeared
+inside any prompt-mode output. No early cut was observed in 37 commands x 1
+pass per target. Stage 4 extends the same check to 4,540 SSH rows
+(Section~\ref{sec:s4-quality}).
+
+An A-vs-B comparison against the A-vs-C quiet baseline covers 36 commands per
+target. Table~\ref{tab:abac} counts commands whose A-vs-B masked similarity is
+below their own A-vs-C value.
+
+\begin{table}[ht]
+\centering
+\caption{Commands whose A-vs-B masked similarity is below the A-vs-C value for
+the same command (from
+\texttt{results/exp/validation/\{target\}\_comparison.csv}).}
+\label{tab:abac}
+\scriptsize
+\begin{tabular}{l r r r r}
+\toprule
+Target & Checked & A-vs-B $<$ A-vs-C & of those, drop $>$ 0.10 & of those, B shorter than A \\
+\midrule
+DECEIVE        & 36 & 13 & 12 & 7 \\
+Beelzebub      & 36 & 14 & 12 & 2 \\
+VelLMes        & 36 & 9  & 0  & 0 \\
+AdvancedshelLM & 36 & 6  & 2  & 2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Every one of the 26 commands with a drop above 0.10 has \texttt{prompt} set,
+\texttt{prompt\_without\_echo} false, no timed-out pass~B, and no prompt-like
+line inside its output, so none shows the early-cut signature. Fifteen of the
+26 had a longer pass-B output than pass~A. The A-vs-C baseline is a single
+quiet-vs-quiet comparison per command and so does not bound LLM variance:
+whether the residual differences are measurement artefacts or ordinary model
+variation is UNVERIFIED.
+
+\subsection{Masked determinism}
+
+The v1 determinism column compares outputs character by character, so
+timestamps, PIDs, uptime values and hostnames contribute. Stage 2 replaces
+those fields with placeholders before the comparison. On the baseline batch,
+masking moves every target by at most 0.04
+(\texttt{results/exp/summary\_v2.md}): ground truth 0.9746 to 0.9841, Cowrie
+0.9874 to 0.9957, AdvancedshelLM 0.7836 to 0.8034, VelLMes 0.8364 to 0.8472,
+Beelzebub 0.6800 to 0.6815, DECEIVE 0.4664 to 0.5038. Masking volatile fields
+did not close the gap between the static baseline and the LLM targets. The
+ground-truth service is itself not perfectly deterministic (0.9746 raw), so
+earlier comparisons were implicitly against a 1.0 baseline. Stage 4 reports
+masked determinism only (Table~\ref{tab:s4-ssh}).
+
+\subsection{API proxy}
+
+A local reverse proxy (\texttt{harness/api\_proxy.py}) sits in front of the
+Fireworks endpoint. It logs only \texttt{ts}, \texttt{method},
+\texttt{status}, \texttt{duration\_ms}, \texttt{request\_sha256} and
+\texttt{usage}; it never logs the \texttt{Authorization} header, the API key,
+or request/response body text. A five-command feasibility check on
+AdvancedshelLM (10 sessions, 12 proxy requests) matched every request to a
+command and measured a median non-API gap of 0.045\,s (min 0.026, max 0.075)
+over 5 commands (\texttt{results/exp/smoke/}). Stage 4 runs every target through
+the same proxy (Section~\ref{sec:s4-method}).
+
+\section{Stage 4: the 20-run pass}
+\label{sec:s4}
+
+\subsection{Method}
+\label{sec:s4-method}
+
+Stage 4 is the main result set. Driver: \texttt{harness/run\_stage4.py};
+design and schema in \texttt{docs/STAGE4\_NOTES.md}. It differs from the
+baseline batch in three deliberate ways:
+
+\begin{itemize}[leftmargin=*]
+\item \textbf{Prompt timing} instead of quiet timing, so the 0.5\,s settle
+  window is not part of the measurement (Section~\ref{sec:floor}).
+\item \textbf{Twenty runs per target} instead of five, which supports
+  bootstrap confidence intervals resampled by run.
+\item \textbf{A fresh container per slot}: each of the 180 slots runs
+  \texttt{docker compose down} followed by \texttt{up -d --force-recreate},
+  verified 180/180 in \texttt{results/exp/stage4/driver.log}. The baseline
+  batch used one long-lived container per target for all five runs.
+\end{itemize}
+
+Additional controls: the target order within a run was shuffled with seed
+2026 and recorded per row (\texttt{s4\_order\_seed}); runs 1--2 additionally
+ran the four LLM SSH targets in quiet mode as a same-day quiet check, written
+to \texttt{raw\_quiet/}; credentials were masked at write time; and every
+request passed through the API proxy with one slot marker per mode. All 188
+slot keys are \texttt{complete}, with no safety stop
+(\texttt{results/exp/stage4/status.json}). The pass took 6.85\,h of wall clock
+over 180 slots (median 95\,s per slot,
+\texttt{results/exp/stage4/analysis\_review.md}).
+
+Budget and cost: 3,699 proxy requests and \$2.0173 at the corrected
+cached-token price model (Section~\ref{sec:s4-cost}).
+
+\subsection{Per-target results}
+
+Table~\ref{tab:s4-ssh} is the main results table. Latency excludes timed-out
+commands (censored at the 120\,s runner timeout). CIs are 10,000 bootstrap
+resamples of run-level medians, seed 20261106. Extra seconds are run-paired
+target-minus-ground-truth medians.
+
+\begin{table}[ht]
+\centering
+\caption{Stage 4 SSH results: 20 runs, prompt timing, 720 scored commands per
+target. Sources: \texttt{results/exp/stage4/latency.csv},
+\texttt{determinism.csv}, \texttt{bootstrap\_ci.csv},
+\texttt{extra\_vs\_gt.csv}; completed counts from
+\texttt{analysis\_review.md}.}
+\label{tab:s4-ssh}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l r r r r r r r@{}}
+\toprule
+Target & Timeouts & Median s [95\% CI] & p95 s & Extra vs GT s [95\% CI] & Det.\ masked & Fid.\ masked & Completed \\
+\midrule
+groundtruth\_ssh & 0 & 0.015 [0.015, 0.015] & 0.031 & --- & 0.992 & 0.991 & 720 \\
+cowrie & 0 & 0.031 [0.031, 0.031] & 0.047 & 0.016 [0.016, 0.016] & 0.996 & 0.603 & 720 \\
+llmhoneypot & 0 & 0.015 [0.015, 0.015] & 0.031 & 0.000 [0.000, 0.000] & 0.996 & 0.437 & 720 \\
+AdvancedshelLM & 0 & 2.253 [2.100, 2.437] & 5.311 & 2.216 [2.085, 2.422] & 0.790 & 0.566 & 720 \\
+Beelzebub & 4 & 2.308 [2.165, 2.433] & 5.868 & 2.243 [2.150, 2.418] & 0.594 & 0.433 & 716 \\
+DECEIVE & 29 & 2.390 [2.228, 2.567] & 8.637 & 2.392 [2.213, 2.552] & 0.509 & 0.482 & 691 \\
+VelLMes & 45 & 2.181 [1.995, 2.252] & 4.996 & 2.088 [1.980, 2.237] & 0.848 & 0.637 & 675 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The LLM targets sit at 2.18--2.39\,s median, 0.14--0.21\,s apart, with
+overlapping confidence intervals; the data do not rank them. Fidelity is
+masked similarity against ground truth over the shared-command intersection;
+the llm-honeypot row is the detector target and its fidelity and determinism
+are excluded from interpretation.
+
+\textbf{Clock resolution.} Every statistic below 50\,ms is quantised, not
+measured. Over 720 completed commands the ground-truth values pile up at
+15\,ms (403), 16\,ms (105), 31\,ms (77) and 30\,ms (34); Cowrie and llm-honeypot
+show the same 15/16\,ms and 30--32\,ms steps
+(\texttt{results/exp/stage4/analysis\_followup.md}~S4). The differences between
+ground truth (0.015\,s), llm-honeypot (0.015\,s) and Cowrie (0.031\,s) are one
+or two scheduler ticks and are not interpreted.
+
+\subsection{Output quality and prompt integrity}
+\label{sec:s4-quality}
+
+Empty outputs out of 720 rows: AdvancedshelLM 103, Cowrie 160, DECEIVE 100,
+ground truth 140, llm-honeypot 120, VelLMes 102, Beelzebub 6. Oversized outputs
+(over 20,000 characters): DECEIVE 6 (maximum 142,810 characters) and Beelzebub
+2; all other targets 0. The run-time leakage counter over
+\texttt{cleaned\_output} reports Beelzebub 13 and DECEIVE 2; measured directly
+on \texttt{raw\_output} as ``interior prompt followed by text'', Beelzebub is
+38/720 in prompt mode and 6/72 in quiet mode, DECEIVE 2/720, and all other
+targets 0 (\texttt{results/exp/stage4/analysis.md},
+\texttt{analysis\_followup.md}~S1a).
+
+Prompt-mode integrity: \texttt{prompt\_without\_echo} is false in all 4,540
+SSH rows of the pass; rows without a final prompt are exactly the timed-out
+rows plus one Beelzebub quiet row that ends with a leaked next prompt; and no
+harness latency is below its matching API duration
+(\texttt{analysis\_followup.md}~S1a, S1d). The published Beelzebub leakage case
+(14/180) is therefore not the same measurement as the Stage 4 count
+(38/720 on the wire capture).
+
+The oversize and leakage totals differ from the baseline batch: DECEIVE 6
+oversized here versus 2 there, Beelzebub 2 versus 9. Both are prompt-mode
+counts, so the comparison is between different timing modes and run counts,
+not a measured change.
+
+\subsection{Drift, order, and batch comparison}
+
+Drift controls, Spearman correlation between run index and per-run median
+latency over 20 runs (\texttt{results/exp/stage4/drift.csv}): Cowrie
+$\rho=0.256$ ($p=0.414$, inconclusive) and ground truth $\rho=0.704$
+($p=0.0012$). The ground-truth value is an artefact of two possible run
+medians, 15\,ms and 16\,ms; the correlation is one tick flip and is not
+reported as drift.
+
+Order effect, Spearman correlation between position-in-run and per-command
+latency: AdvancedshelLM $\rho=0.144$ ($p=0.0004$), DECEIVE $\rho=-0.090$
+($p=0.049$), VelLMes $\rho=0.075$ ($p=0.12$), Beelzebub $\rho=0.049$
+($p=0.34$). The signs disagree and the magnitudes are small; no usable
+position effect is claimed (\texttt{results/exp/stage4/analysis.md}).
+
+Table~\ref{tab:s4-vs-v1} sets the baseline batch beside Stage 4. The two
+batches differ in timing mode, run count and container lifetime, so the
+differences are differences between batches, not effects.
+
+\begin{table}[ht]
+\centering
+\caption{Baseline (v1) versus Stage 4, same metrics. Sources:
+\texttt{results/summary.md}, \texttt{results/exp/summary\_v2.md},
+\texttt{results/exp/stage4/latency.csv},
+\texttt{results/exp/stage4/analysis\_review.md}.}
+\label{tab:s4-vs-v1}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l r r r r r r@{}}
+\toprule
+ & \multicolumn{3}{c}{Timeout rate per 180 commands} & \multicolumn{2}{c}{Median s} & Det.\ masked \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-6}
+Target & v1 (/180) & Stage 4 & Stage 4 (/180) & v1 & Stage 4 & v1 $\rightarrow$ Stage 4 \\
+\midrule
+Cowrie & 0 & 0 & 0.0 & 0.563 & 0.031 & 0.996 $\rightarrow$ 0.996 \\
+AdvancedshelLM & 0 & 0 & 0.0 & 1.922 & 2.253 & 0.803 $\rightarrow$ 0.790 \\
+VelLMes & 9 & 45 & 11.3 & 1.687 & 2.181 & 0.847 $\rightarrow$ 0.848 \\
+DECEIVE & 5 & 29 & 7.3 & 1.984 & 2.390 & 0.504 $\rightarrow$ 0.509 \\
+Beelzebub & 16 & 4 & 1.0 & 5.023 & 2.308 & 0.682 $\rightarrow$ 0.594 \\
+Ground truth & 0 & 0 & 0.0 & 0.562 & 0.015 & 0.984 $\rightarrow$ 0.992 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{HTTP results at equal sample size}
+
+Stage 4 collected 400 galah requests against 400 ground-truth requests. Because
+the baseline batch has only 100, the Stage 4 pool was resampled 1,000 times at
+100 requests (seed 20261122) to give comparable rates
+(\texttt{results/exp/stage4/analysis\_followup.md}~S5).
+Table~\ref{tab:galah} sets the two batches side by side at equal sample size.
+
+\begin{table}[ht]
+\centering
+\caption{Galah HTTP metrics, Stage 4 pool and equal-size resampling versus the
+baseline batch. Sources: \texttt{results/exp/stage4/analysis.md};
+\texttt{analysis\_followup.md}~S5; \texttt{results/summary.md}.}
+\label{tab:galah}
+\scriptsize
+\begin{tabularx}{\textwidth}{Y r r r r}
+\toprule
+Metric & Stage 4, 400 req. & Stage 4 per-100 mean & Stage 4 per-100 95\% range & v1, 100 req. \\
+\midrule
+5xx rate & 0.100 (40/400) & 0.101 & 0.05--0.15 & 0.110 (11/100) \\
+Timeout rate & 0.0375 (15/400) & 0.037 & 0.01--0.07 & 0.030 (3/100) \\
+Status agreement with nginx & 0.260 (95/366) & 0.260 & 0.187--0.341 & 0.266 (25/94) \\
+Distinct \texttt{Server} values & 13 & 6.9 & 4--9 & 6 \\
+Repeat \texttt{GET /} similarity & 0.376 & 0.377 & 0.237--0.545 & 0.236 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+At equal sampling, the 5xx rate, timeout rate, status agreement and
+distinct-\texttt{Server} count of the baseline batch fall inside the Stage 4
+per-100 range; repeat similarity (0.236) sits at the lower edge (range starts
+at 0.237). The full-400 distinct-\texttt{Server} count of 13 grows with sample
+size; the comparable figure is about 7 per 100.
+
+\subsection{Quiet-mode check (runs 1--2)}
+\label{sec:quiet}
+
+Runs 1--2 also ran each LLM SSH target in quiet mode, giving 72 prompt/quiet
+command pairs per target (\texttt{results/exp/stage4/quiet\_check.csv}). A pair
+is flagged when the prompt-mode output is shorter than the quiet-mode output
+and its masked similarity is below the Stage 2 quiet-vs-quiet similarity for
+that same command.
+
+\begin{table}[ht]
+\centering
+\caption{Prompt-versus-quiet pairs beyond the Stage 2 noise floor, 72 pairs per
+target. Source: \texttt{results/exp/stage4/quiet\_check.csv}; per-pair list in
+\texttt{analysis\_followup.md}~S1c.}
+\label{tab:quiet}
+\scriptsize
+\begin{tabular}{l r r r}
+\toprule
+Target & Pairs checked & Beyond the floor & Largest single case \\
+\midrule
+DECEIVE        & 72 & 10 & \texttt{env}: 684 vs 2,054 chars, similarity 0.28 \\
+Beelzebub      & 72 & 6  & \texttt{find\_etc\_conf}: 192 vs 164,049 chars \\
+VelLMes        & 72 & 7  & \texttt{ls\_etc} run 2: 0 vs 2,720 chars (timeout) \\
+AdvancedshelLM & 72 & 9  & \texttt{passwd}: 83 vs 1,208 chars, similarity 0.12 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:quiet} counts them: 32 of the 288 pairs differ beyond the floor.
+Why prompt mode returns less for
+those commands is UNVERIFIED: the pairs are different sessions, so output
+variance and any timing effect are not separable here.
+
+The VelLMes \texttt{ls\_etc} case is explained by the proxy log: prompt mode
+recorded a 120.013\,s harness timeout with 10 bytes captured, while the quiet
+run of the same command returned 2,720 characters in 6.0\,s. The proxy row for
+that command shows \texttt{status=200}, \texttt{duration\_ms=7203},
+\texttt{completion\_tokens=800}: the model produced a capped reply in 7.2\,s and
+the target never wrote it to the session
+(\texttt{analysis\_followup.md}~S1b). Whether the reply was held or dropped
+inside the target is UNVERIFIED; no container-side log was recorded for that
+slot.
+
+\subsection{Timeout attribution}
+\label{sec:timeouts}
+
+The proxy stamps \texttt{ts} before forwarding and writes the log line after
+the response, so file order is completion order. Joining by request start
+instead of file order, all 86 timed-out SSH rows of the pass (raw/ and
+raw\_quiet/) fall into three classes (Table~\ref{tab:timeouts},
+source \texttt{results/exp/stage4/analysis\_timeouts.md}):
+
+\begin{table}[ht]
+\centering
+\caption{Stage 4 timeout attribution: 86 timed-out rows joined to the proxy log
+by request start, each proxy entry used once. Source:
+\texttt{results/exp/stage4/analysis\_timeouts.md}.}
+\label{tab:timeouts}
+\scriptsize
+\begin{tabularx}{\textwidth}{l r Y r}
+\toprule
+Class & n & Description & API duration (s) \\
+\midrule
+API-side & 9 & request ran past the 120\,s harness timeout & 241.6--291.4, p50 264.1 \\
+Target-side & 66 & API answered in time, harness never saw the reply & 1.5--28.1, p50 5.4 \\
+Unmatched & 11 & no proxy request assigned to the command & --- \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+By target: Beelzebub 3 API-side and 3 unmatched; DECEIVE 6 API-side, 15
+target-side and 8 unmatched; VelLMes 51 target-side. All nine API-side rows
+end at exactly 65,536 completion tokens. The 51 VelLMes rows are the capped
+800-token replies: the API answered in 4.5--7.8\,s and the harness saw nothing,
+which is the same signature as the \texttt{ls\_etc} case above. Nine of the 11
+unmatched rows were commanded while a request of 120\,s or longer from the same
+run was still in flight; the other two are DECEIVE run~20 \texttt{whoami} and
+\texttt{id}, where no request was logged and the next command took 20.9\,s (a
+cold start, not an API timeout). A candidate explanation for the target-side
+rows is that the reply is truncated at the cap or dropped before reaching the
+terminal; that is UNVERIFIED.
+
+\subsection{max\_tokens enforcement}
+\label{sec:maxtokens}
+
+Table~\ref{tab:maxtokens} reports the observed completion-token distribution
+per target over the requests attributed to it in Stage 4, with the documented
+cap.
+
+\begin{table}[ht]
+\centering
+\caption{Observed completion tokens per target, Stage 4, versus the documented
+cap. Sources: \texttt{results/exp/stage4/analysis\_timeouts.md} (Part A.2);
+caps from \texttt{BENCHMARK.md}.}
+\label{tab:maxtokens}
+\scriptsize
+\begin{tabular}{l r r r r r r}
+\toprule
+Target & Requests & p50 & p95 & Max & Documented cap & Above cap \\
+\midrule
+AdvancedshelLM & 792 & 51 & 533 & 4,096 & 4,096 & 0 \\
+VelLMes & 814 & 56.5 & 800 & 800 & 800 & 0 \\
+DECEIVE & 806 & 73 & 1,221 & 65,536 & none & n/a \\
+Beelzebub & 789 & 55 & 682 & 65,536 & unknown & n/a \\
+galah & 400 & 388 & 3,232 & 65,536 & unknown & n/a \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Both documented caps hold exactly: AdvancedshelLM peaks at 4,096 and VelLMes at
+800, with no request above either. AdvancedshelLM sets the cap in
+\texttt{openai\_client.py} line 155 (\texttt{int(os.environ.get('MAX\_TOKENS',
+'4096'))}), and every worker call passes it; the two paths that do not are the
+Responses-API branch, reachable only for codex-style model names, and a
+second provider client with a hard-coded 16384 that the wrapper never selects
+(\texttt{docker/advshellm\_ssh\_wrapper.py} passes \texttt{--provider openai}).
+
+The three targets that reach 65,536 are the uncapped ones. An earlier reading
+of the proxy log attributed some 65,536-token calls to AdvancedshelLM and
+VelLMes; with request-start attribution those calls belong to galah (8),
+DECEIVE (6) and Beelzebub (3), so the caps are consistent with the data and no
+different call type is required to explain the ceiling
+(\texttt{analysis\_timeouts.md}, Part A.2--A.3). Galah's ceiling replies report
+\texttt{reasoning\_tokens = 65,536}; DECEIVE's and Beelzebub's spend the ceiling
+on visible text. \texttt{BENCHMARK.md} and the v1 configuration table state
+4,096 and 800; neither statement is contradicted by the data.
+
+\subsection{API proxy joins and cost}
+\label{sec:s4-cost}
+
+All Stage 4 command rows matched a proxy request: 720/720 for each LLM SSH
+target and 400/400 for galah, with no unmatched entries. Median API duration was
+2.24--2.38\,s for the SSH targets (p95 5.5--9.1\,s) and 3.71\,s for galah (p95
+18.2\,s); the median non-API gap was 35--161\,ms for SSH and 46\,ms for galah
+(\texttt{results/exp/stage4/proxy\_join.csv}).
+
+Cost with the corrected cached-token model (\$0.15/M uncached prompt, \$0.03/M
+cached prompt, \$0.50/M completion) is \$2.0173 over 3,699 requests: 20,459,956
+prompt tokens of which 83.72\% were cache hits, and 2,007,696 completion
+tokens. Per target: DECEIVE \$0.8983, Beelzebub \$0.4467, VelLMes \$0.2947,
+AdvancedshelLM \$0.2253, galah \$0.1522; the four targets that never call the
+model cost nothing. The per-run median is \$0.0710, and the two runs above
+three times the median (run~4 \$0.2407, run~15 \$0.2268) made the same number of
+requests as every other prompt-only run but contained 65,536-token generations
+(\texttt{analysis\_followup.md}~S6). An earlier batch, whose driver replayed
+run~n n times, was discarded before this pass and is documented in
+\texttt{docs/STAGE4\_NOTES.md}~S11; its numbers are not used anywhere here.
+
+\subsection{The Beelzebub observation and the container-lifetime control}
+\label{sec:lifetime}
+
+Beelzebub is the one target whose baseline and Stage 4 numbers point in
+different directions: 16/180 timeouts and a median of 5.02\,s in the baseline
+batch, against 4/720 and 2.31\,s in Stage 4. In the baseline batch its per-run
+median rose monotonically across the five runs, 2.16 to 7.09\,s; in Stage 4 the
+20 run medians stay between 1.71 and 3.83\,s with no trend
+(\texttt{results/exp/stage4/analysis\_followup.md}~S3). The Beelzebub YAML
+configuration is identical between the \texttt{final-batch-v1} tag and HEAD
+(\texttt{git diff final-batch-v1 HEAD} over the three Beelzebub files is empty);
+whether the built binary was identical is not recorded, so that is UNVERIFIED.
+
+The three protocol differences listed in Section~\ref{sec:s4-method} all
+changed at once, so the batch difference cannot be assigned to any one of them
+from these data. To isolate container lifetime, a control experiment kept one
+Beelzebub container for ten consecutive sessions
+(\texttt{harness/run\_lifetime\_control.py}, output under
+\texttt{results/exp/lifetime\_control/beelzebub\_persistent/}).
+Table~\ref{tab:lifetime} summarises it.
+
+\begin{table}[ht]
+\centering
+\caption{Beelzebub container-lifetime control: ten sessions, one container
+(no recreate; container id and \texttt{StartedAt} identical before and after
+every run). Source:
+\texttt{results/exp/lifetime\_control/beelzebub\_persistent/lifetime.json}.}
+\label{tab:lifetime}
+\scriptsize
+\begin{tabular}{@{}l p{11.2cm}@{}}
+\toprule
+Item & Value \\
+\midrule
+Container & one id, \texttt{State.StartedAt} unchanged; \texttt{never\_recreated = true} \\
+Sessions & 10, prompt timing, 36 scored commands each \\
+Median latency per run & 3.88, 3.95, 4.09, 3.83, 4.13, 5.12, 4.33, 5.43, 5.44, 5.95\,s \\
+Timeouts & 0,0,0,0,0,0,2,0,2,2 (6/360), all in runs 7, 9, 10 \\
+Spearman, median vs run & $\rho = 0.915$, $p = 0.0006$ (20,000 permutations, seed 20261122) \\
+Container memory / log & 11.14 $\rightarrow$ 20.35\,MiB; 38,143 $\rightarrow$ 906,557 bytes \\
+Proxy calls / cost & 360 / \$0.8210 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The ten-session series is not flat: the median rises from 3.83--3.88\,s to
+5.95\,s, and the three sessions that produced a 65,536-token generation (315,
+298 and 287\,s) are exactly the three with timeouts. The Stage 4 fresh-container
+series for the same target has a median-of-medians of 2.26\,s over 20 runs
+(\texttt{analysis\_timeouts.md}, Part B). The persistent series therefore shows
+growth and more timeouts than the fresh series, so the hypothesis that a
+long-lived container is harmless for this target is not supported. The cause of
+the growth is UNVERIFIED: the control differs from Stage 4 in time of day and
+machine load, contains a higher share of ceiling generations (3 of 10 sessions
+versus 2 of 20 runs), and has only ten sessions.
+
+\section{Findings}
+
+The following statements are limited to what the data above show.
+
+\begin{itemize}[leftmargin=*]
+\item Measured masked determinism separated the static baseline (Cowrie 0.996)
+  from the LLM SSH targets (0.509--0.848) in Stage 4; ground truth measured
+  0.992 (\texttt{results/exp/stage4/determinism.csv}).
+\item In Stage 4 the LLM SSH medians were 2.18--2.39\,s against 0.015\,s for
+  ground truth, i.e. 2.09--2.39\,s of extra seconds over the run-paired ground
+  truth median; values below 50\,ms are clock-quantised and are not
+  interpreted (\texttt{extra\_vs\_gt.csv}, \texttt{analysis\_followup.md}~S4).
+\item Timeouts were command-specific and repeated across batches: VelLMes
+  \texttt{ps\_aux} and \texttt{env} dominate its 45 Stage 4 timeouts (19/20 and
+  17/20 runs), and DECEIVE's 29 are led by \texttt{cpuinfo} and \texttt{ps\_aux}
+  (6/20 each) (\texttt{analysis\_review.md}).
+\item Timeout attribution splits the 86 Stage 4 timed-out rows into 9 API-side
+  (all ending at 65,536 completion tokens), 66 target-side and 11 unmatched;
+  VelLMes' 51 target-side rows are 800-token replies produced in 4.5--7.8\,s
+  that never reached the harness (\texttt{analysis\_timeouts.md}).
+\item Observed completion tokens match the documented caps per target
+  (AdvancedshelLM 4,096, VelLMes 800) and reach the 65,536 model ceiling only
+  for the uncapped targets (\texttt{analysis\_timeouts.md}, Part A.2).
+\item Galah's Stage 4 rates are consistent with its baseline rates at equal
+  sample size: 5xx 0.101 versus 0.110, status agreement 0.260 versus 0.266
+  (\texttt{analysis\_followup.md}~S5).
+\item Prompt-mode integrity held across the pass: zero
+  \texttt{prompt\_without\_echo} rows in 4,540 SSH rows and no harness latency
+  below its matching API duration (\texttt{analysis\_followup.md}~S1).
+\item The single-container control shows a rising Beelzebub median
+  (3.88 to 5.95\,s, $\rho=0.915$) and 6/360 timeouts, while the fresh-container
+  series stays at a median-of-medians of 2.26\,s; the cause is UNVERIFIED
+  (\texttt{results/exp/lifetime\_control/}, \texttt{analysis\_timeouts.md}).
+\end{itemize}
+
+\section{Limitations}
+
+The benchmark has two batches with different protocols, one shared model and
+API endpoint, scripted inputs, censored timeout latencies, and a
+character-similarity proxy for fidelity and determinism. Personas, hostnames
+and filesystem fixtures differ between targets, so fidelity values fold persona
+differences into the score. Shared API load can affect timeout and latency
+patterns. The 26-command fidelity intersection is a restricted subset and
+host-specific commands are reference-only. HoneyBee has three generations per
+cell and static validity checks.
+
+Timing resolution is a hard limit on part of the result set: every value below
+50\,ms is quantised by the 15.6\,ms Windows tick, so ground-truth, Cowrie and
+detector latencies, and the ``extra seconds'' for Cowrie, are one or two ticks
+and are not interpreted.
+
+The batches are not interchangeable. Stage 4 changed timing mode, run count
+and container lifetime together, so differences between the batches
+(Beelzebub most visibly) are differences between protocols; the lifetime
+control addresses one of the three factors with ten sessions and its own
+confounds. The response of galah and of the SSH targets to a repeated identical
+command is partly a property of the shared endpoint, and galah's cache means
+the proxy log is a lower bound on its upstream calls within a slot
+(\texttt{docs/STAGE4\_NOTES.md}~S8).
+
+The overlapping confidence intervals do not support a tool ranking. DECEIVE
+state-check failures do not establish its state-tracking capability. The
+scripted observations do not establish attacker detectability, HoneyBee output
+security, or behaviour beyond this model, endpoint and sample. No causal claim
+is made anywhere in this report; where a mechanism is suggested it is marked
+UNVERIFIED.
+
+\section{Next steps}
+
+Planned work, none of it done in this report:
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Local-model feasibility check.} One target, a small local model on
+  8\,GB RAM, single sessions. The model changes together with the endpoint, so
+  no comparison with the hosted batches is implied.
+\item \textbf{Persona-matched fidelity.} A control that separates persona and
+  filesystem differences from shell errors, so fidelity stops folding the two
+  together.
+\item \textbf{Repeat of the container-lifetime control with longer sessions and
+  matched time of day}, to separate session count from wall-clock and load
+  effects.
+\item \textbf{Test the VelLMes truncation/drop hypothesis.} The target-side
+  signature (capped reply produced, prompt never surfaced) needs a
+  container-side log or a capture at the target to say whether the reply is
+  held or dropped.
+\item \textbf{Add a collaborator-provided honeypot target} to the same manifest.
+\item \textbf{Repeat the pass with a second model} while keeping the command and
+  request manifests unchanged.
+\item \textbf{Add detectability probes} and a separate attacker evaluation.
+\end{enumerate}
+
+\begin{thebibliography}{99}
+
+\bibitem{bitterharvest}
+Alexander Vetterl and Richard Clayton. ``Bitter Harvest: Systematically
+Fingerprinting Low- and Medium-interaction Honeypots at Internet Scale.'' In
+\emph{12th USENIX Workshop on Offensive Technologies (WOOT~'18)}, Baltimore,
+MD, August 2018. USENIX Association.
+% Title, authors, venue, year and location verified against the USENIX WOOT '18
+% page on 2026-11-21. UNVERIFIED: page numbers and DOI, which that page omits.
+
+\bibitem{llmintheshell}
+Muris Sladi\'c, Veronica Valeros, Carlos Catania, and Sebastian Garcia. ``LLM in
+the Shell: Generative Honeypots.'' In \emph{2024 IEEE European Symposium on
+Security and Privacy Workshops (EuroS\&PW)}, pp.~430--435.
+doi:10.1109/EuroSPW61312.2024.00054.
+
+\bibitem{vellmes-paper}
+Muris Sladi\'c, Veronica Valeros, Carlos Catania, and Sebastian Garcia.
+``VelLMes: A High-Interaction AI-Based Deception Framework.'' In \emph{2025
+IEEE European Symposium on Security and Privacy Workshops (EuroS\&PW)}, pp.~671--679.
+doi:10.1109/EuroSPW67616.2025.00082.
+
+\bibitem{honeygpt}
+Ziyang Wang, Jianzhou You, Haining Wang, Tianwei Yuan, Shichao Lv, Yang Wang,
+and Limin Sun. ``HoneyGPT: Breaking the Trilemma in Terminal Honeypots with
+Large Language Model.'' arXiv:2406.01882, 2024.
+% Title, author list and 2024 submission year verified against the arXiv abstract
+% page on 2026-11-21. UNVERIFIED: peer-reviewed venue, cited here as a preprint;
+% the arXiv v2 title reads ``... in Honeypots with Large Language Models''.
+
+\bibitem{reworr}
+Reworr and Dmitrii Volkov. ``LLM Agent Honeypot: Monitoring AI Hacking Agents in
+the Wild.'' arXiv:2410.13919, 2024.
+
+\bibitem{bridgessok}
+Robert A. Bridges, Thomas R. Mitchell, Mauricio Mu\~noz, and Ted Henriksson.
+``SoK: Honeypots \& LLMs, More Than the Sum of Their Parts?'' In \emph{2026 IEEE
+11th European Symposium on Security and Privacy (EuroS\&P)}, pp.~910--928.
+doi:10.1109/EuroSP68448.2026.00063.
+
+\bibitem{galah}
+galah. \url{https://github.com/0x4D31/galah}.
+
+\bibitem{deceive}
+DECEIVE. \url{https://github.com/splunk/DECEIVE}.
+
+\bibitem{cowrie}
+Cowrie. \url{https://github.com/cowrie/cowrie}.
+
+\bibitem{beelzebub}
+Beelzebub. \url{https://github.com/mariocandela/beelzebub}.
+
+\bibitem{advancedshellm}
+shelLM (AdvancedshelLM). \url{https://github.com/stratosphereips/shelLM}.
+% UNVERIFIED: AdvancedshelLM has no standalone repository that resolves; the code
+% is part of shelLM.
+
+\bibitem{vellmes}
+VelLMes. \url{https://github.com/stratosphereips/VelLMes-AI-Deception-Framework}.
+
+\end{thebibliography}
+
+\end{document}
