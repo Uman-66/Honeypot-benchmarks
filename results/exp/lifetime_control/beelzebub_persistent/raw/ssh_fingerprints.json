@@ -1,0 +1,15 @@
+{
+  "beelzebub": [
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.3",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-rsa",
+      "host_key_fingerprint": "972e0c34ac042de67215910f2cf562c9",
+      "auth_methods": null,
+      "run": 10,
+      "auth_method_used": "password",
+      "connection_error": null
+    }
+  ]
+}

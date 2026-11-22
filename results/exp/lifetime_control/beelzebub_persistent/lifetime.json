@@ -1,0 +1,271 @@
+{
+  "target": "beelzebub",
+  "runs": 10,
+  "call_limit": 45,
+  "cost_cap": 1.5,
+  "runs_data": [
+    {
+      "run": 1,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 0,
+      "median_latency_s": 3.8805,
+      "p95_latency_s": 8.9155,
+      "oversized": 0,
+      "leakage": 0,
+      "calls": 36,
+      "cost_run_usd": 0.006613,
+      "cost_cum_usd": 0.006613,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "11.14MiB / 3.591GiB",
+      "log_bytes": 38143,
+      "wall_start_utc": "2026-11-22T19:07:08.845280+00:00"
+    },
+    {
+      "run": 2,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 0,
+      "median_latency_s": 3.9535,
+      "p95_latency_s": 7.3325,
+      "oversized": 0,
+      "leakage": 0,
+      "calls": 36,
+      "cost_run_usd": 0.011397,
+      "cost_cum_usd": 0.01801,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "11.68MiB / 3.591GiB",
+      "log_bytes": 75192,
+      "wall_start_utc": "2026-11-22T19:09:42.323657+00:00"
+    },
+    {
+      "run": 3,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 0,
+      "median_latency_s": 4.086,
+      "p95_latency_s": 8.698,
+      "oversized": 0,
+      "leakage": 0,
+      "calls": 36,
+      "cost_run_usd": 0.016658,
+      "cost_cum_usd": 0.034668,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "12.22MiB / 3.591GiB",
+      "log_bytes": 112429,
+      "wall_start_utc": "2026-11-22T19:12:26.041595+00:00"
+    },
+    {
+      "run": 4,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 0,
+      "median_latency_s": 3.833,
+      "p95_latency_s": 8.8338,
+      "oversized": 0,
+      "leakage": 0,
+      "calls": 36,
+      "cost_run_usd": 0.022101,
+      "cost_cum_usd": 0.056769,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "12.82MiB / 3.591GiB",
+      "log_bytes": 149977,
+      "wall_start_utc": "2026-11-22T19:15:18.735544+00:00"
+    },
+    {
+      "run": 5,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 0,
+      "median_latency_s": 4.1345,
+      "p95_latency_s": 7.236,
+      "oversized": 0,
+      "leakage": 1,
+      "calls": 36,
+      "cost_run_usd": 0.02761,
+      "cost_cum_usd": 0.084379,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "13.14MiB / 3.591GiB",
+      "log_bytes": 187710,
+      "wall_start_utc": "2026-11-22T19:18:05.084157+00:00"
+    },
+    {
+      "run": 6,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 0,
+      "median_latency_s": 5.118,
+      "p95_latency_s": 9.1745,
+      "oversized": 0,
+      "leakage": 0,
+      "calls": 36,
+      "cost_run_usd": 0.033467,
+      "cost_cum_usd": 0.117846,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "12.57MiB / 3.591GiB",
+      "log_bytes": 226510,
+      "wall_start_utc": "2026-11-22T19:20:45.886474+00:00"
+    },
+    {
+      "run": 7,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 2,
+      "median_latency_s": 4.3275,
+      "p95_latency_s": 9.2873,
+      "oversized": 1,
+      "leakage": 1,
+      "calls": 36,
+      "cost_run_usd": 0.090874,
+      "cost_cum_usd": 0.20872,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "14.35MiB / 3.591GiB",
+      "log_bytes": 436216,
+      "wall_start_utc": "2026-11-22T19:24:02.639930+00:00"
+    },
+    {
+      "run": 8,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 0,
+      "median_latency_s": 5.4275,
+      "p95_latency_s": 13.8093,
+      "oversized": 0,
+      "leakage": 2,
+      "calls": 36,
+      "cost_run_usd": 0.123442,
+      "cost_cum_usd": 0.332162,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "15.96MiB / 3.591GiB",
+      "log_bytes": 497396,
+      "wall_start_utc": "2026-11-22T19:32:07.921064+00:00"
+    },
+    {
+      "run": 9,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 2,
+      "median_latency_s": 5.439,
+      "p95_latency_s": 10.3426,
+      "oversized": 1,
+      "leakage": 1,
+      "calls": 36,
+      "cost_run_usd": 0.190168,
+      "cost_cum_usd": 0.52233,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "16.91MiB / 3.591GiB",
+      "log_bytes": 702531,
+      "wall_start_utc": "2026-11-22T19:36:15.263117+00:00"
+    },
+    {
+      "run": 10,
+      "rc": 0,
+      "n_commands": 36,
+      "timeouts": 2,
+      "median_latency_s": 5.946,
+      "p95_latency_s": 13.9702,
+      "oversized": 1,
+      "leakage": 1,
+      "calls": 36,
+      "cost_run_usd": 0.298637,
+      "cost_cum_usd": 0.820967,
+      "container_before": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_after": {
+        "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+        "started_at": "2026-11-22T19:07:05.078776169Z"
+      },
+      "container_unchanged": true,
+      "mem_usage": "20.35MiB / 3.591GiB",
+      "log_bytes": 906557,
+      "wall_start_utc": "2026-11-22T19:44:48.826637+00:00"
+    }
+  ],
+  "container_initial": {
+    "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+    "started_at": "2026-11-22T19:07:05.078776169Z"
+  },
+  "container_image": "sha256:f54cfa99d5cbe8e5386c1f974d2f630311b371628b81d62d41d78eb2e15c53e6",
+  "container_final": {
+    "id": "e85c64992b2c4723362a36ff38449fdcb4c101c89169002b7b4ac9fafdf7f155",
+    "started_at": "2026-11-22T19:07:05.078776169Z"
+  },
+  "container_never_recreated": true,
+  "stop_reason": "",
+  "total_calls": 360,
+  "total_cost_usd": 0.820967
+}
