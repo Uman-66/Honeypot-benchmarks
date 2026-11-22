@@ -215,7 +215,7 @@ The driver exits with code 3 and writes `status["safety_stop"]` to
 | Free disk below | 5 GB | hardcoded |
 | Cumulative estimated cost | > `--cost-cap` USD | `--cost-cap` (default $6) |
 | Unexpected model string in proxy log | any model ≠ `glm-5p3-flash` | hardcoded |
-| Per-slot provider call count | > 80 (LLM SSH) / > 45 (galah) | hardcoded |
+| Per-slot provider call count | > 80 single-mode / > 100 two-mode (LLM SSH), > 45 (galah) | hardcoded |
 
 To resume after a safety stop, fix the underlying issue, then re-run.
 The status file keeps `"safety_stop"` until you manually remove it
@@ -337,8 +337,10 @@ est_cost=...`) and on the per-slot progress line.
 
 After each slot the driver counts proxy requests since the slot started and
 stops with exit 3 and `slot_call_anomaly: <target> <n> calls` when an LLM SSH
-slot exceeds 80 calls or a galah slot exceeds 45 (a clean slot measured 36-39
-and 20; prompt+quiet in runs 1-2 is ~76). Targets that never call the model
+slot exceeds 80 calls (100 when the slot runs both prompt and quiet) or a galah
+slot exceeds 45. The count spans the **whole slot**: `calls_before_slot` is
+taken before the mode loop, so runs 1-2 sum both modes (38+38 vellmes,
+36+36 beelzebub, 37+37 advshellm, 39+39 deceive). Targets that never call the model
 (cowrie, llmhoneypot, groundtruth_*) are not guarded. This would have stopped
 the multiplier bug at run 2 (152 calls in one prompt+quiet slot).
 

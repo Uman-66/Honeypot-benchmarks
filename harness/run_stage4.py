@@ -125,6 +125,9 @@ COST_PER_COMPL_TOKEN   = 0.50 / 1_000_000         # output
 # SSH slot measured 36-39 provider calls and a galah slot 20 in run 1. Anything
 # far above that means the slot replayed the list (the --runs multiplier bug).
 SAFETY_SLOT_CALLS_LLM_SSH = 80
+# Runs 1-2 of an LLM SSH target run prompt AND quiet in the same slot, and the
+# guard counts the whole slot: 38+38 (vellmes), 36+36, 37+37, 39+39 (deceive).
+SAFETY_SLOT_CALLS_LLM_SSH_MULTI = 100
 SAFETY_SLOT_CALLS_GALAH   = 45
 EXPECTED_MODEL         = "accounts/fireworks/models/glm-5p3-flash"
 
@@ -638,18 +641,26 @@ def _proxy_request_count(proxy_log_path: Path) -> int:
     return n
 
 
-def _slot_call_limit(target: str) -> int | None:
-    """Maximum plausible provider calls for one slot of *target*."""
+def _slot_call_limit(target: str, n_modes: int = 1) -> int | None:
+    """Maximum plausible provider calls for one slot of *target*.
+
+    *n_modes* is the number of modes executed in the slot: a slot that runs
+    both prompt and quiet necessarily makes about twice as many calls, and the
+    count below spans the whole slot.
+    """
     if target == "galah":
         return SAFETY_SLOT_CALLS_GALAH
     if target in LLM_SSH_TARGETS:
+        if n_modes > 1:
+            return SAFETY_SLOT_CALLS_LLM_SSH_MULTI
         return SAFETY_SLOT_CALLS_LLM_SSH
     return None
 
 
-def _slot_call_anomaly_message(target: str, n_calls: int) -> str | None:
+def _slot_call_anomaly_message(target: str, n_calls: int,
+                               n_modes: int = 1) -> str | None:
     """Flag a slot that made far more provider calls than its list explains."""
-    limit = _slot_call_limit(target)
+    limit = _slot_call_limit(target, n_modes)
     if limit is not None and n_calls > limit:
         return f"slot_call_anomaly: {target} {n_calls} calls"
     return None
@@ -1366,7 +1377,8 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                              mode, result["rc"], result["n_commands"], result["n_timeouts"])
 
                 slot_calls = _proxy_request_count(proxy_log_path) - calls_before_slot
-                msg = _slot_call_anomaly_message(target, slot_calls)
+                msg = _slot_call_anomaly_message(target, slot_calls,
+                                                 len(modes_to_run))
                 if msg:
                     log.error("SAFETY STOP: %s", msg)
                     status["safety_stop"] = msg

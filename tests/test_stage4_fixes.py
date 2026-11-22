@@ -242,6 +242,45 @@ def test_slot_call_anomaly_predicate():
     assert s4._slot_call_anomaly_message("groundtruth_ssh", 1000) is None
 
 
+def test_two_mode_slot_allows_78_calls():
+    """Runs 1-2 run prompt AND quiet in one slot: 78 calls must not stop."""
+    assert s4._slot_call_anomaly_message("deceive", 78, 2) is None
+    assert s4._slot_call_anomaly_message("vellmes", 76, 2) is None
+    assert s4._slot_call_anomaly_message("deceive", 100, 2) is None
+    assert s4._slot_call_anomaly_message("deceive", 101, 2) == \
+        "slot_call_anomaly: deceive 101 calls"
+
+
+def test_two_mode_slot_with_152_calls_stops():
+    """The multiplier bug produced 152 calls in one prompt+quiet slot."""
+    assert s4._slot_call_anomaly_message("deceive", 152, 2) == \
+        "slot_call_anomaly: deceive 152 calls"
+    assert s4._slot_call_anomaly_message("beelzebub", 152, 2) == \
+        "slot_call_anomaly: beelzebub 152 calls"
+
+
+def test_single_mode_limit_stays_80():
+    assert s4._slot_call_anomaly_message("vellmes", 80, 1) is None
+    assert s4._slot_call_anomaly_message("vellmes", 81, 1) == \
+        "slot_call_anomaly: vellmes 81 calls"
+    # galah has a single http mode, so the multi-mode allowance never applies
+    assert s4._slot_call_anomaly_message("galah", 100, 2) == \
+        "slot_call_anomaly: galah 100 calls"
+
+
+def test_guard_counts_both_modes_of_one_slot(tmp_path):
+    """The slot delta spans both mode markers (38 prompt + 40 quiet = 78)."""
+    rows = [{"event": "slot_start", "mode": "prompt"}]
+    rows += [{"status": 200}] * 38
+    rows += [{"event": "slot_start", "mode": "quiet"}]
+    rows += [{"status": 200}] * 40
+    p = _write_log(tmp_path, rows)
+    slot_calls = s4._proxy_request_count(p)
+    assert slot_calls == 78
+    assert s4._slot_call_anomaly_message("vellmes", slot_calls, 2) is None
+    assert s4._slot_call_anomaly_message("vellmes", slot_calls, 1) is None
+
+
 def test_slot_call_count_uses_only_the_current_slot(tmp_path):
     rows = [{"event": "slot_start", "run": 1, "target": "vellmes"}]
     rows += [{"status": 200, "prompt_tokens": 10}] * 38
