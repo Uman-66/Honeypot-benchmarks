@@ -38,7 +38,7 @@ See [BENCHMARK.md](BENCHMARK.md) and [results/summary.md](results/summary.md).
   proxy. 180 slots completed, 3,699 proxy requests, about $2.02 at the
   corrected cached-token price model.
 
-The full write-up is [report/honeypot_report_v3.tex](report/honeypot_report_v3.tex)
+The full write-up is [report/honeypot_report_v2.tex](report/honeypot_report_v2.tex)
 (the PDF is added after it is compiled). Design, resume rules and the safety
 stops are in [docs/STAGE4_NOTES.md](docs/STAGE4_NOTES.md).
 
@@ -60,7 +60,7 @@ nine baseline/pilot galah bodies stay withheld for the reasons in
 | Tool | Status | Protocol | LLM-based | Host port | Notes |
 |---|---|---:|:---:|---:|---|
 | [DECEIVE](https://github.com/splunk/DECEIVE) | Done | SSH | Yes | 8022 | LangChain-based |
-| [Beelzebub](https://github.com/mariocandela/beelzebub) | Done | SSH | Yes | 2222 | Go-based |
+| [Beelzebub](https://github.com/beelzebub-labs/beelzebub) | Done | SSH | Yes | 2222 | Go-based |
 | [shelLM / AdvancedshelLM](https://github.com/stratosphereips/shelLM) | Done | SSH | Yes | 2224 | Subprocess wrapper |
 | [VelLMes](https://github.com/stratosphereips/VelLMes-AI-Deception-Framework) | Done | SSH | Yes | 2228 | Commit `192fa5084df84b38a16f6581939fd3143c350181` |
 | [galah](https://github.com/0x4D31/galah) | Done | HTTP | Yes | 8088 | LLM-generated HTTP responses |
@@ -111,7 +111,7 @@ OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
 
 ```powershell
 git clone https://github.com/splunk/DECEIVE DECEIVE
-git clone https://github.com/mariocandela/beelzebub beelzebub
+git clone https://github.com/beelzebub-labs/beelzebub beelzebub
 git clone https://github.com/stratosphereips/shelLM shelLM
 git clone https://github.com/0x4D31/galah galah
 git clone https://github.com/PalisadeResearch/llm-honeypot llm-honeypot

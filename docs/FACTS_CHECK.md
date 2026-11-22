@@ -85,6 +85,10 @@ galah rows in `results/summary.md` cannot be recomputed from this repository alo
 Licence texts are copied verbatim into `LICENSES/`; see `THIRD_PARTY_NOTICES.md` for the
 per-tool table, upstream URLs and which tools were modified.
 
+Beelzebub upstream URL, checked 2026-11-22: `https://github.com/beelzebub-labs/beelzebub`
+is canonical; `https://github.com/mariocandela/beelzebub` resolves but redirects there
+(HTTP 200 after redirect).
+
 DECEIVE upstream URL, checked 2026-11-21: `https://github.com/splunk/DECEIVE` resolves;
 `https://github.com/coverflex-tech/DECEIVE` returns "Repository not found". The upstream
 repository tracks `SSH/config.ini.TEMPLATE`, not `SSH/config.ini`.

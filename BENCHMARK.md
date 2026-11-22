@@ -257,7 +257,7 @@ read-only facts verification in [docs/FACTS_CHECK.md](docs/FACTS_CHECK.md).
 
 The numbers above are the published final batch and are unchanged. Two later
 stages were collected on branch `stage4-driver`; the full write-up is
-[`report/honeypot_report_v3.tex`](report/honeypot_report_v3.tex) and the data
+[`report/honeypot_report_v2.tex`](report/honeypot_report_v2.tex) and the data
 are under [`results/exp/`](results/exp/).
 
 - **Harness latency floor (Stage 2).** The default quiet rule records a command
