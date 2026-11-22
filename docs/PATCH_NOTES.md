@@ -75,8 +75,10 @@ Upstream tracks `SSH/config.ini.TEMPLATE`; the clone's `SSH/config.ini` is deriv
 | `model_name` changed from `gpt-4o` to `accounts/fireworks/models/glm-5p3-flash` | Use the benchmark model via Fireworks |
 
 The commented-out `base_url` example and the `tiktoken_model_name = gpt-4o` key are **not**
-in the working clone; they exist only in `recovered/deceive_app/SSH/config.ini`, the copy taken
-from the built application. In the clone the same value comes from the code default at
+in the working clone; they exist only in the copy of `SSH/config.ini` taken from the built
+application, which is kept outside this repository beside an unpublished private SSH host key
+and is therefore **not published**, so this item cannot be checked from the repository
+(UNVERIFIED). In the clone the same value comes from the code default at
 `ssh_server.py:420` (`config['llm'].get("tiktoken_model_name", "gpt-4o")`), so both resolve
 to `gpt-4o` at run time.
 

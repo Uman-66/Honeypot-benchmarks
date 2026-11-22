@@ -127,8 +127,8 @@ repository tracks `SSH/config.ini.TEMPLATE`, not `SSH/config.ini`.
 4. Cause of the Beelzebub difference between the batches and of the rising
    latency in the single-container control (confounds: ceiling generations,
    time of day, n=10).
-5. Why prompt mode returned less than quiet mode for the 32 quiet-check pairs
-   beyond the noise floor.
+5. Why prompt mode returned less than quiet mode for the 33 quiet-check pairs
+   (of 288) beyond the noise floor.
 6. Whether the VelLMes target-side replies (capped 800-token answers produced
    in 4.5-7.8 s) are held or dropped inside the target; no container-side log
    was recorded.

@@ -38,13 +38,18 @@ See [BENCHMARK.md](BENCHMARK.md) and [results/summary.md](results/summary.md).
   proxy. 180 slots completed, 3,699 proxy requests, about $2.02 at the
   corrected cached-token price model.
 
-The full write-up is [report/honeypot_report_v2.tex](report/honeypot_report_v2.tex)
-(the PDF is added after it is compiled). Design, resume rules and the safety
-stops are in [docs/STAGE4_NOTES.md](docs/STAGE4_NOTES.md).
+The full write-up is [report/honeypot_report_v2.pdf](report/honeypot_report_v2.pdf);
+the LaTeX source is [report/honeypot_report_v2.tex](report/honeypot_report_v2.tex).
+Design, resume rules and the safety stops are in
+[docs/STAGE4_NOTES.md](docs/STAGE4_NOTES.md).
+
+The pass and its analysis are reproduced with (one command per line; the
+trailing backtick is the PowerShell line continuation):
 
 ```powershell
-.venv-hb\Scripts\python.exe harness\run_stage4.py `
-    --runs 20 --timing prompt --seed 2026
+.venv-hb\Scripts\python.exe harness\run_stage4.py --runs 20 --timing prompt --seed 2026 `
+    --quiet-check-runs 2 --out results\exp\stage4
+.venv-hb\Scripts\python.exe harness\analyze_stage4.py --stage4-dir results\exp\stage4
 ```
 
 Stage 4 data lives in `results/exp/stage4/`: `raw/`, `raw_quiet/`,
