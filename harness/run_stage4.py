@@ -116,9 +116,16 @@ SAFETY_HTTP_ERR_RATE   = 0.20   # Fireworks HTTP error rate over last 50 proxy r
 SAFETY_TIMEOUT_FRAC    = 0.50   # LLM SSH target: fraction of commands that may time out
 SAFETY_CONSEC_SLOTS    = 3      # consecutive slots above SAFETY_TIMEOUT_FRAC → stop
 SAFETY_DISK_MIN_GB     = 5.0
-SAFETY_COST_CAP_DEFAULT = 8.0   # USD at list price ($0.15/M in, $0.50/M out)
-COST_PER_PROMPT_TOKEN  = 0.15 / 1_000_000
-COST_PER_COMPL_TOKEN   = 0.50 / 1_000_000
+SAFETY_COST_CAP_DEFAULT = 6.0   # USD with the corrected model below
+COST_PER_PROMPT_TOKEN  = 0.15 / 1_000_000         # uncached input
+COST_PER_CACHED_PROMPT_TOKEN = 0.03 / 1_000_000   # cached (cache-hit) input
+COST_PER_COMPL_TOKEN   = 0.50 / 1_000_000         # output
+
+# Per-slot call sanity guard. One slot runs the command list once, so an LLM
+# SSH slot measured 36-39 provider calls and a galah slot 20 in run 1. Anything
+# far above that means the slot replayed the list (the --runs multiplier bug).
+SAFETY_SLOT_CALLS_LLM_SSH = 80
+SAFETY_SLOT_CALLS_GALAH   = 45
 EXPECTED_MODEL         = "accounts/fireworks/models/glm-5p3-flash"
 
 # Port-ready poll
@@ -555,8 +562,36 @@ def _estimate_cost_from_proxy_log(proxy_log_path: Path) -> tuple[float, int]:
             n += 1
             pt = entry.get("prompt_tokens") or 0
             ct = entry.get("completion_tokens") or 0
-            cost += pt * COST_PER_PROMPT_TOKEN + ct * COST_PER_COMPL_TOKEN
+            cached = _cached_prompt_tokens(entry)
+            if cached is None:
+                # No cache breakdown in this row: bill the whole prompt at the
+                # uncached rate (conservative, never undercounts).
+                cost += pt * COST_PER_PROMPT_TOKEN
+            else:
+                cached = min(cached, pt)
+                cost += ((pt - cached) * COST_PER_PROMPT_TOKEN
+                         + cached * COST_PER_CACHED_PROMPT_TOKEN)
+            cost += ct * COST_PER_COMPL_TOKEN
     return cost, n
+
+
+def _cached_prompt_tokens(entry: dict[str, Any]) -> int | None:
+    """Cache-hit prompt tokens the provider reported, or None if absent.
+
+    Cached prompt tokens are billed at a fraction of the uncached rate; billing
+    every prompt token at $0.15/M overestimated the first Stage 4 batch by
+    about 3.8x because 95.6% of its prompt tokens were cache hits.
+    """
+    usage = entry.get("usage")
+    if not isinstance(usage, dict):
+        return None
+    details = usage.get("prompt_tokens_details")
+    if not isinstance(details, dict):
+        return None
+    cached = details.get("cached_tokens")
+    if isinstance(cached, (int, float)):
+        return int(cached)
+    return None
 
 
 def _recent_http_error_rate(proxy_log_path: Path, window: int = 50) -> float:
@@ -581,6 +616,43 @@ def _recent_http_error_rate(proxy_log_path: Path, window: int = 50) -> float:
         return 0.0
     errors = sum(1 for r in recent if (r.get("status") or 0) >= 500)
     return errors / len(recent)
+
+
+def _proxy_request_count(proxy_log_path: Path) -> int:
+    """Number of real request rows in the proxy log (slot markers excluded)."""
+    if not proxy_log_path.exists():
+        return 0
+    n = 0
+    with open(proxy_log_path, encoding=ENCODING) as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if entry.get("event") == "slot_start":
+                continue
+            n += 1
+    return n
+
+
+def _slot_call_limit(target: str) -> int | None:
+    """Maximum plausible provider calls for one slot of *target*."""
+    if target == "galah":
+        return SAFETY_SLOT_CALLS_GALAH
+    if target in LLM_SSH_TARGETS:
+        return SAFETY_SLOT_CALLS_LLM_SSH
+    return None
+
+
+def _slot_call_anomaly_message(target: str, n_calls: int) -> str | None:
+    """Flag a slot that made far more provider calls than its list explains."""
+    limit = _slot_call_limit(target)
+    if limit is not None and n_calls > limit:
+        return f"slot_call_anomaly: {target} {n_calls} calls"
+    return None
 
 
 def _unexpected_model_seen(proxy_log_path: Path) -> str | None:
@@ -678,7 +750,8 @@ def _run_ssh_slot(
     argv = [
         "--targets", targets_yaml,
         "--commands", commands_yaml,
-        "--runs", str(run),
+        "--runs", "1",
+        "--run-index", str(run),
         "--out", str(out_dir),
         "--timeout", str(int(timeout)),
         "--timing", timing,
@@ -749,7 +822,8 @@ def _run_http_slot(
     argv = [
         "--targets", targets_yaml,
         "--requests", requests_yaml,
-        "--runs", str(run),
+        "--runs", "1",
+        "--run-index", str(run),
         "--out", str(out_dir),
         "--timeout", str(int(timeout)),
         "--target", tname,
@@ -1147,6 +1221,8 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
 
                 # ── Safety checks (before starting containers) ──────────────
                 cost_usd, n_calls = _estimate_cost_from_proxy_log(proxy_log_path)
+                log.info("slot start: calls=%d est_cost=$%.3f cap=$%.2f",
+                         n_calls, cost_usd, args.cost_cap)
                 msg = _cost_stop_message(cost_usd, args.cost_cap, n_calls)
                 if msg:
                     log.error("SAFETY STOP: %s", msg)
@@ -1260,6 +1336,7 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                 slot_result: dict[str, Any] = {}
                 log.info("slot modes to run: %s (planned %s)", modes_to_run, modes)
 
+                calls_before_slot = _proxy_request_count(proxy_log_path)
                 for mode in modes_to_run:
                     _write_slot_boundary(proxy_log_path, run, pos + 1, target, mode)
                     if is_http:
@@ -1287,6 +1364,16 @@ def main(argv: list[str] | None = None) -> int:  # noqa: C901 (complexity OK for
                     slot_result[mode] = result
                     log.info("  mode=%s: rc=%d  cmds=%d  timeouts=%d",
                              mode, result["rc"], result["n_commands"], result["n_timeouts"])
+
+                slot_calls = _proxy_request_count(proxy_log_path) - calls_before_slot
+                msg = _slot_call_anomaly_message(target, slot_calls)
+                if msg:
+                    log.error("SAFETY STOP: %s", msg)
+                    status["safety_stop"] = msg
+                    _write_json_atomic(status_path, status)
+                    exit_code = 3
+                    _interrupted = True
+                    break
 
                 primary_result = slot_result.get(modes_to_run[0], {})
                 n_cmds = primary_result.get("n_commands", 0)
