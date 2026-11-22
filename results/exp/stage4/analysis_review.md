@@ -41,6 +41,15 @@ documented in the docstring but never written before this pass; the analyzer was
 fixed (separate commit) to emit them, plus the per-command proxy join it already
 computed in memory.
 
+`quiet_check.csv` holds only the pairs the analyzer flags (85 rows), not the full
+design. `quiet_check_full.py` recomputes all 288 pairs (4 LLM targets x 36 scored
+commands x runs 1-2) to `quiet_check_full.csv`, using the analyzer's masker and
+similarity helper and the masked A-vs-C floor from `results/exp/validation`.
+Under the report's rule (prompt shorter than quiet AND masked similarity below
+the floor for the same command) 33 pairs qualify: AdvancedshelLM 9, Beelzebub 6,
+DECEIVE 11, VelLMes 7. The analyzer's own threshold (unmasked similarity, drop >
+0.05) is looser, which is why its subset file is larger.
+
 ### SSH targets (prompt mode, n = 20 runs, 36 scored commands/run)
 
 | Target | timeout | median s (95% CI) | p95 s | extra vs GT s (95% CI) | det. masked | fidelity masked |

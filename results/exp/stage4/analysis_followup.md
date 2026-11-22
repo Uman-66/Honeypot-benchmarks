@@ -24,7 +24,7 @@ Nothing was run against a target, no data was modified or committed.
 | llmhoneypot | prompt | 720 | 0 | 0 | 0 | 0 |
 | groundtruth_ssh | prompt | 720 | 0 | 0 | 0 | 0 |
 
-- `prompt_without_echo` is false in all 4,540 SSH rows (no missing command echo).
+- `prompt_without_echo` is false in all 5,476 SSH rows of the pass (5,180 prompt-mode rows, of which 5,040 are scored, plus 296 quiet rows) and in all 6,276 rows including the 800 HTTP rows (no missing command echo).
 - "No final prompt" is the timeout set plus one beelzebub quiet row
   (`find_etc_conf`, which ends with the model echoing the *next* prompt and
   command — leakage, not truncation).
