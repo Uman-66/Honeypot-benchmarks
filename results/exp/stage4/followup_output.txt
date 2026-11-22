@@ -1,0 +1,196 @@
+== 1a. PROMPT-MODE INTEGRITY ==
+target          mode      rows  no_echo  no_final  interior
+deceive         prompt     720        0       720         2
+deceive         quiet       72        0        72         0
+beelzebub       prompt     720        0       645        13
+beelzebub       quiet       72        0        71         6
+vellmes         prompt     720        0       720         0
+vellmes         quiet       72        0        72         0
+advshellm       prompt     720        0       720         0
+advshellm       quiet       72        0        72         0
+cowrie          prompt     720        0       720         0
+llmhoneypot     prompt     720        0       720         0
+groundtruth_ssh prompt     720        0       720         0
+
+== 1b. vellmes ls_etc run 2 ==
+prompt: timed_out=True latency=120.013 bytes=10 cleaned_len=0 raw='ls /etc\r\n '
+quiet : timed_out=False latency=6.015 bytes=2779 cleaned_len=2720
+proxy requests overlapping the 120 s window: 5
+  status=200 dur_ms=1860.0 start=2026-11-22T08:21:24.333961+00:00 prompt=1738 completion=92 err=
+  status=200 dur_ms=3531.0 start=2026-11-22T08:21:26.228884+00:00 prompt=1788 completion=482 err=
+  status=200 dur_ms=7203.0 start=2026-11-22T08:21:29.789433+00:00 prompt=2249 completion=800 err=
+  status=200 dur_ms=1500.0 start=2026-11-22T08:23:29.807250+00:00 prompt=2276 completion=34 err=
+  status=200 dur_ms=3469.0 start=2026-11-22T08:23:31.332832+00:00 prompt=2310 completion=467 err=
+
+== 1c. NOISE-FLOOR EXCEEDANCES (prompt shorter AND sim < A-vs-C quiet noise) ==
+deceive: pairs=72 flagged=10
+   run 1 env                    plen=   684 qlen=  2054 sim=0.280 floor=0.440 lat=3.625
+   run 1 ls                     plen=    50 qlen=    56 sim=0.340 floor=0.781 lat=1.836
+   run 1 ls_home                plen=    51 qlen=    65 sim=0.458 floor=0.667 lat=1.656
+   run 1 perm_sudo_l            plen=    26 qlen=    81 sim=0.514 floor=1.000 lat=120.016
+   run 2 hostname               plen=    10 qlen=    13 sim=0.000 floor=0.267 lat=1.51
+   run 2 id                     plen=    89 qlen=    92 sim=0.802 floor=0.832 lat=4.138
+   run 2 perm_sudo_l            plen=   344 qlen=   351 sim=0.587 floor=1.000 lat=2.855
+   run 2 state_ls_tmp_1         plen=   165 qlen=   176 sim=0.504 floor=0.691 lat=4.59
+   run 2 state_ls_tmp_2         plen=   189 qlen=   194 sim=0.543 floor=0.684 lat=2.298
+   run 2 state_ls_tmp_3         plen=   181 qlen=   186 sim=0.572 floor=0.671 lat=2.121
+beelzebub: pairs=72 flagged=6
+   run 1 ls                     plen=    67 qlen=   255 sim=0.025 floor=0.467 lat=1.731
+   run 2 err_foobarbaz          plen=    28 qlen=   247 sim=0.204 floor=1.000 lat=1.66
+   run 2 find_etc_conf          plen=   192 qlen=164049 sim=0.015 floor=0.271 lat=2.636
+   run 2 ls                     plen=    96 qlen=   218 sim=0.025 floor=0.467 lat=1.809
+   run 2 ls_la                  plen=   906 qlen=  2916 sim=0.012 floor=0.066 lat=4.21
+   run 2 perm_shadow            plen=    35 qlen=   309 sim=0.203 floor=1.000 lat=1.465
+vellmes: pairs=72 flagged=7
+   run 1 ps_aux                 plen=  1398 qlen=  1638 sim=0.613 floor=0.691 lat=120.002
+   run 1 whoami                 plen=     4 qlen=     5 sim=0.889 floor=1.000 lat=1.685
+   run 2 df_h                   plen=   372 qlen=   600 sim=0.613 floor=0.707 lat=2.429
+   run 2 perm_sudo_l            plen=    26 qlen=   248 sim=0.053 floor=0.105 lat=1.643
+   run 2 state_ls_tmp_1         plen=     6 qlen=   171 sim=0.068 floor=0.071 lat=1.613
+   run 2 state_ls_tmp_2         plen=    14 qlen=   179 sim=0.124 floor=0.130 lat=1.722
+   run 2 state_ls_tmp_3         plen=     6 qlen=   171 sim=0.068 floor=0.071 lat=1.832
+advshellm: pairs=72 flagged=9
+   run 1 df_h                   plen=   182 qlen=   235 sim=0.408 floor=0.505 lat=2.041
+   run 1 passwd                 plen=    83 qlen=  1208 sim=0.122 floor=1.000 lat=2.969
+   run 1 ps_aux                 plen=  2542 qlen=  4413 sim=0.423 floor=0.526 lat=7.081
+   run 1 state_ls_tmp_1         plen=   221 qlen=   223 sim=0.158 floor=1.000 lat=2.814
+   run 1 state_ls_tmp_2         plen=   229 qlen=   231 sim=0.178 floor=1.000 lat=2.5
+   run 1 state_ls_tmp_3         plen=   221 qlen=   223 sim=0.158 floor=1.000 lat=2.429
+   run 2 find_etc_conf          plen=   101 qlen=   204 sim=0.039 floor=0.489 lat=3.301
+   run 2 ls_la                  plen=   965 qlen=   966 sim=0.593 floor=0.676 lat=3.686
+   run 2 ps_aux                 plen=  2971 qlen=  6701 sim=0.090 floor=0.526 lat=9.483
+
+== 1d. harness latency vs overlapping API duration for flagged pairs ==
+deceive     run1 env                    lat=  3.625 n_api=1 api_max_ms=3563.0 status=[200] 
+deceive     run1 ls                     lat=  1.836 n_api=1 api_max_ms=1781.0 status=[200] 
+deceive     run1 ls_home                lat=  1.656 n_api=1 api_max_ms=1610.0 status=[200] 
+deceive     run1 perm_sudo_l            lat=120.016 n_api=1 api_max_ms=2688.0 status=[200] 
+deceive     run2 hostname               lat=   1.51 n_api=1 api_max_ms=1453.0 status=[200] 
+deceive     run2 id                     lat=  4.138 n_api=1 api_max_ms=4093.0 status=[200] 
+deceive     run2 perm_sudo_l            lat=  2.855 n_api=1 api_max_ms=2797.0 status=[200] 
+deceive     run2 state_ls_tmp_1         lat=   4.59 n_api=1 api_max_ms=4515.0 status=[200] 
+deceive     run2 state_ls_tmp_2         lat=  2.298 n_api=1 api_max_ms=2234.0 status=[200] 
+deceive     run2 state_ls_tmp_3         lat=  2.121 n_api=1 api_max_ms=2063.0 status=[200] 
+beelzebub   run1 ls                     lat=  1.731 n_api=1 api_max_ms=1688.0 status=[200] 
+beelzebub   run2 err_foobarbaz          lat=   1.66 n_api=1 api_max_ms=1625.0 status=[200] 
+beelzebub   run2 find_etc_conf          lat=  2.636 n_api=1 api_max_ms=2609.0 status=[200] 
+beelzebub   run2 ls                     lat=  1.809 n_api=1 api_max_ms=1781.0 status=[200] 
+beelzebub   run2 ls_la                  lat=   4.21 n_api=1 api_max_ms=4172.0 status=[200] 
+beelzebub   run2 perm_shadow            lat=  1.465 n_api=1 api_max_ms=1438.0 status=[200] 
+vellmes     run1 ps_aux                 lat=120.002 n_api=1 api_max_ms=5047.0 status=[200] 
+vellmes     run1 whoami                 lat=  1.685 n_api=1 api_max_ms=1656.0 status=[200] 
+vellmes     run2 df_h                   lat=  2.429 n_api=1 api_max_ms=2390.0 status=[200] 
+vellmes     run2 perm_sudo_l            lat=  1.643 n_api=1 api_max_ms=1594.0 status=[200] 
+vellmes     run2 state_ls_tmp_1         lat=  1.613 n_api=1 api_max_ms=1578.0 status=[200] 
+vellmes     run2 state_ls_tmp_2         lat=  1.722 n_api=1 api_max_ms=1671.0 status=[200] 
+vellmes     run2 state_ls_tmp_3         lat=  1.832 n_api=1 api_max_ms=1797.0 status=[200] 
+advshellm   run1 df_h                   lat=  2.041 n_api=1 api_max_ms=1984.0 status=[200] 
+advshellm   run1 passwd                 lat=  2.969 n_api=1 api_max_ms=2937.0 status=[200] 
+advshellm   run1 ps_aux                 lat=  7.081 n_api=1 api_max_ms=7032.0 status=[200] 
+advshellm   run1 state_ls_tmp_1         lat=  2.814 n_api=1 api_max_ms=2782.0 status=[200] 
+advshellm   run1 state_ls_tmp_2         lat=    2.5 n_api=1 api_max_ms=2454.0 status=[200] 
+advshellm   run1 state_ls_tmp_3         lat=  2.429 n_api=1 api_max_ms=2391.0 status=[200] 
+advshellm   run2 find_etc_conf          lat=  3.301 n_api=2 api_max_ms=257672.0 status=[200, 200] LATENCY<API
+advshellm   run2 ls_la                  lat=  3.686 n_api=2 api_max_ms=257672.0 status=[200, 200] LATENCY<API
+advshellm   run2 ps_aux                 lat=  9.483 n_api=2 api_max_ms=257672.0 status=[200, 200] LATENCY<API
+cases where harness latency < API duration: [('advshellm', 2, 'find_etc_conf', 3.301, 257672.0, [200, 200]), ('advshellm', 2, 'ls_la', 3.686, 257672.0, [200, 200]), ('advshellm', 2, 'ps_aux', 9.483, 257672.0, [200, 200])]
+
+== 3. BEELZEBUB: published vs Stage 4 vs Stage 2 ==
+  published run1: rows=36 timeouts=4 median=2.164 p95=8.87815 oversized=1 leakage=5
+  published run2: rows=36 timeouts=2 median=4.375 p95=17.78604999999995 oversized=2 leakage=1
+  published run3: rows=36 timeouts=2 median=4.992 p95=18.696099999999944 oversized=2 leakage=1
+  published run4: rows=36 timeouts=4 median=5.672000000000001 p95=39.78329999999997 oversized=2 leakage=2
+  published run5: rows=36 timeouts=4 median=7.086 p95=45.75819999999994 oversized=2 leakage=2
+  published all: rows=180 timeouts=16 median=5.023 p95=31.65644999999992 oversized=9 leakage=11
+  published totals: {'rows': 180, 'to': 16, 'med': 5.023, 'over': 9, 'leak': 11}
+  stage4 run1: rows=36 timeouts=0 median=2.2729999999999997 p95=4.69625 oversized=0 leakage=0
+  stage4 run2: rows=36 timeouts=0 median=2.0629999999999997 p95=4.5015 oversized=0 leakage=4
+  stage4 run3: rows=36 timeouts=0 median=2.45 p95=6.83075 oversized=0 leakage=3
+  stage4 run4: rows=36 timeouts=2 median=2.694 p95=6.058849999999995 oversized=1 leakage=1
+  stage4 run5: rows=36 timeouts=0 median=1.983 p95=5.922 oversized=0 leakage=1
+  stage4 run6: rows=36 timeouts=0 median=2.1365 p95=5.701 oversized=0 leakage=0
+  stage4 run7: rows=36 timeouts=0 median=1.7065000000000001 p95=4.1745 oversized=0 leakage=0
+  stage4 run8: rows=36 timeouts=0 median=2.1959999999999997 p95=10.97025 oversized=0 leakage=0
+  stage4 run9: rows=36 timeouts=2 median=3.8265000000000002 p95=10.22565 oversized=1 leakage=2
+  stage4 run10: rows=36 timeouts=0 median=2.243 p95=5.489 oversized=0 leakage=0
+  stage4 run11: rows=36 timeouts=0 median=2.1944999999999997 p95=7.352 oversized=0 leakage=0
+  stage4 run12: rows=36 timeouts=0 median=2.0095 p95=4.20925 oversized=0 leakage=0
+  stage4 run13: rows=36 timeouts=0 median=1.871 p95=4.35925 oversized=0 leakage=0
+  stage4 run14: rows=36 timeouts=0 median=2.2885 p95=5.804 oversized=0 leakage=0
+  stage4 run15: rows=36 timeouts=0 median=2.4165 p95=5.6075 oversized=0 leakage=0
+  stage4 run16: rows=36 timeouts=0 median=2.227 p95=4.84875 oversized=0 leakage=2
+  stage4 run17: rows=36 timeouts=0 median=2.3435 p95=4.805 oversized=0 leakage=0
+  stage4 run18: rows=36 timeouts=0 median=2.988 p95=6.48875 oversized=0 leakage=0
+  stage4 run19: rows=36 timeouts=0 median=2.9585 p95=6.1625 oversized=0 leakage=0
+  stage4 run20: rows=36 timeouts=0 median=3.1135 p95=6.897 oversized=0 leakage=0
+
+ Stage 2 validation beelzebub:
+  passA quiet: rows=36 timeouts=0 median=2.1094999999999997 p95=4.54325 oversized=0 leakage=0
+  passB prompt: rows=36 timeouts=0 median=1.697 p95=4.466 oversized=0 leakage=0
+  passC quiet: rows=36 timeouts=0 median=2.039 p95=3.9417500000000003 oversized=0 leakage=0
+
+ published file mtimes (repo working tree, read-only):
+  2026-11-06 11:33:23.843832  groundtruth_ssh_run01.jsonl
+  2026-11-06 11:33:45.992588  cowrie_run01.jsonl
+  2026-11-06 11:34:07.530662  llmhoneypot_run01.jsonl
+  2026-11-06 11:44:30.594540  beelzebub_run01.jsonl
+  2026-11-06 12:20:28.301583  advshellm_run01.jsonl
+  2026-11-06 12:27:44.778690  deceive_run01.jsonl
+  2026-11-06 12:34:58.563464  vellmes_run01.jsonl
+  2026-11-06 12:44:03.002377  beelzebub_run02.jsonl
+  2026-11-06 13:04:35.656680  beelzebub_run03.jsonl
+  2026-11-06 13:27:54.783938  beelzebub_run04.jsonl
+  2026-11-06 13:57:26.274628  beelzebub_run05.jsonl
+ published beelzebub file mtimes:
+  run1: 2026-11-06 11:44:30.594540
+  run2: 2026-11-06 12:44:03.002377
+  run3: 2026-11-06 13:04:35.656680
+  run4: 2026-11-06 13:27:54.783938
+  run5: 2026-11-06 13:57:26.274628
+ earliest/latest across targets: 2026-11-06 11:33:23.843832 -> 2026-11-06 14:06:08.572159
+
+== 4. CLOCK RESOLUTION ==
+  groundtruth_ssh: distinct latency values={0.015: 403, 0.016: 105, 0.031: 77, 0.03: 34, 0.014: 26, 0.013: 18, 0.032: 15, 0.047: 15}
+  cowrie: distinct latency values={0.031: 237, 0.015: 133, 0.032: 76, 0.016: 70, 0.03: 54, 0.047: 25, 0.028: 16, 0.029: 15}
+  llmhoneypot: distinct latency values={0.015: 408, 0.016: 136, 0.031: 87, 0.014: 35, 0.032: 25, 0.03: 9, 0.013: 8, 0.029: 5}
+  deceive: run medians distinct=[1.818, 1.9375, 2.1155, 2.1180000000000003, 2.2125000000000004, 2.2220000000000004, 2.2345, 2.322, 2.3525, 2.3895, 2.4245, 2.481, 2.5004999999999997, 2.5055, 2.628, 2.6405000000000003, 2.8739999999999997, 2.8745000000000003, 2.965, 3.2640000000000002]
+  beelzebub: run medians distinct=[1.7065000000000001, 1.871, 1.983, 2.0095, 2.0629999999999997, 2.1365, 2.1944999999999997, 2.1959999999999997, 2.227, 2.243, 2.2729999999999997, 2.2885, 2.3435, 2.4165, 2.45, 2.694, 2.9585, 2.988, 3.1135, 3.8265000000000002]
+  vellmes: run medians distinct=[1.832, 1.9064999999999999, 1.928, 1.931, 1.963, 1.9865, 2.004, 2.012, 2.028, 2.0309999999999997, 2.1755, 2.1765, 2.1845, 2.2155, 2.289, 2.3855, 2.474, 2.7720000000000002, 2.807, 2.808]
+  advshellm: run medians distinct=[1.9375, 2.0045, 2.0069999999999997, 2.0229999999999997, 2.032, 2.092, 2.1085000000000003, 2.1935000000000002, 2.222, 2.224, 2.2395, 2.316, 2.3295, 2.4015, 2.4715, 2.4735, 2.5035, 2.5525, 2.7105, 2.7809999999999997]
+  cowrie: run medians distinct=[0.016, 0.0285, 0.0295, 0.03, 0.031, 0.0315]
+  llmhoneypot: run medians distinct=[0.015, 0.016, 0.0295]
+  groundtruth_ssh: run medians distinct=[0.015, 0.016]
+
+== 6. COST BY TARGET / RUN TYPE ==
+total=$2.0173 requests=3699
+  advshellm        calls=  817 cost=$0.2253
+  beelzebub        calls=  794 cost=$0.4467
+  cowrie           calls=    0 cost=$0.0000
+  deceive          calls=  858 cost=$0.8983
+  galah            calls=  390 cost=$0.1522
+  groundtruth_http calls=    0 cost=$0.0000
+  groundtruth_ssh  calls=    0 cost=$0.0000
+  llmhoneypot      calls=    0 cost=$0.0000
+  vellmes          calls=  840 cost=$0.2947
+per-run median=$0.0710
+  run01 TWO-MODE     calls= 320 cost=$0.0853
+  run02 TWO-MODE     calls= 321 cost=$0.2001
+  run03 prompt-only  calls= 170 cost=$0.0512
+  run04 prompt-only  calls= 170 cost=$0.2407  <-- >3x median
+  run05 prompt-only  calls= 169 cost=$0.0427
+  run06 prompt-only  calls= 171 cost=$0.0905
+  run07 prompt-only  calls= 170 cost=$0.0407
+  run08 prompt-only  calls= 170 cost=$0.1717
+  run09 prompt-only  calls= 170 cost=$0.1542
+  run10 prompt-only  calls= 170 cost=$0.0492
+  run11 prompt-only  calls= 170 cost=$0.0568
+  run12 prompt-only  calls= 170 cost=$0.0440
+  run13 prompt-only  calls= 170 cost=$0.0415
+  run14 prompt-only  calls= 167 cost=$0.1495
+  run15 prompt-only  calls= 173 cost=$0.2268  <-- >3x median
+  run16 prompt-only  calls= 169 cost=$0.0451
+  run17 prompt-only  calls= 171 cost=$0.1397
+  run18 prompt-only  calls= 170 cost=$0.0953
+  run19 prompt-only  calls= 170 cost=$0.0497
+  run20 prompt-only  calls= 168 cost=$0.0426
+two-mode runs total=$0.2854  prompt-only total=$1.7318

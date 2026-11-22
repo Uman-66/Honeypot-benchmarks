@@ -1,0 +1,69 @@
+== 1. COMPLETENESS ==
+status.json: 188 slot keys, all complete={'complete'}, safety_stop=False, aux=['_consec_timeout_advshellm', '_consec_timeout_beelzebub', '_consec_timeout_cowrie', '_consec_timeout_deceive', '_consec_timeout_galah', '_consec_timeout_groundtruth_http', '_consec_timeout_groundtruth_ssh', '_consec_timeout_llmhoneypot', '_consec_timeout_vellmes']
+[PASS] status 180 run keys + 8 quiet — n=188
+[PASS] manifest 180 unique slots, no resumed — lines=180 dups=[] resumed=0
+manifest modes_run != modes rows: 0
+file counts raw={'advshellm': 20, 'beelzebub': 20, 'cowrie': 20, 'deceive': 20, 'groundtruth_ssh': 20, 'llmhoneypot': 20, 'vellmes': 20}
+file counts raw_quiet={'advshellm': 2, 'beelzebub': 2, 'deceive': 2, 'vellmes': 2}
+file counts raw_http={'galah': 20, 'groundtruth_http': 20}
+[PASS] file counts 140/8/40
+[PASS] row counts 37/37/20 — deviations=[] n_bad=0
+
+== 2. RUN / MODE FIELDS ==
+[PASS] run/s4_run/target/seed/mode/ver fields — rows=6276 bad=[] n_bad=0 non-2026={}
+s4_harness_ver values: {'3ffe159': 6276}
+s4_timing_mode values per dir: {'raw': {'prompt': 5180}, 'raw_quiet': {'quiet': 296}, 'raw_http': {'http': 800}}
+SSH legacy timing_mode field: {'prompt': 5180, 'quiet': 296}
+
+== 3. PROXY LOG ==
+slot_start markers=188 request rows=3699
+[PASS] one marker per mode (188) — n=188
+[PASS] per-mode call counts in range — outside=[]
+two-mode slot totals: [(1, 'advshellm', 74), (1, 'beelzebub', 72), (1, 'deceive', 78), (1, 'vellmes', 76), (2, 'advshellm', 75), (2, 'beelzebub', 72)] min/max 72 78
+[PASS] proxy statuses (non-200 listed, all upstream read timeouts) — n=2 [(6, 'advshellm', 'prompt', 502, 'TimeoutError: The read operation timed out'), (13, 'deceive', 'prompt', 502, 'TimeoutError: The read operation timed out')]
+[PASS] model_requested always glm-5p3-flash (model_reported None only on 502s) — {('accounts/fireworks/models/glm-5p3-flash', 'accounts/fireworks/models/glm-5p3-flash'): 3697, ('accounts/fireworks/models/glm-5p3-flash', None): 2}
+[PASS] no auth/bearer/key text in proxy log — hits=0
+calls=3699 prompt=20,459,956 cached=17,129,924 (83.72%) completion=2,007,696 rows_without_cached_breakdown=2
+cost corrected=$2.0173  (all-prompt-at-0.15=$4.0728)
+max completion_tokens per target: {'advshellm': 65536, 'beelzebub': 65536, 'deceive': 65536, 'galah': 10607, 'vellmes': 65536}
+calls >4000 completion tokens: {'deceive': 12, 'beelzebub': 6, 'advshellm': 7, 'galah': 6, 'vellmes': 3} total=34
+
+== 4. TIMEOUTS ==
+  deceive: runs=20 timeouts=29 over 720 scored cmds; per-run=[2, 0, 0, 2, 1, 0, 1, 2, 0, 0, 0, 0, 4, 2, 2, 0, 6, 2, 3, 2]
+  beelzebub: runs=20 timeouts=4 over 720 scored cmds; per-run=[0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  vellmes: runs=20 timeouts=45 over 720 scored cmds; per-run=[2, 3, 2, 2, 2, 2, 2, 5, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 1, 4]
+  advshellm: runs=20 timeouts=0 over 720 scored cmds; per-run=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  cowrie: runs=20 timeouts=0 over 720 scored cmds; per-run=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  llmhoneypot: runs=20 timeouts=0 over 720 scored cmds; per-run=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  groundtruth_ssh: runs=20 timeouts=0 over 720 scored cmds; per-run=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[PASS] no run with >10 timeouts — []
+
+== 4b. SLOT DURATIONS (driver.log) ==
+slots timed=180 total=6.85 h
+slot duration median=95s min=2s max=1026s
+slowest slots (s, run, pos, target): [(605.0, 13, 6, 'deceive'), (609.0, 20, 9, 'vellmes'), (789.0, 2, 8, 'vellmes'), (809.0, 8, 1, 'vellmes'), (874.0, 17, 3, 'deceive'), (1026.0, 1, 2, 'vellmes')]
+per-target median slot s: {'advshellm': 108, 'beelzebub': 114, 'cowrie': 6, 'deceive': 364, 'galah': 115, 'groundtruth_http': 2, 'groundtruth_ssh': 5, 'llmhoneypot': 5, 'vellmes': 344}
+
+== 5. MASKING / SECRET SCAN ==
+flagged patterns (file, count): {'eyJ': [('raw_http\\galah_run01.jsonl', 1), ('raw_http\\galah_run02.jsonl', 1), ('raw_http\\galah_run04.jsonl', 1), ('raw_http\\galah_run09.jsonl', 1), ('raw_http\\galah_run10.jsonl', 1), ('raw_http\\galah_run16.jsonl', 1), ('raw_http\\galah_run20.jsonl', 1)]}
+env vars checked for leakage: ['OPENAI_API_KEY', 'OPENAI_BASE_URL'] -> not found
+MASKED marker counts per file group: {'raw/advshellm': 0, 'raw/beelzebub': 10, 'raw/cowrie': 80, 'raw/deceive': 2, 'raw/groundtruth_ssh': 0, 'raw/llmhoneypot': 80, 'raw/ssh_commands_long': 86, 'raw/ssh_fingerprints': 0, 'raw/vellmes': 0, 'raw_http/galah': 76, 'raw_http/groundtruth_http': 0, 'raw_http/http_requests_long': 16, 'raw_quiet/advshellm': 0, 'raw_quiet/beelzebub': 0, 'raw_quiet/deceive': 0, 'raw_quiet/ssh_commands_long': 1, 'raw_quiet/ssh_fingerprints': 0, 'raw_quiet/vellmes': 2, 'stage4/containers': 0, 'stage4/driver': 0, 'stage4/manifest': 0, 'stage4/status': 0, 'stage4/verify_output': 0, 'stage4/verify_s4': 2}
+galah raw_http files free of flagged patterns: False
+distinct eyJ strings in raw_http: {'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'} -> decoy JWT header only: True
+
+== 6. PHYSICAL ==
+folder size=21.3 MB  files=200
+5 largest: [(3.07, 'raw\\ssh_commands_long.csv'), (3.01, 'api_proxy_log.jsonl'), (0.45, 'raw\\beelzebub_run09.jsonl'), (0.39, 'raw\\deceive_run15.jsonl'), (0.38, 'raw_quiet\\beelzebub_run02.jsonl')]
+files >50MB: []
+
+== 7. STATE-CARRY / CONTAINER RECREATE ==
+driver.log: docker up=360 (with --force-recreate=180), docker down=358
+[PASS] every slot: docker up --force-recreate (180/180) — INFO up=180 force-recreate=180
+INFO docker down lines=178; the 2 slots without a down are run11pos9 and run12pos1 (same target twice in a row, --force-recreate still applies)
+beelzebub prompt-mode calls per run: [36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 38, 36, 36, 36, 36, 36]
+[PASS] beelzebub calls flat (34-40, no growth) — min=36 max=38 first5=[36, 36, 36, 36, 36] last5=[36, 36, 36, 36, 36]
+docker/logs/beelzebub files=1; sample=['beelzebub.log']
+log lines mentioning connection/session/SSH banner: 9973
+
+== SUMMARY ==
+FAILS: none

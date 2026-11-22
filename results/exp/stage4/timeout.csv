@@ -1,0 +1,8 @@
+target,n_commands,n_timeouts,timeout_rate
+advshellm,720,0,0.0
+beelzebub,720,4,0.0056
+cowrie,720,0,0.0
+deceive,720,29,0.0403
+groundtruth_ssh,720,0,0.0
+llmhoneypot,720,0,0.0
+vellmes,720,45,0.0625

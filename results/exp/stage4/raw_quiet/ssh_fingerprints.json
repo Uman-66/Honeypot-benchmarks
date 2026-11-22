@@ -1,0 +1,15 @@
+{
+  "vellmes": [
+    {
+      "remote_version": "SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.13",
+      "cipher": "aes128-ctr",
+      "mac": "hmac-sha2-256",
+      "host_key_type": "ssh-ed25519",
+      "host_key_fingerprint": "9909639e70524c3851f60f0ebc91495e",
+      "auth_methods": null,
+      "run": 2,
+      "auth_method_used": "password",
+      "connection_error": null
+    }
+  ]
+}
