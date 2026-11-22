@@ -403,3 +403,33 @@ The following have NOT been tested in Stage 4 and may need investigation:
 9. **`--start-run` extension to 30 runs.** Runs 1..N are skipped through
    `status.json`; extending a finished pass
    (`--runs 30 --start-run 21`) has not been run end-to-end.
+
+## 13. DECEIVE output-cap evidence
+
+Recorded for the max-token check (read-only, no code change):
+
+- `DECEIVE/SSH/config.ini` line 61 `temperature = 0.2`; line 67
+  `trimmer_max_tokens = 64000` (history trimmer only, not an output cap).
+- `DECEIVE/SSH/ssh_server.py` line 429 `ChatOpenAI(**kwargs)` with no
+  `max_tokens` argument (kwargs built at lines 421-428).
+- Stage 4 data consistent with an uncapped target: 6 oversized outputs
+  (max 142,810 characters) and six requests at the 65,536-token ceiling
+  (`analysis.md`, `analysis_timeouts.md`).
+
+## 14. Final UNVERIFIED list (Stage 4 scope)
+
+1. State carried between runs in named volumes (only galah's cache volume is
+   cleared per slot); effect on determinism not measured.
+2. galah end-to-end proxy correctness was exercised in Stage 4 (17-20 calls per
+   slot, all logged), but whether identical in-slot requests are served from
+   `cache.db` instead of the API is unknown; the proxy log is a lower bound.
+3. llmhoneypot trap markers in prompt mode: markers were visible after ANSI
+   stripping in Stage 4, but a marker-level comparison against quiet mode was
+   not run.
+4. Cause of the Beelzebub baseline-vs-Stage-4 difference; the
+   container-lifetime control covers one of the three protocol changes only.
+5. Why prompt mode returned shorter output for 32 of 288 quiet-check pairs.
+6. Whether VelLMes target-side replies are held or dropped inside the target
+   (no container-side log for those slots).
+7. The exact Beelzebub binary identity for the published batch (YAML identical,
+   image digest not recorded).

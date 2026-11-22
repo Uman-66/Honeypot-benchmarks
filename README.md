@@ -25,13 +25,43 @@ See [BENCHMARK.md](BENCHMARK.md) and [results/summary.md](results/summary.md).
   use completed commands only, so they understate latency for targets with
   timeouts. No ranking or causal explanation is inferred from these data.
 
+## Stage 2 and Stage 4
+
+- **Stage 2** added the measurement machinery: an explicit prompt-timing mode
+  beside the default quiet mode, a measured harness latency floor
+  (0.547--0.563 s quiet, about 16 ms prompt), write-time credential masking,
+  masked determinism, a local API proxy, and prompt-mode validation on the four
+  LLM SSH targets.
+- **Stage 4** is the 20-run pass used for the main results: 9 targets x 20
+  runs, prompt timing, target order shuffled with seed 2026, a fresh container
+  per slot, quiet-mode checks in runs 1--2, and every request through the API
+  proxy. 180 slots completed, 3,699 proxy requests, about $2.02 at the
+  corrected cached-token price model.
+
+The full write-up is [report/honeypot_report_v3.tex](report/honeypot_report_v3.tex)
+(the PDF is added after it is compiled). Design, resume rules and the safety
+stops are in [docs/STAGE4_NOTES.md](docs/STAGE4_NOTES.md).
+
+```powershell
+.venv-hb\Scripts\python.exe harness\run_stage4.py `
+    --runs 20 --timing prompt --seed 2026
+```
+
+Stage 4 data lives in `results/exp/stage4/`: `raw/`, `raw_quiet/`,
+`raw_http/`, `manifest.jsonl`, `status.json`, `api_proxy_log.jsonl`, the
+`analysis*.md` notes and the CSVs. The Beelzebub container-lifetime control is
+in `results/exp/lifetime_control/beelzebub_persistent/`. The Stage 4 galah
+bodies were collected with write-time credential masking and are published; the
+nine baseline/pilot galah bodies stay withheld for the reasons in
+[docs/WITHHELD_FILES.md](docs/WITHHELD_FILES.md).
+
 ## Tool inventory
 
 | Tool | Status | Protocol | LLM-based | Host port | Notes |
 |---|---|---:|:---:|---:|---|
 | [DECEIVE](https://github.com/splunk/DECEIVE) | Done | SSH | Yes | 8022 | LangChain-based |
 | [Beelzebub](https://github.com/mariocandela/beelzebub) | Done | SSH | Yes | 2222 | Go-based |
-| [shelLM / AdvancedshelLM](https://github.com/stratosphereips/AdvancedShelLM) | Done | SSH | Yes | 2224 | Subprocess wrapper |
+| [shelLM / AdvancedshelLM](https://github.com/stratosphereips/shelLM) | Done | SSH | Yes | 2224 | Subprocess wrapper |
 | [VelLMes](https://github.com/stratosphereips/VelLMes-AI-Deception-Framework) | Done | SSH | Yes | 2228 | Commit `192fa5084df84b38a16f6581939fd3143c350181` |
 | [galah](https://github.com/0x4D31/galah) | Done | HTTP | Yes | 8088 | LLM-generated HTTP responses |
 | [llm-honeypot](https://github.com/PalisadeResearch/llm-honeypot) | Detector only | SSH | No | 2227 | ANSI-hidden marker detector |
@@ -82,7 +112,7 @@ OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
 ```powershell
 git clone https://github.com/splunk/DECEIVE DECEIVE
 git clone https://github.com/mariocandela/beelzebub beelzebub
-git clone https://github.com/stratosphereips/AdvancedShelLM shelLM
+git clone https://github.com/stratosphereips/shelLM shelLM
 git clone https://github.com/0x4D31/galah galah
 git clone https://github.com/PalisadeResearch/llm-honeypot llm-honeypot
 git clone --branch v2.6.1 https://github.com/cowrie/cowrie cowrie-base

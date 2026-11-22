@@ -99,3 +99,37 @@ repository tracks `SSH/config.ini.TEMPLATE`, not `SSH/config.ini`.
 - Pilot DECEIVE reports 13 timeouts in `results_pilot/summary.md`; the pilot
   raw files contain 14, while `results_pilot/ssh_commands_long.csv` contains
   17. These are different source/accounting views; the cause is UNVERIFIED.
+
+## f) DECEIVE output-cap evidence (read-only)
+
+- `DECEIVE/SSH/config.ini` line 61: `temperature = 0.2`; line 67:
+  `trimmer_max_tokens = 64000` (a history trimmer, not an output cap).
+- `DECEIVE/SSH/ssh_server.py` line 429: `ChatOpenAI(**kwargs)` is constructed
+  from model, temperature, api_key and tiktoken model name (lines 421-428) with
+  no `max_tokens` argument, so replies are uncapped per request.
+- Consequence in the data: the published batch has 2 oversized DECEIVE outputs
+  (max 135,108 characters); Stage 4 has 6 (max 142,810 characters) and six
+  requests that reach the 65,536-token model ceiling
+  (`results/exp/stage4/analysis.md`, `analysis_timeouts.md`).
+
+## g) Final UNVERIFIED list
+
+1. DECEIVE clone commit (no `.git` in the local clone; nearest upstream
+   revision `cce98f3`, 2026-05-13).
+2. Which of the two DECEIVE `config.ini` files ran either batch (both name the
+   same model and temperature).
+3. Whether the built Beelzebub binary was identical between `final-batch-v1`
+   and Stage 4 (the YAML files are identical).
+4. Cause of the Beelzebub difference between the batches and of the rising
+   latency in the single-container control (confounds: ceiling generations,
+   time of day, n=10).
+5. Why prompt mode returned less than quiet mode for the 32 quiet-check pairs
+   beyond the noise floor.
+6. Whether the VelLMes target-side replies (capped 800-token answers produced
+   in 4.5-7.8 s) are held or dropped inside the target; no container-side log
+   was recorded.
+7. Whether residual A-vs-B differences in the Stage 2 validation are artefacts
+   or ordinary model variation.
+8. Whether galah's write-time masking changes any published baseline count
+   (the baseline galah bodies are withheld, so their counts cannot be
+   recomputed from the repository).

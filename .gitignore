@@ -28,6 +28,16 @@ trap_test.txt
 report/main.tex
 report/REPORT_REVIEW_NOTES.md
 
+# ── Stage 4 scratch and aborted runs (kept on disk, never published) ──────────
+/results/exp/stage4_smoke/
+/results/exp/stage4_fixcheck/
+/results/exp/stage4_discarded_multiplier_bug/
+/results/exp/lifetime_control/partial_attempt1/
+
+# ── stale report drafts (report/honeypot_report_v3.tex is the source) ─────────
+/honeypot_report_v2.tex
+/report/honeypot_report_v2.pdf
+
 # ── verbose by-products (the scored data under results/raw* is tracked) ────────
 /logs/
 /docker/logs/

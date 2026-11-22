@@ -253,6 +253,41 @@ The analyzer writes Markdown, CSV, and audit summaries from local raw JSONL.
 The final data also includes [results/summary.md](results/summary.md) and the
 read-only facts verification in [docs/FACTS_CHECK.md](docs/FACTS_CHECK.md).
 
+## Later measurements (Stage 2 and Stage 4)
+
+The numbers above are the published final batch and are unchanged. Two later
+stages were collected on branch `stage4-driver`; the full write-up is
+[`report/honeypot_report_v3.tex`](report/honeypot_report_v3.tex) and the data
+are under [`results/exp/`](results/exp/).
+
+- **Harness latency floor (Stage 2).** The default quiet rule records a command
+  only after 0.5 s of silence, so every latency above includes a measured floor
+  of 0.547--0.563 s (`results/exp/floor.md`). Prompt timing replies in about
+  16 ms, limited by the 15.6 ms Windows timer tick.
+- **Prompt-mode validation.** Three passes (quiet/prompt/quiet) on the four LLM
+  SSH targets, 452 API calls, zero `prompt_without_echo` rows
+  (`results/exp/validation/`).
+- **Stage 4 pass.** 9 targets x 20 runs, prompt timing, shuffled order (seed
+  2026), fresh container per slot, 180 completed slots, 3,699 proxy requests,
+  $2.0173 at the corrected cached-token price model
+  (`results/exp/stage4/analysis.md`, `analysis_review.md`).
+- **Stage 4 SSH medians.** 2.18--2.39 s for the four LLM SSH targets against
+  0.015 s for ground truth, with 0/720 (AdvancedshelLM), 4/720 (Beelzebub),
+  29/720 (DECEIVE) and 45/720 (VelLMes) timeouts
+  (`results/exp/stage4/latency.csv`, `timeout.csv`).
+- **Timeout attribution.** Of 86 timed-out rows, 9 were API-side (241--291 s,
+  all ending at 65,536 completion tokens), 66 target-side and 11 unmatched
+  (`results/exp/stage4/analysis_timeouts.md`).
+- **Token caps.** AdvancedshelLM peaks at 4,096 and VelLMes at 800, exactly
+  their documented caps; only the uncapped targets reach 65,536.
+- **Beelzebub lifetime control.** Ten sessions in one container show a rising
+  median (3.88 to 5.95 s) and 6/360 timeouts, while the fresh-container series
+  stays flat; the cause is UNVERIFIED
+  (`results/exp/lifetime_control/beelzebub_persistent/lifetime.json`).
+- **Galah at equal n.** Per-100 resampling of the 400 Stage 4 requests gives
+  5xx 0.101 and status agreement 0.260, consistent with the 0.110 and 0.266
+  reported above (`results/exp/stage4/analysis_followup.md`).
+
 ## Future work
 
 Repeat the benchmark across more runs, models, temperatures, and independently
