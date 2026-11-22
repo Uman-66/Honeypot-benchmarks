@@ -10,6 +10,7 @@ Options:
     --targets   Path to targets.yaml   (default: harness/targets.yaml)
     --commands  Path to commands.yaml  (default: harness/commands.yaml)
     --runs      Number of runs per target (default: 5)
+    --run-index Run N only, written to {target}_run{N:02d}.jsonl (needs --runs 1)
     --out       Output directory        (default: results/raw)
     --timeout   Per-command timeout in seconds (default: 90)
     --dry-run   Validate YAML only, do not connect
@@ -969,6 +970,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="Target config path, or comma-separated target names")
     p.add_argument("--commands", default="harness/commands.yaml")
     p.add_argument("--runs",     type=int, default=5)
+    p.add_argument(
+        "--run-index",
+        type=int,
+        default=None,
+        help=(
+            "Label this invocation as run N instead of running 1..--runs. "
+            "Use with --runs 1: the command list executes exactly once and "
+            "is written to {target}_run{N:02d}.jsonl with run=N in every row. "
+            "Without this flag behaviour is unchanged (runs 1..--runs)."
+        ),
+    )
     p.add_argument("--out",      default="results/raw")
     p.add_argument("--csv-dir", default="results",
                    help="Directory for ssh_commands_long.csv, ssh_fingerprints.json "
@@ -1010,7 +1022,31 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     args.timing_explicit = any(
         item == "--timing" or item.startswith("--timing=") for item in argv_list
     )
+    if args.run_index is not None:
+        if args.runs != 1:
+            p.error("--run-index requires --runs 1 (one slot runs the list once)")
+        if args.run_index < 1:
+            p.error("--run-index must be >= 1")
     return args
+
+
+def _run_labels(args: argparse.Namespace) -> list[int]:
+    """Run indices this invocation covers.
+
+    Without --run-index this is 1..--runs (unchanged behaviour). With
+    --run-index N and --runs 1 it is exactly [N]: the command list runs once
+    and the output file / row field carry N.
+    """
+    if getattr(args, "run_index", None) is None:
+        return list(range(1, args.runs + 1))
+    return [int(args.run_index)]
+
+
+def _run_label_text(run_idx: int, args: argparse.Namespace) -> str:
+    """Progress text: '3/5' normally, '5' for a single --run-index slot."""
+    if getattr(args, "run_index", None) is None:
+        return f"{run_idx}/{args.runs}"
+    return str(run_idx)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1069,10 +1105,11 @@ def main(argv: list[str] | None = None) -> int:
     import logging
     logging.getLogger("paramiko").setLevel(logging.WARNING)
 
+    run_labels = _run_labels(args)
     planned: list[tuple[str, int, str]] = []
     expected_records = len(all_commands)
     for target in ssh_targets:
-        for run_idx in range(1, args.runs + 1):
+        for run_idx in run_labels:
             pair = out_dir / f"{target['name']}_run{run_idx:02d}.jsonl"
             complete = pair.exists() and sum(
                 1 for _ in pair.open(encoding=ENCODING)
@@ -1086,17 +1123,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n=== Target: {tname} ===")
         target_fps = []
 
-        for run_idx in range(1, args.runs + 1):
+        for run_idx in run_labels:
             plan = next(item for item in planned if item[0] == tname and item[1] == run_idx)
             jsonl_path = out_dir / f"{tname}_run{run_idx:02d}.jsonl"
             if plan[2] == "skip":
-                print(f"  Run {run_idx}/{args.runs} ... skipped (complete)")
+                print(f"  Run {_run_label_text(run_idx, args)} ... skipped (complete)")
                 continue
             if args.force and jsonl_path.exists():
                 _backup_pair(jsonl_path, csv_path, tname, run_idx)
             else:
                 _csv_without_pair(csv_path, tname, run_idx)
-            print(f"  Run {run_idx}/{args.runs} ...", end=" ", flush=True)
+            print(f"  Run {_run_label_text(run_idx, args)} ...", end=" ", flush=True)
             t0 = time.monotonic()
 
             try:
