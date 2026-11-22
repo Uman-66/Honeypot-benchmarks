@@ -13,7 +13,8 @@ Outputs (all under --stage4-dir):
     determinism.csv     per-target determinism statistics
     timeout.csv         per-target timeout counts
     bootstrap_ci.csv    95% bootstrap CIs
-    proxy_join.csv      per-command proxy duration join
+    proxy_join.csv      per-target proxy duration join
+    proxy_join_per_command.csv  per-command proxy duration join
     quiet_check.csv     quiet-check comparison (runs 1-2)
     drift.csv           Spearman drift check for Cowrie and groundtruth_ssh
 
@@ -1131,7 +1132,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Write CSVs
     _write_csvs(stage4_dir, ssh_stats, http_stats, drift_checks,
-                extra_vs_gt_map, proxy_joins)
+                extra_vs_gt_map, proxy_joins, quiet_checks)
 
     return 0
 
@@ -1143,6 +1144,7 @@ def _write_csvs(
     drift_checks: dict[str, dict[str, Any]],
     extra_vs_gt: dict[str, dict[str, Any]],
     proxy_joins: dict[str, dict[str, Any]],
+    quiet_checks: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     # latency.csv
     lat_path = stage4_dir / "latency.csv"
@@ -1245,6 +1247,73 @@ def _write_csvs(
                 "gap_median_ms": pj.get("gap_median_ms"),
             })
     _safe_print(f"Written: {proxy_path}")
+
+    # proxy_join_per_command.csv
+    pc_path = stage4_dir / "proxy_join_per_command.csv"
+    with open(pc_path, "w", newline="", encoding=ENCODING) as fh:
+        writer = csv.DictWriter(fh, fieldnames=[
+            "target", "cmd_id", "n", "median_ms", "p95_ms",
+        ], extrasaction="ignore")
+        writer.writeheader()
+        for tname, pj in sorted(proxy_joins.items()):
+            for cid, st in sorted((pj.get("per_command") or {}).items()):
+                writer.writerow({
+                    "target": tname,
+                    "cmd_id": cid,
+                    "n": st.get("n"),
+                    "median_ms": st.get("median_ms"),
+                    "p95_ms": st.get("p95_ms"),
+                })
+    _safe_print(f"Written: {pc_path}")
+
+    # timeout.csv
+    to_path = stage4_dir / "timeout.csv"
+    with open(to_path, "w", newline="", encoding=ENCODING) as fh:
+        writer = csv.DictWriter(fh, fieldnames=[
+            "target", "n_commands", "n_timeouts", "timeout_rate",
+        ], extrasaction="ignore")
+        writer.writeheader()
+        for tname, s in sorted(ssh_stats.items()):
+            writer.writerow({
+                "target": tname,
+                "n_commands": s.get("n_commands"),
+                "n_timeouts": s.get("n_timeouts"),
+                "timeout_rate": s.get("timeout_rate"),
+            })
+    _safe_print(f"Written: {to_path}")
+
+    # bootstrap_ci.csv (one row per target x metric)
+    ci_path = stage4_dir / "bootstrap_ci.csv"
+    with open(ci_path, "w", newline="", encoding=ENCODING) as fh:
+        writer = csv.DictWriter(fh, fieldnames=[
+            "target", "metric", "estimate", "ci_lo", "ci_hi",
+        ], extrasaction="ignore")
+        writer.writeheader()
+        for tname, s in sorted(ssh_stats.items()):
+            for metric, key, est in (
+                ("latency_median", "ci_latency_median", s.get("latency_median")),
+                ("timeout_rate", "ci_timeout_rate", s.get("timeout_rate")),
+                ("determinism_masked", "ci_determinism", s.get("determinism_masked")),
+            ):
+                ci = s.get(key) or (None, None)
+                writer.writerow({"target": tname, "metric": metric,
+                                 "estimate": est, "ci_lo": ci[0], "ci_hi": ci[1]})
+    _safe_print(f"Written: {ci_path}")
+
+    # quiet_check.csv
+    qc_path = stage4_dir / "quiet_check.csv"
+    with open(qc_path, "w", newline="", encoding=ENCODING) as fh:
+        writer = csv.DictWriter(fh, fieldnames=[
+            "target", "run", "cmd_id", "prompt_len", "quiet_len",
+            "sim_pq", "noise_floor", "drop_vs_floor", "is_shorter", "exceeds_floor",
+        ], extrasaction="ignore")
+        writer.writeheader()
+        for tname, qc in sorted((quiet_checks or {}).items()):
+            for fl in qc.get("flagged_details") or []:
+                row = dict(fl)
+                row["target"] = tname
+                writer.writerow(row)
+    _safe_print(f"Written: {qc_path}")
 
 
 if __name__ == "__main__":
