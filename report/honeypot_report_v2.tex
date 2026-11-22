@@ -196,17 +196,18 @@ VelLMes & Python 3.11-slim + VelLMes & glm-5p3-flash & 0.2 & 800 &
 user / not recorded; SSH wrapper and benchmark config \\
 galah & Go 1.22 build + Debian slim & glm-5p3-flash & 0.2 & not recorded &
 not applicable / not recorded; response cleaning, entrypoint \\
-Cowrie & official image digest & not applicable & not applicable & not applicable &
+Cowrie & official image digest & not applicable & n/a & n/a &
 root / ubuntu; mounted config, no upstream source edit \\
-llm-honeypot & Cowrie v2.6.1 overlay & not applicable & not applicable & not applicable &
+llm-honeypot & Cowrie v2.6.1 overlay & not applicable & n/a & n/a &
 root / not recorded; overlay Dockerfile and v2.6.1 pin \\
-Ground truth SSH & Ubuntu 20.04 + OpenSSH & not applicable & not applicable & not applicable &
+Ground truth SSH & Ubuntu 20.04 + OpenSSH & not applicable & n/a & n/a &
 guest / ubuntu; PTY and PAM changes \\
-Ground truth HTTP & Ubuntu 20.04 + nginx 1.18.0 & not applicable & not applicable & not applicable &
+Ground truth HTTP & Ubuntu 20.04 + nginx 1.18.0 & not applicable & n/a & n/a &
 not applicable / not recorded; Dockerfile and compose \\
 HoneyBee & Python 3.11 + Streamlit & glm-5p3-flash & 0.2 & 8192 &
 not applicable; deploy path disabled \\
 \end{longtable}
+\par\vspace{2pt}{\footnotesize n/a: not applicable.}
 }
 
 Third-party source changes are documented as patches and notes. The verified
@@ -247,19 +248,26 @@ third-party honeypots are published for reproducibility.
 
 \subsection{DECEIVE configuration evidence}
 
-Four configuration items were checked in the local clone, and the two
-\texttt{config.ini} files in the repository were compared:
+Four configuration items were checked in the local clone, and its
+\texttt{config.ini} was compared with the copy taken from the running
+application. The third-party clones (\texttt{DECEIVE/} and the other upstream
+trees) are not published, so those paths cannot be opened from this repository;
+the published record of the DECEIVE edits is
+\texttt{docs/PATCH\_NOTES.md}~S1--S2.
 \begin{itemize}[leftmargin=*]
 \item \texttt{DECEIVE/SSH/config.ini} line 32: \texttt{model\_name =
   accounts/fireworks/models/glm-5p3-flash}; line 61: \texttt{temperature =
   0.2}; line 67: \texttt{trimmer\_max\_tokens = 64000}.
-\item \texttt{recovered/deceive\_app/SSH/config.ini}, a copy taken from the
-  running DECEIVE application, carries the same \texttt{model\_name} (line 32)
-  and \texttt{temperature = 0.2} (line 72), and additionally sets
-  \texttt{tiktoken\_model\_name = gpt-4o} (line 43). The working clone omits
-  that key and relies on the code default: \texttt{ssh\_server.py} line 420
-  reads \texttt{config['llm'].get('tiktoken\_model\_name', 'gpt-4o')}, so both
-  files resolve to the same value in the API request.
+\item A copy of \texttt{SSH/config.ini} taken from the running DECEIVE
+  application carries the same \texttt{model\_name} (line 32) and
+  \texttt{temperature = 0.2} (line 72), and additionally sets
+  \texttt{tiktoken\_model\_name = gpt-4o} (line 43). That copy is kept outside
+  this repository, beside an unpublished private SSH host key, so it is not
+  published and this item cannot be checked from the repository; it stays
+  \textbf{UNVERIFIED}. The working clone omits that key and relies on the code
+  default: \texttt{ssh\_server.py} line 420 reads
+  \texttt{config['llm'].get('tiktoken\_model\_name', 'gpt-4o')}, so both files
+  resolve to the same value in the API request.
 \item \texttt{DECEIVE/SSH/ssh\_server.py} line 429: \texttt{ChatOpenAI(**kwargs)}
   is built from \texttt{model}, \texttt{temperature}, \texttt{api\_key} and
   \texttt{tiktoken\_model\_name} (lines 421--428) with no \texttt{max\_tokens}
@@ -502,10 +510,13 @@ the same proxy (Section~\ref{sec:s4-method}).
 Stage 4 is the main result set. Driver: \texttt{harness/run\_stage4.py};
 design and schema in \texttt{docs/STAGE4\_NOTES.md}. The pass is reproduced
 with
+% The flag hyphens are written -{}- so that the font's "--" ligature cannot
+% collapse them into one dash; each command is a single line, broken here only
+% to fit the page width.
 \begin{quote}\footnotesize\ttfamily
-python harness/run\_stage4.py --runs 20 --timing prompt --seed 2026 \\
-\hspace*{2em}--quiet-check-runs 2 --out results/exp/stage4 \\
-python harness/analyze\_stage4.py --stage4-dir results/exp/stage4
+python harness/run\_stage4.py -{}-runs 20 -{}-timing prompt -{}-seed 2026 \\
+\hspace*{2em}-{}-quiet-check-runs 2 -{}-out results/exp/stage4 \\
+python harness/analyze\_stage4.py -{}-stage4-dir results/exp/stage4
 \end{quote}
 and the data are in \texttt{results/exp/stage4/}. It differs from the baseline
 batch in three deliberate ways:
@@ -516,7 +527,7 @@ batch in three deliberate ways:
 \item \textbf{Twenty runs per target} instead of five, which supports
   bootstrap confidence intervals resampled by run.
 \item \textbf{A fresh container per slot}: each of the 180 slots runs
-  \texttt{docker compose down} followed by \texttt{up -d --force-recreate},
+  \texttt{docker compose down} followed by \texttt{up -d -{}-force-recreate},
   verified 180/180 in \texttt{results/exp/stage4/driver.log}. The baseline
   batch used one long-lived container per target for all five runs.
 \end{itemize}
@@ -807,7 +818,7 @@ Both documented caps hold exactly: AdvancedshelLM peaks at 4,096 and VelLMes at
 '4096'))}), and every worker call passes it; the two paths that do not are the
 Responses-API branch, reachable only for codex-style model names, and a
 second provider client with a hard-coded 16384 that the wrapper never selects
-(\texttt{docker/advshellm\_ssh\_wrapper.py} passes \texttt{--provider openai}).
+(\texttt{docker/advshellm\_ssh\_wrapper.py} passes \texttt{-{}-provider openai}).
 
 The three targets that reach 65,536 are the uncapped ones. An earlier reading
 of the proxy log attributed some 65,536-token calls to AdvancedshelLM and
