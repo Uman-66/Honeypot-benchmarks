@@ -8,7 +8,7 @@ verification) are not optional; the rest of the document assumes both passed.
 
 ---
 
-## Stage 2 status (branch `stage2-measurement`, not pushed)
+## Stage 2 status (branch `stage2-measurement`; merged into `main`)
 
 Stage 2 fixed the measurement layer before any more API calls are spent. Read this
 section first: two of the rules below have changed.

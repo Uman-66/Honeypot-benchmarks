@@ -1,6 +1,7 @@
 # STAGE2_NOTES.md — measurement fixes and smoke results
 
-Branch: `stage2-measurement` (not pushed). Nothing under `results/raw`,
+Branch: `stage2-measurement`, merged into `main` for the v2 release (origin
+still carries the branch). Nothing under `results/raw`,
 `results/raw_http`, `results_pilot/`, `report/` or `BENCHMARK.md` was modified.
 Every new artefact is under `results/exp/`.
 
