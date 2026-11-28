@@ -1,0 +1,8 @@
+target,outputs_scanned,narration_outputs,narration_sessions,prose_only_outputs,prose_only_sessions,any_flag_outputs,any_flag_sessions
+advshellm,720,0,0,0,0,0,0
+beelzebub,716,15,12,0,0,15,12
+cowrie,720,0,0,0,0,0,0
+deceive,691,0,0,0,0,0,0
+groundtruth_ssh,720,0,0,0,0,0,0
+vellmes,675,0,0,0,0,0,0
+llmhoneypot,720,0,0,0,0,0,0

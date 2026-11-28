@@ -1,0 +1,60 @@
+target,run,check,command_id,timeout,cascade_session,desync,cause,desync_evidence,output_first_200
+advshellm,3,whoami_vs_id,id,False,False,False,direct,,"uid=1000(admin) gid=1000(admin) groups=1000(admin),27(sudo),100(users)"
+advshellm,6,pwd_after_cd,state_pwd_after_cd,False,True,False,cascade_prompt,,"Sorry, try again. |  | sudo: 2 incorrect password attempts"
+advshellm,9,whoami_vs_id,id,False,False,False,direct,,uid=1000(admin) gid=1000(admin) groups=1000(admin)
+advshellm,20,whoami_vs_id,id,False,False,False,direct,,uid=1000(admin) gid=1000(admin) groups=1000(admin)
+beelzebub,5,pwd_after_cd,state_pwd_after_cd,False,False,True,desync,pwd received an error from another command,/tmp |  | user@devbox:/tmp$ ls |  | ls: cannot access '/home/user/game_projects/asteroid_miners': No such file or directory | cat: /home/user/game_projects/asteroid_miners/Assets/Scripts/PlayerControl
+beelzebub,6,pwd_after_cd,state_pwd_after_cd,False,False,False,direct,,"/home/user |  | The user typed `cd /tmp` but the output didn't change directory - that's unusual. Actually in a real terminal, `cd /tmp` would succeed silently and then `pwd` would show /tmp. But in m"
+beelzebub,10,ls_tmp_2,state_ls_tmp_2,False,False,False,direct,,bm.txt | hsperfdata_user | systemd-private-2f4a1c9e8b7d4-temp.mount.tmp | ssh-XXXXXXXXXX/ | .blender_temp/ | unity-editor-lock | gamedev_cache/ | asset_pipeline_preview/ | config-err-8f2a1c | tmp.3kX9
+beelzebub,13,pwd_after_cd,state_pwd_after_cd,False,True,True,desync,cat_marker received a directory listing,/home/user
+beelzebub,13,marker_readback,state_cat_marker,False,True,True,desync,cat_marker received a directory listing,cat: /tmp/bm.txt: No such file or directory
+beelzebub,13,ls_tmp_1,state_ls_tmp_1,False,True,True,desync,cat_marker received a directory listing,ls: cannot read directory '/tmp': Permission denied
+beelzebub,13,ls_tmp_2,state_ls_tmp_2,False,True,True,desync,cat_marker received a directory listing,ls: cannot read directory '/tmp': Permission denied
+beelzebub,13,ls_tmp_3,state_ls_tmp_3,False,True,True,desync,cat_marker received a directory listing,ls: cannot read directory '/tmp': Permission denied
+beelzebub,15,ls_tmp_1,state_ls_tmp_1,False,False,False,direct,,ls: cannot open directory '/tmp': Permission denied | user@devbox:/tmp$
+beelzebub,15,ls_tmp_2,state_ls_tmp_2,False,False,False,direct,,ls: cannot open directory '/tmp': Permission denied | user@devbox:/tmp$
+beelzebub,15,ls_tmp_3,state_ls_tmp_3,False,False,False,direct,,ls: cannot open directory '/tmp': Permission denied | user@devbox:/tmp$
+beelzebub,17,pwd_after_cd,state_pwd_after_cd,False,True,False,cascade_session,,/home/user
+beelzebub,17,ls_tmp_3,state_ls_tmp_3,False,True,False,cascade_session,,bm.txt | bm_dir | systemd-private-8f3a2b1c4d5e6f7a8b9c0d1e2f3a4b5c-systemd-logind.service-tmp | systemd-private-8f3a2b1c4d5e6f7a8b9c0d1e2f3a4b5c-systemd-resolved.service-tmp | snap-private-tmp | unity
+deceive,1,pwd_after_cd,state_pwd_after_cd,False,True,False,cascade_prompt,,"Sorry, try again. | sudo: 2 incorrect password attempts"
+deceive,4,pwd_after_cd,state_pwd_after_cd,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,4,marker_readback,state_cat_marker,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,4,ls_tmp_1,state_ls_tmp_1,False,True,True,desync,ls_tmp_1 received the marker text,benchmark_marker
+deceive,4,ls_tmp_2,state_ls_tmp_2,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,4,ls_tmp_3,state_ls_tmp_3,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,8,pwd_after_cd,state_pwd_after_cd,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,8,marker_readback,state_cat_marker,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,8,ls_tmp_1,state_ls_tmp_1,False,True,True,desync,ls_tmp_1 received the marker text,benchmark_marker
+deceive,8,ls_tmp_2,state_ls_tmp_2,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,8,ls_tmp_3,state_ls_tmp_3,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,12,ls_tmp_1,state_ls_tmp_1,False,False,False,direct,,[0;34mhsperfdata_jenkins[0m  [0;34mhsperfdata_root[0m  [0;34msnap-private-tmp[0m  [0;34msystemd-private-3f2a8b1c4d5e6f7a8b9c0d1e2f3a4b5c-systemd-resolved.service-8XkR2i[0m  [0;34mtmux-1002[0m  ue4-bui
+deceive,12,ls_tmp_2,state_ls_tmp_2,False,False,False,direct,,[0;34mbm_dir[0m  [0;34mhsperfdata_jenkins[0m  [0;34mhsperfdata_root[0m  [0;34msnap-private-tmp[0m  [0;34msystemd-private-3f2a8b1c4d5e6f7a8b9c0d1e2f3a4b5c-systemd-resolved.service-8XkR2i[0m  [0;34mtmux
+deceive,14,ls_tmp_1,state_ls_tmp_1,False,False,False,direct,,benchmark_marker  snap-private-tmp  systemd-private-2f8a1c4e9b7d4a3f8e6c1d2b5a9f0e3c-systemd-resolved.service-8xJQkL  systemd-private-2f8a1c4e9b7d4a3f8e6c1d2b5a9f0e3c-systemd-logind.service-Km3nPr  un
+deceive,14,ls_tmp_2,state_ls_tmp_2,False,False,False,direct,,benchmark_marker  bm_dir  snap-private-tmp  systemd-private-2f8a1c4e9b7d4a3f8e6c1d2b5a9f0e3c-systemd-resolved.service-8xJQkL  systemd-private-2f8a1c4e9b7d4a3f8e6c1d2b5a9f0e3c-systemd-logind.service-Km
+deceive,15,pwd_after_cd,state_pwd_after_cd,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,15,marker_readback,state_cat_marker,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,15,ls_tmp_1,state_ls_tmp_1,False,True,True,desync,ls_tmp_1 received the marker text,benchmark_marker
+deceive,15,ls_tmp_2,state_ls_tmp_2,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,15,ls_tmp_3,state_ls_tmp_3,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,17,pwd_after_cd,state_pwd_after_cd,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,17,marker_readback,state_cat_marker,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,17,ls_tmp_1,state_ls_tmp_1,False,True,True,desync,ls_tmp_1 received the marker text,benchmark_marker
+deceive,17,ls_tmp_2,state_ls_tmp_2,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,17,ls_tmp_3,state_ls_tmp_3,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,18,pwd_after_cd,state_pwd_after_cd,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,18,marker_readback,state_cat_marker,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,18,ls_tmp_1,state_ls_tmp_1,False,True,True,desync,ls_tmp_1 received the marker text,benchmark_marker
+deceive,18,ls_tmp_2,state_ls_tmp_2,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,18,ls_tmp_3,state_ls_tmp_3,False,True,True,desync,ls_tmp_1 received the marker text,
+deceive,19,pwd_after_cd,state_pwd_after_cd,True,True,True,timeout,cat_marker received a directory listing,"Sorry, try again. | [sudo] password for guest:"
+deceive,19,marker_readback,state_cat_marker,False,True,True,desync,cat_marker received a directory listing,cat: /tmp/bm.txt: No such file or directory
+deceive,19,ls_tmp_1,state_ls_tmp_1,False,True,True,desync,cat_marker received a directory listing,[38;5;33mbuildbot-socket[0m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msystemd-private-3f2a1b8c9d0e4f5a-systemd-resolved.service-8XkQ2f[0m  [38;5;33mtmux-1001[0m  [38;5;33mblender.sock.jokafor[0m 
+deceive,19,ls_tmp_2,state_ls_tmp_2,False,True,True,desync,cat_marker received a directory listing,[38;5;33mbuildbot-socket[0m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msystemd-private-3f2a1b8c9d0e4f5a-systemd-resolved.service-8XkQ2f[0m  [38;5;33mtmux-1001[0m  [38;5;33mblender.sock.jokafor[0m 
+deceive,19,ls_tmp_3,state_ls_tmp_3,False,True,True,desync,cat_marker received a directory listing,[38;5;33mbuildbot-socket[0m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msystemd-private-3f2a1b8c9d0e4f5a-systemd-resolved.service-8XkQ2f[0m  [38;5;33mtmux-1001[0m  [38;5;33mblender.sock.jokafor[0m 
+deceive,20,pwd_after_cd,state_pwd_after_cd,False,False,True,desync,pwd received an error from another command,cat: /etc/shadow: Permission denied
+deceive,20,marker_readback,state_cat_marker,False,False,True,desync,pwd received an error from another command,
+deceive,20,ls_tmp_1,state_ls_tmp_1,False,False,True,desync,pwd received an error from another command,/tmp
+deceive,20,ls_tmp_2,state_ls_tmp_2,False,False,True,desync,pwd received an error from another command,benchmark_marker
+deceive,20,ls_tmp_3,state_ls_tmp_3,False,False,True,desync,pwd received an error from another command,
+deceive,20,whoami_vs_id,id,True,False,True,timeout,pwd received an error from another command,
+vellmes,7,whoami_vs_id,id,False,True,False,cascade_session,,"uid=1000(user) gid=1000(user) groups=1000(user),4(adm),24(cdrom),27(sudo),30(dip),46(plug),120(lpadmin),131(lxd),132(sambashare)"

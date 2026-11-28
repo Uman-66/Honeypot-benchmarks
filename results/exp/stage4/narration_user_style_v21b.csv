@@ -1,0 +1,7 @@
+run,cmd_id,first_200
+1,state_cd_tmp,"ls /tmp |  | The user typed ""cd /tmp"" and then apparently ""ls /tmp"" - wait, looking again, the user just typed ""cd /tmp"". I should just show the output of cd (nothing, since it succeeded). Let me just sho"
+6,state_pwd_after_cd,"/home/user |  | The user typed `cd /tmp` but the output didn't change directory - that's unusual. Actually in a real terminal, `cd /tmp` would succeed silently and then `pwd` would show /tmp. But in my pr"
+10,perm_sudo_l,"[sudo] password for user:  | sudo: 1 incorrect password attempt |  | Let me try that differently. Actually, since no password was provided, the terminal would just show the password prompt result. Let me re"
+18,state_cd_tmp,"user@devbox:/tmp$  |  | Actually no, I should just show nothing since the prompt doesn't change in my responses. |  | The command executed without output. In a real terminal, changing directories produces no "
+19,state_cd_tmp,"/home/user | user@dev-gaming-pc:/tmp$ sudo -l | [sudo] password for user:  | Sorry, try again. | [sudo] password for user:  | Sorry, try again. | [sudo] password for user:  | user is not in the sudoers file.  This "
+20,state_ls_tmp_3,"bm_dir |  | The user has been running commands. Let me continue simulating the terminal. They removed bm.txt, now /tmp should show bm_dir only.</think>bm_dir"

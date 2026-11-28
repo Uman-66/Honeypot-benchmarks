@@ -1,0 +1,35 @@
+target,variant,definition,determinism,n_commands,n_pairs,published
+advshellm,V0,"published: masked, 4,000-char cap, pairwise, all rows",0.7903,36,6840,True
+advshellm,V1,drop timed-out rows (censored outputs),0.7903,36,6840,False
+advshellm,V12,keep the `exit` control row in the denominator,0.7959,37,7030,False
+advshellm,EXIT,the `exit` control row on its own (mean pairwise),1.0,1,190,False
+beelzebub,V0,"published: masked, 4,000-char cap, pairwise, all rows",0.594,36,6840,True
+beelzebub,V1,drop timed-out rows (censored outputs),0.5982,36,6764,False
+beelzebub,V12,keep the `exit` control row in the denominator,0.6049,37,7030,False
+beelzebub,EXIT,the `exit` control row on its own (mean pairwise),1.0,1,190,False
+cowrie,V0,"published: masked, 4,000-char cap, pairwise, all rows",0.9964,36,6840,True
+cowrie,V1,drop timed-out rows (censored outputs),0.9964,36,6840,False
+cowrie,V12,keep the `exit` control row in the denominator,0.9965,37,7030,False
+cowrie,EXIT,the `exit` control row on its own (mean pairwise),1.0,1,190,False
+deceive,V0,"published: masked, 4,000-char cap, pairwise, all rows",0.5086,36,6840,True
+deceive,V1,drop timed-out rows (censored outputs),0.5242,36,6334,False
+deceive,V2,drop empty outputs,0.5182,36,5400,False
+deceive,V3,drop timed-out and empty rows,0.5194,36,5157,False
+deceive,V4,pooled pairs with dropped timeouts (not mean of per-command means),0.5167,36,6334,False
+deceive,V5,listwise: drop any command with a timeout,0.4799,27,5130,False
+deceive,V6,median of per-command means instead of mean,0.4771,36,6840,False
+deceive,V7,compare each run to run 1 instead of pairwise,0.5748,36,684,False
+deceive,V8,no masking at all (v1 method),0.4751,36,6840,False
+deceive,V9,no ANSI stripping (raw escape bytes kept),0.5086,36,6840,False
+deceive,V10,"cap 20,000 chars for commands with any long output",0.5083,36,6840,False
+deceive,V11,hostnames collected from prompts as well as `hostname`,0.5086,36,6840,False
+deceive,V12,keep the `exit` control row in the denominator,0.5219,37,7030,False
+deceive,EXIT,the `exit` control row on its own (mean pairwise),1.0,1,190,False
+groundtruth_ssh,V0,"published: masked, 4,000-char cap, pairwise, all rows",0.9923,36,6840,True
+groundtruth_ssh,V1,drop timed-out rows (censored outputs),0.9923,36,6840,False
+groundtruth_ssh,V12,keep the `exit` control row in the denominator,0.9925,37,7030,False
+groundtruth_ssh,EXIT,the `exit` control row on its own (mean pairwise),1.0,1,190,False
+vellmes,V0,"published: masked, 4,000-char cap, pairwise, all rows",0.8477,36,6840,True
+vellmes,V1,drop timed-out rows (censored outputs),0.8468,35,6298,False
+vellmes,V12,keep the `exit` control row in the denominator,0.8518,37,7030,False
+vellmes,EXIT,the `exit` control row on its own (mean pairwise),1.0,1,190,False

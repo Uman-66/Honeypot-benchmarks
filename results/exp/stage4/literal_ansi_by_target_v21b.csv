@@ -1,0 +1,8 @@
+target,outputs_scanned,outputs_any,sessions_any,esc_byte_outputs,esc_byte_sessions,ESC_bracket_outputs,ESC_bracket_sessions,backslash_e_outputs,backslash_e_sessions,backslash_033_outputs,backslash_033_sessions,backslash_x1b_outputs,backslash_x1b_sessions,backslash_u001b_outputs,backslash_u001b_sessions,bare_sgr_outputs,bare_sgr_sessions
+advshellm,617,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+beelzebub,714,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+cowrie,560,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+deceive,605,32,6,0,0,5,1,17,3,0,0,0,0,0,0,10,2
+groundtruth_ssh,580,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+vellmes,576,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+llmhoneypot,600,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

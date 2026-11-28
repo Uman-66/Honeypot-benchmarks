@@ -1,0 +1,67 @@
+target,config,status,definition
+advshellm,M1,built in 9.1s (4000 max chars),"published: cleaned_output, hostnames masked, 4,000 cap, SequenceMatcher.ratio (autojunk on)"
+advshellm,M2,time_limit: exceeded 240s at command ps_aux,as M1 but autojunk=False
+advshellm,M3,built in 1.1s (4000 max chars),as M1 but quick_ratio()
+advshellm,M4,built in 7.7s (4000 max chars),"as M1 but exact Levenshtein ratio 1 - d/max(n,m)"
+advshellm,M5,built in 9.5s (4000 max chars),as M1 but no masking
+advshellm,M6,built in 8.5s (4000 max chars),as M1 but only timestamps/PIDs masked
+advshellm,M7,built in 9.1s (4000 max chars),"raw_output instead of cleaned_output (echo not removed), hostnames masked"
+advshellm,M8,built in 8.3s (4000 max chars),"raw_output, no masking"
+advshellm,M9,built in 8.1s (4000 max chars),"raw_output with real ESC sequences stripped, no masking"
+advshellm,M10,built in 9.7s (14713 max chars),"as M1 but 20,000-char cap"
+advshellm,M11,built in 9.4s (14713 max chars),as M1 but no cap
+beelzebub,M1,built in 8.1s (4000 max chars),"published: cleaned_output, hostnames masked, 4,000 cap, SequenceMatcher.ratio (autojunk on)"
+beelzebub,M2,time_limit: exceeded 240s at command ps_aux,as M1 but autojunk=False
+beelzebub,M3,built in 1.0s (4000 max chars),as M1 but quick_ratio()
+beelzebub,M4,built in 7.1s (4000 max chars),"as M1 but exact Levenshtein ratio 1 - d/max(n,m)"
+beelzebub,M5,built in 7.9s (4000 max chars),as M1 but no masking
+beelzebub,M6,built in 7.2s (4000 max chars),as M1 but only timestamps/PIDs masked
+beelzebub,M7,built in 9.2s (4000 max chars),"raw_output instead of cleaned_output (echo not removed), hostnames masked"
+beelzebub,M8,built in 12.2s (4000 max chars),"raw_output, no masking"
+beelzebub,M9,built in 12.2s (4000 max chars),"raw_output with real ESC sequences stripped, no masking"
+beelzebub,M10,built in 12.8s (20000 max chars),"as M1 but 20,000-char cap"
+beelzebub,M11,"skipped: longest output 198,706 chars; no-cap difflib not time-feasible",as M1 but no cap
+cowrie,M1,cached,"published: cleaned_output, hostnames masked, 4,000 cap, SequenceMatcher.ratio (autojunk on)"
+cowrie,M2,time_limit: exceeded 240s at command ps_aux,as M1 but autojunk=False
+cowrie,M3,built in 1.2s (4000 max chars),as M1 but quick_ratio()
+cowrie,M4,built in 0.1s (4000 max chars),"as M1 but exact Levenshtein ratio 1 - d/max(n,m)"
+cowrie,M5,built in 3.4s (4000 max chars),as M1 but no masking
+cowrie,M6,built in 4.3s (4000 max chars),as M1 but only timestamps/PIDs masked
+cowrie,M7,built in 4.1s (4000 max chars),"raw_output instead of cleaned_output (echo not removed), hostnames masked"
+cowrie,M8,built in 3.9s (4000 max chars),"raw_output, no masking"
+cowrie,M9,built in 3.8s (4000 max chars),"raw_output with real ESC sequences stripped, no masking"
+cowrie,M10,built in 10.2s (9516 max chars),"as M1 but 20,000-char cap"
+cowrie,M11,built in 10.3s (9516 max chars),as M1 but no cap
+deceive,M1,built in 9.7s (4000 max chars),"published: cleaned_output, hostnames masked, 4,000 cap, SequenceMatcher.ratio (autojunk on)"
+deceive,M2,time_limit: exceeded 240s at command ps_aux,as M1 but autojunk=False
+deceive,M3,built in 1.1s (4000 max chars),as M1 but quick_ratio()
+deceive,M4,built in 10.8s (4000 max chars),"as M1 but exact Levenshtein ratio 1 - d/max(n,m)"
+deceive,M5,built in 10.1s (4000 max chars),as M1 but no masking
+deceive,M6,built in 8.2s (4000 max chars),as M1 but only timestamps/PIDs masked
+deceive,M7,built in 10.3s (4000 max chars),"raw_output instead of cleaned_output (echo not removed), hostnames masked"
+deceive,M8,built in 9.5s (4000 max chars),"raw_output, no masking"
+deceive,M9,built in 9.4s (4000 max chars),"raw_output with real ESC sequences stripped, no masking"
+deceive,M10,built in 165.6s (20000 max chars),"as M1 but 20,000-char cap"
+deceive,M11,"skipped: longest output 145,509 chars; no-cap difflib not time-feasible",as M1 but no cap
+groundtruth_ssh,M1,built in 2.4s (1828 max chars),"published: cleaned_output, hostnames masked, 4,000 cap, SequenceMatcher.ratio (autojunk on)"
+groundtruth_ssh,M2,built in 36.1s (1828 max chars),as M1 but autojunk=False
+groundtruth_ssh,M3,built in 0.7s (1828 max chars),as M1 but quick_ratio()
+groundtruth_ssh,M4,built in 1.6s (1828 max chars),"as M1 but exact Levenshtein ratio 1 - d/max(n,m)"
+groundtruth_ssh,M5,built in 1.9s (1828 max chars),as M1 but no masking
+groundtruth_ssh,M6,built in 2.4s (2086 max chars),as M1 but only timestamps/PIDs masked
+groundtruth_ssh,M7,built in 2.5s (1884 max chars),"raw_output instead of cleaned_output (echo not removed), hostnames masked"
+groundtruth_ssh,M8,built in 3.3s (1884 max chars),"raw_output, no masking"
+groundtruth_ssh,M9,built in 3.0s (1884 max chars),"raw_output with real ESC sequences stripped, no masking"
+groundtruth_ssh,M10,built in 2.4s (1828 max chars),"as M1 but 20,000-char cap"
+groundtruth_ssh,M11,built in 2.5s (1828 max chars),as M1 but no cap
+vellmes,M1,built in 6.0s (3549 max chars),"published: cleaned_output, hostnames masked, 4,000 cap, SequenceMatcher.ratio (autojunk on)"
+vellmes,M2,time_limit: exceeded 240s at command ps_aux,as M1 but autojunk=False
+vellmes,M3,built in 0.8s (3549 max chars),as M1 but quick_ratio()
+vellmes,M4,built in 6.0s (3549 max chars),"as M1 but exact Levenshtein ratio 1 - d/max(n,m)"
+vellmes,M5,built in 5.1s (3549 max chars),as M1 but no masking
+vellmes,M6,built in 4.9s (3549 max chars),as M1 but only timestamps/PIDs masked
+vellmes,M7,built in 5.0s (3606 max chars),"raw_output instead of cleaned_output (echo not removed), hostnames masked"
+vellmes,M8,built in 5.0s (3610 max chars),"raw_output, no masking"
+vellmes,M9,built in 5.0s (3610 max chars),"raw_output with real ESC sequences stripped, no masking"
+vellmes,M10,built in 5.2s (3549 max chars),"as M1 but 20,000-char cap"
+vellmes,M11,built in 5.2s (3549 max chars),as M1 but no cap

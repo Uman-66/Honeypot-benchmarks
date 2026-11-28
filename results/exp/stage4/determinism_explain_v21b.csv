@@ -1,0 +1,7 @@
+target,rows,timeouts,timeout_rate,empty_outputs,long_outputs_gt4000,max_len,timeouts_by_cmd
+advshellm,740,0,0.0,123,6,14713,
+beelzebub,740,4,0.0054,26,7,198856,ls=1; ls_la=1; env=1
+cowrie,740,0,0.0,180,20,9508,
+deceive,740,39,0.0527,120,17,142810,exit=10; ps_aux=6; cpuinfo=6
+groundtruth_ssh,740,0,0.0,160,0,1828,
+vellmes,740,45,0.0608,122,0,3549,ps_aux=19; env=17; perm_sudo_l=3

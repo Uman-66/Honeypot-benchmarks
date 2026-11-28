@@ -1,0 +1,96 @@
+target,run,cmd_id,form,count_in_output,match,context,output_chars
+deceive,2,ls_etc,ESC_bracket,144,ESC[01;34m,ESC[01;34macpiESC[0m                  ESC[01;34mip,3570
+deceive,2,ls_etc,ESC_bracket,144,ESC[0m,ESC[01;34macpiESC[0m                  ESC[01;34miproute2ESC[,3570
+deceive,2,ls_etc,ESC_bracket,144,ESC[01;34m,ESC[01;34macpiESC[0m                  ESC[01;34miproute2ESC[0m              ESC[01;34mpy,3570
+deceive,2,ls_home,ESC_bracket,16,ESC[01;34m,ESC[01;34mavolkovESC[0m  ESC[01;34mdokaforESC[0m  ,198
+deceive,2,ls_home,ESC_bracket,16,ESC[0m,ESC[01;34mavolkovESC[0m  ESC[01;34mdokaforESC[0m  ESC[01;34mgue,198
+deceive,2,ls_home,ESC_bracket,16,ESC[01;34m,ESC[01;34mavolkovESC[0m  ESC[01;34mdokaforESC[0m  ESC[01;34mguestESC[0m  ES,198
+deceive,2,state_ls_tmp_1,ESC_bracket,2,ESC[01;34m,ESC[01;34msnap-private-tmpESC[0m  bm.txt  unity-ed,165
+deceive,2,state_ls_tmp_1,ESC_bracket,2,ESC[0m,ESC[01;34msnap-private-tmpESC[0m  bm.txt  unity-editor-mchen.lock  ssh-X,165
+deceive,2,state_ls_tmp_2,ESC_bracket,4,ESC[01;34m,ESC[01;34mbm_dirESC[0m  ESC[01;34msnap-private-tmp,189
+deceive,2,state_ls_tmp_2,ESC_bracket,4,ESC[0m,ESC[01;34mbm_dirESC[0m  ESC[01;34msnap-private-tmpESC[0m  bm.t,189
+deceive,2,state_ls_tmp_2,ESC_bracket,4,ESC[01;34m,ESC[01;34mbm_dirESC[0m  ESC[01;34msnap-private-tmpESC[0m  bm.txt  unity-ed,189
+deceive,2,state_ls_tmp_3,ESC_bracket,4,ESC[01;34m,ESC[01;34mbm_dirESC[0m  ESC[01;34msnap-private-tmp,181
+deceive,2,state_ls_tmp_3,ESC_bracket,4,ESC[0m,ESC[01;34mbm_dirESC[0m  ESC[01;34msnap-private-tmpESC[0m  unit,181
+deceive,2,state_ls_tmp_3,ESC_bracket,4,ESC[01;34m,ESC[01;34mbm_dirESC[0m  ESC[01;34msnap-private-tmpESC[0m  unity-editor-mch,181
+deceive,4,ls,backslash_e,20,\e[01;34m,\e[01;34mAssets\e[00m  \e[01;34mDocuments\e[00m  ,265
+deceive,4,ls,backslash_e,20,\e[00m,\e[01;34mAssets\e[00m  \e[01;34mDocuments\e[00m  \e[01;34mDow,265
+deceive,4,ls,backslash_e,20,\e[01;34m,\e[01;34mAssets\e[00m  \e[01;34mDocuments\e[00m  \e[01;34mDownloads\e[00,265
+deceive,4,ls_etc,backslash_e,286,\e[01;34m,\e[01;34mImageMagick-6\e[00m               \e[01;,4978
+deceive,4,ls_etc,backslash_e,286,\e[00m,\e[01;34mImageMagick-6\e[00m               \e[01;34mfonts\e[00m     ,4978
+deceive,4,ls_etc,backslash_e,286,\e[01;34m,01;34mImageMagick-6\e[00m               \e[01;34mfonts\e[00m              \e[01;34mpam.d\,4978
+deceive,4,ls_home,backslash_e,12,\e[01;34m,\e[01;34mdpetrov\e[00m  \e[01;34mguest\e[00m  \e[,139
+deceive,4,ls_home,backslash_e,12,\e[00m,\e[01;34mdpetrov\e[00m  \e[01;34mguest\e[00m  \e[01;34mjharmon,139
+deceive,4,ls_home,backslash_e,12,\e[01;34m,\e[01;34mdpetrov\e[00m  \e[01;34mguest\e[00m  \e[01;34mjharmon\e[00m  \e[,139
+deceive,4,state_mkdir_bm_dir,backslash_e,16,\e[01;34m,\e[01;34mdrwxrwxrwt\e[00m 12 root   root       40,1349
+deceive,4,state_mkdir_bm_dir,backslash_e,16,\e[00m,\e[01;34mdrwxrwxrwt\e[00m 12 root   root       4096 Jun 12 14:18 ,1349
+deceive,4,state_mkdir_bm_dir,backslash_e,16,\e[01;34m, guest   guest       4096 Jun 12 14:22  \e[01;34m.X11-unix\e[00m\ndrwxrwxrwt   2 guest   g,1349
+deceive,4,state_rm_marker,backslash_e,18,\e[01;34m,\e[01;34mdrwxrwxrwt\e[00m 12 root   root       40,1426
+deceive,4,state_rm_marker,backslash_e,18,\e[00m,\e[01;34mdrwxrwxrwt\e[00m 12 root   root       4096 Jun 12 14:18 ,1426
+deceive,4,state_rm_marker,backslash_e,18,\e[01;34m, guest   guest       4096 Jun 12 14:22  \e[01;34m.X11-unix\e[00m\ndrwxrwxrwt   2 guest   g,1426
+deceive,4,state_rmdir_bm_dir,backslash_e,18,\e[01;34m,\e[01;34mdrwxrwxrwt\e[00m 12 root   root       40,1365
+deceive,4,state_rmdir_bm_dir,backslash_e,18,\e[00m,\e[01;34mdrwxrwxrwt\e[00m 12 root   root       4096 Jun 12 14:18 ,1365
+deceive,4,state_rmdir_bm_dir,backslash_e,18,\e[01;34m, guest   guest       4096 Jun 12 14:22  \e[01;34m.X11-unix\e[00m\ndrwxrwxrwt   2 guest   g,1365
+deceive,5,ls_home,backslash_e,10,\e[01;34m,\e[01;34mdvasquez\e[0m  \e[01;34mguest\e[0m  \e[0,111
+deceive,5,ls_home,backslash_e,10,\e[0m,\e[01;34mdvasquez\e[0m  \e[01;34mguest\e[0m  \e[01;34mmharper\,111
+deceive,5,ls_home,backslash_e,10,\e[01;34m,\e[01;34mdvasquez\e[0m  \e[01;34mguest\e[0m  \e[01;34mmharper\e[0m  \e[01,111
+deceive,5,state_ls_tmp_1,backslash_e,8,\e[01;32m,\e[01;32mbm.txt\e[0m  \e[01;34m.ICE-unix\e[0m  \e,102
+deceive,5,state_ls_tmp_1,backslash_e,8,\e[0m,\e[01;32mbm.txt\e[0m  \e[01;34m.ICE-unix\e[0m  \e[01;34m.X11,102
+deceive,5,state_ls_tmp_1,backslash_e,8,\e[01;34m,\e[01;32mbm.txt\e[0m  \e[01;34m.ICE-unix\e[0m  \e[01;34m.X11-unix\e[0m ,102
+deceive,5,state_ls_tmp_2,backslash_e,8,\e[01;32m,bm_dir  \e[01;32mbm.txt\e[0m  \e[01;34m.ICE-unix\e[0m  \e,110
+deceive,5,state_ls_tmp_2,backslash_e,8,\e[0m,bm_dir  \e[01;32mbm.txt\e[0m  \e[01;34m.ICE-unix\e[0m  \e[01;34m.X11,110
+deceive,5,state_ls_tmp_2,backslash_e,8,\e[01;34m,bm_dir  \e[01;32mbm.txt\e[0m  \e[01;34m.ICE-unix\e[0m  \e[01;34m.X11-unix\e[0m ,110
+deceive,5,state_ls_tmp_3,backslash_e,6,\e[01;34m,bm_dir  \e[01;34m.ICE-unix\e[0m  \e[01;34m.X11-unix\e[0m ,88
+deceive,5,state_ls_tmp_3,backslash_e,6,\e[0m,bm_dir  \e[01;34m.ICE-unix\e[0m  \e[01;34m.X11-unix\e[0m  \e[01;34msnap,88
+deceive,5,state_ls_tmp_3,backslash_e,6,\e[01;34m,bm_dir  \e[01;34m.ICE-unix\e[0m  \e[01;34m.X11-unix\e[0m  \e[01;34msnap-private-tm,88
+deceive,9,ls,backslash_e,13,\e[0m,\e[0m\e[01;34mAssets\e[0m  \e[01;34mDocs\e[0m,130
+deceive,9,ls,backslash_e,13,\e[01;34m,\e[0m\e[01;34mAssets\e[0m  \e[01;34mDocs\e[0m  \e[01;3,130
+deceive,9,ls,backslash_e,13,\e[0m,\e[0m\e[01;34mAssets\e[0m  \e[01;34mDocs\e[0m  \e[01;34mProjects\,130
+deceive,9,ls_la,backslash_e,38,\e[01;34m,-xr-x 12 guest guest  4096 Feb 11 08:12 \e[01;34m.\e[0m\ndrwxr-xr-x  5 root  root   4096 J,1545
+deceive,9,ls_la,backslash_e,38,\e[0m,uest guest  4096 Feb 11 08:12 \e[01;34m.\e[0m\ndrwxr-xr-x  5 root  root   4096 Jan  6 ,1545
+deceive,9,ls_la,backslash_e,38,\e[01;34m,-xr-x  5 root  root   4096 Jan  6 09:31 \e[01;34m..\e[0m\n-rw-------  1 guest guest   842 ,1545
+deceive,9,ls_etc,backslash_e,542,\e[01;34m,\e[01;34mNetworkManager\e[0m        \e[01;34mfont,7986
+deceive,9,ls_etc,backslash_e,542,\e[0m,\e[01;34mNetworkManager\e[0m        \e[01;34mfonts\e[0m           \e,7986
+deceive,9,ls_etc,backslash_e,542,\e[01;34m,\e[01;34mNetworkManager\e[0m        \e[01;34mfonts\e[0m           \e[01;34mperl\e[0m\n,7986
+deceive,9,ls_home,backslash_e,12,\e[01;34m,\e[01;34mdokafor\e[0m  \e[01;34mguest\e[0m  \e[01,136
+deceive,9,ls_home,backslash_e,12,\e[0m,\e[01;34mdokafor\e[0m  \e[01;34mguest\e[0m  \e[01;34mjkowalcz,136
+deceive,9,ls_home,backslash_e,12,\e[01;34m,\e[01;34mdokafor\e[0m  \e[01;34mguest\e[0m  \e[01;34mjkowalczyk\e[0m  \e,136
+deceive,9,state_ls_tmp_1,backslash_e,8,\e[01;34m,\e[01;34mUnityPerforce\e[0m  \e[01;34msnap-privat,257
+deceive,9,state_ls_tmp_1,backslash_e,8,\e[0m,\e[01;34mUnityPerforce\e[0m  \e[01;34msnap-private-tmp\e[0m  bm.txt,257
+deceive,9,state_ls_tmp_1,backslash_e,8,\e[01;34m,\e[01;34mUnityPerforce\e[0m  \e[01;34msnap-private-tmp\e[0m  bm.txt  \e[01;34m,257
+deceive,9,state_ls_tmp_2,backslash_e,10,\e[01;34m,\e[01;34mUnityPerforce\e[0m  \e[01;34mbm_dir\e[0m,279
+deceive,9,state_ls_tmp_2,backslash_e,10,\e[0m,\e[01;34mUnityPerforce\e[0m  \e[01;34mbm_dir\e[0m  \e[01;34msnap-pr,279
+deceive,9,state_ls_tmp_2,backslash_e,10,\e[01;34m,\e[01;34mUnityPerforce\e[0m  \e[01;34mbm_dir\e[0m  \e[01;34msnap-private-tmp\e,279
+deceive,9,state_ls_tmp_3,backslash_e,10,\e[01;34m,\e[01;34mUnityPerforce\e[0m  \e[01;34mbm_dir\e[0m,271
+deceive,9,state_ls_tmp_3,backslash_e,10,\e[0m,\e[01;34mUnityPerforce\e[0m  \e[01;34mbm_dir\e[0m  \e[01;34msnap-pr,271
+deceive,9,state_ls_tmp_3,backslash_e,10,\e[01;34m,\e[01;34mUnityPerforce\e[0m  \e[01;34mbm_dir\e[0m  \e[01;34msnap-private-tmp\e,271
+deceive,12,ls_etc,bare_sgr,88,[0;34m,[0;34mNetworkManager[0m                [0;34mf,3763
+deceive,12,ls_etc,bare_sgr,88,[0;34m,[0;34mNetworkManager[0m                [0;34mfonts[0m                  [0;34mpam.d[0m,3763
+deceive,12,ls_etc,bare_sgr,88,[0;34m,        [0;34mfonts[0m                  [0;34mpam.d[0m                  [0;34msysctl.d,3763
+deceive,12,ls_home,bare_sgr,14,[0;34m,[0;34maferrari[0m   [0;34mdchen[0m        [0;3,291
+deceive,12,ls_home,bare_sgr,14,[0;34m,[0;34maferrari[0m   [0;34mdchen[0m        [0;34mguest[0m        [0,291
+deceive,12,ls_home,bare_sgr,14,[0;34m,;34maferrari[0m   [0;34mdchen[0m        [0;34mguest[0m        [0;34mmkowalski[0m    [0,291
+deceive,12,state_ls_tmp_1,bare_sgr,5,[0;34m,[0;34mhsperfdata_jenkins[0m  [0;34mhsperfdata_,267
+deceive,12,state_ls_tmp_1,bare_sgr,5,[0;34m,[0;34mhsperfdata_jenkins[0m  [0;34mhsperfdata_root[0m  [0;34msnap-private-t,267
+deceive,12,state_ls_tmp_1,bare_sgr,5,[0;34m,a_jenkins[0m  [0;34mhsperfdata_root[0m  [0;34msnap-private-tmp[0m  [0;34msystemd-priva,267
+deceive,12,state_ls_tmp_2,bare_sgr,6,[0;34m,[0;34mbm_dir[0m  [0;34mhsperfdata_jenkins[0m  ,284
+deceive,12,state_ls_tmp_2,bare_sgr,6,[0;34m,[0;34mbm_dir[0m  [0;34mhsperfdata_jenkins[0m  [0;34mhsperfdata_,284
+deceive,12,state_ls_tmp_2,bare_sgr,6,[0;34m,bm_dir[0m  [0;34mhsperfdata_jenkins[0m  [0;34mhsperfdata_root[0m  [0;34msnap-private-t,284
+deceive,12,state_ls_tmp_3,bare_sgr,6,[0;34m,[0;34mbm_dir[0m  [0;34mhsperfdata_jenkins[0m  ,284
+deceive,12,state_ls_tmp_3,bare_sgr,6,[0;34m,[0;34mbm_dir[0m  [0;34mhsperfdata_jenkins[0m  [0;34mhsperfdata_,284
+deceive,12,state_ls_tmp_3,bare_sgr,6,[0;34m,bm_dir[0m  [0;34mhsperfdata_jenkins[0m  [0;34mhsperfdata_root[0m  [0;34msnap-private-t,284
+deceive,19,ls_etc,bare_sgr,72,[38;5;33m,[38;5;33macpi[0m  [38;5;33madduser.conf[0m  [38;5,2268
+deceive,19,ls_etc,bare_sgr,72,[38;5;33m,[38;5;33macpi[0m  [38;5;33madduser.conf[0m  [38;5;33malternatives[0,2268
+deceive,19,ls_etc,bare_sgr,72,[38;5;33m,5;33macpi[0m  [38;5;33madduser.conf[0m  [38;5;33malternatives[0m  [38;5;33mapparmor[0m  [,2268
+deceive,19,ls_home,bare_sgr,5,[38;5;33m,[38;5;33mdkowalski[0m  [38;5;33mguest[0m  [38;5;3,106
+deceive,19,ls_home,bare_sgr,5,[38;5;33m,[38;5;33mdkowalski[0m  [38;5;33mguest[0m  [38;5;33mjokafor[0m  [38;5;33m,106
+deceive,19,ls_home,bare_sgr,5,[38;5;33m,8;5;33mdkowalski[0m  [38;5;33mguest[0m  [38;5;33mjokafor[0m  [38;5;33mmchen[0m  [38;5;33m,106
+deceive,19,state_ls_tmp_1,bare_sgr,9,[38;5;33m,[38;5;33mbuildbot-socket[0m  [38;5;33munity-edito,346
+deceive,19,state_ls_tmp_1,bare_sgr,9,[38;5;33m,[38;5;33mbuildbot-socket[0m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msys,346
+deceive,19,state_ls_tmp_1,bare_sgr,9,[38;5;33m,m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msystemd-private-3f2a1b8c9d0e4f5a-systemd,346
+deceive,19,state_ls_tmp_2,bare_sgr,9,[38;5;33m,[38;5;33mbuildbot-socket[0m  [38;5;33munity-edito,346
+deceive,19,state_ls_tmp_2,bare_sgr,9,[38;5;33m,[38;5;33mbuildbot-socket[0m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msys,346
+deceive,19,state_ls_tmp_2,bare_sgr,9,[38;5;33m,m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msystemd-private-3f2a1b8c9d0e4f5a-systemd,346
+deceive,19,state_ls_tmp_3,bare_sgr,9,[38;5;33m,[38;5;33mbuildbot-socket[0m  [38;5;33munity-edito,346
+deceive,19,state_ls_tmp_3,bare_sgr,9,[38;5;33m,[38;5;33mbuildbot-socket[0m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msys,346
+deceive,19,state_ls_tmp_3,bare_sgr,9,[38;5;33m,m  [38;5;33munity-editor-mchen.lock[0m  [38;5;33msystemd-private-3f2a1b8c9d0e4f5a-systemd,346

@@ -433,3 +433,128 @@ Recorded for the max-token check (read-only, no code change):
    (no container-side log for those slots).
 7. The exact Beelzebub binary identity for the published batch (YAML identical,
    image digest not recorded).
+
+## 15. v2.1 re-analysis (added 2026-11-25)
+
+A reviewer re-analysed the same raw files and reported four differences from
+v2. This section records how to reproduce the v2.1 answers. The analyzer is
+read-only over `results/exp/stage4/raw*`: it writes new files and never
+overwrites a v2 output.
+
+### One command
+
+```powershell
+.venv-hb\Scripts\python.exe harness\analyze_stage4_v21.py
+```
+
+The determinism section is the slow one (difflib is quadratic; about 2.5
+minutes on this machine, 105 s of it DECEIVE). `--skip-determinism` runs only
+T2-T4 in a few seconds.
+
+### Outputs (all new files, none of them a v2 filename)
+
+| File | Contents |
+|---|---|
+| `results/exp/stage4/v21_reanalysis.md` | all four tables in one page |
+| `results/exp/stage4/determinism_variants_v21.csv` | T1: per target x variant determinism |
+| `results/exp/stage4/narration_hits_v21.csv` | T2: every hit, run, command id, first 200 chars |
+| `results/exp/stage4/narration_by_target_v21.csv` | T2: outputs and sessions per target |
+| `results/exp/stage4/state_checks_v21.csv` | T3: one row per run x check, with failure cause |
+| `results/exp/stage4/state_by_target_v21.csv` | T3: per target, per check totals |
+| `results/exp/stage4/literal_ansi_hits_v21.csv` | T4: every match with context |
+| `results/exp/stage4/literal_ansi_by_target_v21.csv` | T4: counts per target and form |
+
+### T1 DECEIVE determinism: the 0.509 / 0.522 difference
+
+V0 reproduces `determinism.csv` exactly (all six targets). Two variants land
+near the reviewer's 0.522 and neither is confirmed:
+
+- **V12, the `exit` control row kept as a 37th command** gives 0.5219, which
+  rounds to his 0.522. The `exit` row is perfectly stable for every target
+  (mean pairwise 1.0000), so a 36-command mean of 0.5086 becomes
+  `(36 x 0.5086 + 1.0000) / 37 = 0.5219`. But it also moves Beelzebub by
+  0.011, so it does not match his statement that the other targets agree
+  within 0.004.
+- **V1, timed-out rows dropped** gives 0.5242, 0.002 from his value, and moves
+  every other target by at most 0.004 at three decimals. It does not give
+  0.522.
+
+The analyzer excludes `exit` because it is a harness control row, not a
+benchmark observation (`harness/analyze.py`, `n_excluded_exit`), and counts a
+timed-out row as an empty output. The report keeps 0.509 on that definition and
+records the reviewer's exact rule as UNVERIFIED.
+
+Dropping empty outputs gives 0.5182, both 0.5194; the 4,000-character cap
+(0.5083 at 20,000), ANSI stripping (0.5086) and the hostname set (0.5086) make
+no material difference. Masking does: without it 0.4751.
+
+### T1 with the full grid (v2.1b recheck)
+
+`harness/recheck_v21b_det.py` recomputes every target over 11 text/similarity
+configurations x 192 aggregation choices = 2,112 combinations per target
+(12,672 total, 11,328 rows). It caches pairwise matrices in
+`results/exp/stage4/.cache_v21b/` and needs several minutes. Outputs:
+`determinism_grid_v21b.csv`, `determinism_configs_v21b.csv`,
+`determinism_explain_v21b.csv`, `determinism_success_v21b.csv`.
+
+Result: **0 combinations** satisfy `|DECEIVE - 0.522| <= 0.0005` and every other
+target within 0.004 of the published value. The `exit` row gives 0.5219 with a
+0.0109 move on Beelzebub; exact Levenshtein similarity gives 0.5281 with a
+0.0169 move; `autojunk=False` exceeded the 240 s budget at `ps_aux` for five of
+six targets; the no-cap configuration is infeasible for DECEIVE and Beelzebub.
+
+### Corrections found by the v2.1b recheck
+
+- **State checks, `_tokens`**: `ls -F` output `bm_dir/` was compared literally,
+  so a present directory scored as missing (Beelzebub run 10 `state_ls_tmp_3`).
+  Tokens now lose a trailing `/`, `*` or `@`; Beelzebub moves 106 -> 107/120,
+  the reviewer's number.
+- **Failure causes**: a state command whose slot receives another command's text
+  is labelled a shift (34 of DECEIVE's failures), not a direct state error. The
+  split becomes 35 cascade / 4 direct / 2 timeout.
+- **Narration**: "the user has been", "let me continue/simulate/..." and
+  "they/them/their" were missing, so Beelzebub run 20's clear narration was
+  missed. Counts become 15 outputs in 12 of 20 sessions.
+- **ANSI units**: 170 / 1,035 / 223 are occurrences; outputs are 5 / 17 / 10 in
+  1 / 3 / 2 sessions, and the reviewer's 5 is exactly the `ESC[` set in run 2.
+
+Recheck outputs: `recheck_v21b.md`, `determinism_grid_v21b.csv`,
+`narration_*_v21b.csv`, `state_failures_v21b.csv`, `state_rules_v21b.csv`,
+`literal_ansi_hits_v21b.csv`. Both v2.1 scripts accept `--only state|narr` so a
+single section can be regenerated without redoing the slow determinism pass.
+
+### T2 narration detector
+
+The pattern list is `NARRATION_PATTERNS` in the script, one block, 14 named
+phrases. A separate prose flag fires when a command whose ground-truth output is
+under 200 characters returns two English sentences of at least eight words and
+four function words, with a personal pronoun somewhere in the output. Standard
+sudo lecture and Ubuntu login banner text is excluded by `PROSE_BOILERPLATE`.
+The detector is precision-oriented and heuristic; the CSV lists every hit for
+manual review.
+
+### T3 persona-independent state checks
+
+Six checks, mapped to command ids that already exist in `harness/commands.yaml`
+(no command was invented): `state_pwd_after_cd`, `state_cat_marker`,
+`state_ls_tmp_1..3`, and `whoami` against `id`. A check never compares against
+the real host. The listing checks use the benchmark's own marker names, and
+`ls_tmp_1` does not require `bm_dir` to be absent, so a directory left over from
+a previous run is not penalised.
+
+Failure causes are labelled from the outputs: `cascade from sudo -l prompt` when
+a state command's own output carries `[sudo] password` / `Sorry, try again`, or
+when `pwd` is empty while `echo` returned `/tmp`, or when the `sudo -l` reply ends
+with an open password prompt. `whoami`/`id` run before `sudo -l`, so they are
+always labelled `direct state error`. Timeouts are counted as failures and
+labelled `timeout`.
+
+### T4 literal ANSI
+
+Seven forms: real ESC byte, `ESC[`, `\e[`, `\033[`, `\x1b[`, `\u001b[`, and a
+bare `[<n>;<n>m` SGR sequence. v2 has no visible-colour count for DECEIVE: it
+only reports the detector target's concealed markers, and the run-time
+`literal_escape_text_present` flag is raised on `raw_output` against the
+`\x1b[`-style literal forms, so it misses visible `ESC[` in `cleaned_output`
+and the bare SGR form. The reviewer's 5 is the run-2 `ESC[` form alone; all
+forms give 32 outputs in 6 sessions.

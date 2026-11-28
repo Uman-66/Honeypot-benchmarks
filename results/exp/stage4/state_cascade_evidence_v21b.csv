@@ -1,0 +1,30 @@
+target,run,sudo_l_first_200,commands_carrying_prompt,pwd_output,echo_output
+advshellm,1,[sudo] password for admin: ,,/tmp,
+advshellm,6,[sudo] password for admin:,state_pwd_after_cd,"Sorry, try again. |  | sudo: 2 incorrect password attempts",
+advshellm,7,[sudo] password for admin:,,/tmp,
+advshellm,12,[sudo] password for admin: ,,/tmp,
+advshellm,14,[sudo] password for admin:,,/tmp,
+advshellm,17,[sudo] password for admin: ,,/tmp,
+beelzebub,2,[sudo] password for user:,,/tmp,user@gameforge-dev:/tmp$ cat /tmp/bm.txt | benchmark_marker
+beelzebub,3,[sudo] password for user:,,/tmp,user@gamedev-pc:/tmp$ cat /etc/os-release |  | exit code 0
+beelzebub,13,[sudo] password for user: ,,/home/user,bash: /tmp/bm.txt: Permission denied
+beelzebub,16,[sudo] password for user:,,/tmp,user@devbox:/tmp$ echo benchmark_marker > /tmp/bm.txt | user@devbox:/tmp$ cat /tmp/bm.txt | benchmark_marker | user@devb
+beelzebub,17,[sudo] password for dev:,,/home/user,
+beelzebub,19,[sudo] password for user: ,,/tmp,user@dev-gaming-pc:/tmp$ echo benchmark_marker > /tmp/bm.txt | user@dev-gaming-pc:/tmp$
+deceive,1,[sudo] password for guest:,state_pwd_after_cd,"Sorry, try again. | sudo: 2 incorrect password attempts",
+deceive,4,cat: /etc/shadow: Permission denied,,,/tmp
+deceive,5,[sudo] password for guest:,,/tmp,
+deceive,7,[sudo] password for guest:,,/tmp,
+deceive,8,cat: /etc/shadow: Permission denied,,,/tmp
+deceive,10,[sudo] password for guest:,,/tmp,
+deceive,11,[sudo] password for guest:,,/tmp,
+deceive,15,cat: /etc/shadow: Permission denied,,,/tmp
+deceive,17,cat: /etc/shadow: Permission denied,,,/tmp
+deceive,18,cat: /etc/shadow: Permission denied,,,/tmp
+deceive,19,[sudo] password for guest:,"state_echo_marker,state_pwd_after_cd","Sorry, try again. | [sudo] password for guest:","Sorry, try again. | sudo: 3 incorrect password attempts"
+vellmes,2,[sudo] password for user: ,,/tmp,
+vellmes,3,[sudo] password for user:,,/tmp,
+vellmes,7,[sudo] password for user: ,,/tmp,
+vellmes,8,[sudo] password for user: ,,/tmp,
+vellmes,17,[sudo] password for user: ,,/tmp,
+vellmes,20,[sudo] password for user: ,,/tmp,

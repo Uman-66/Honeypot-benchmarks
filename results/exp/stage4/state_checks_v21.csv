@@ -1,0 +1,721 @@
+target,run,check,command_id,pass,failure_cause,detail
+advshellm,1,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,1,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,1,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,1,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,1,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,1,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,2,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,2,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,2,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,2,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,2,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,2,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,3,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,3,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,3,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,3,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,3,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,3,whoami_vs_id,id,False,direct state error,whoami='' id='admin'
+advshellm,4,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,4,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,4,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,4,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,4,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,4,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,5,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,5,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,5,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,5,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,5,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,5,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,6,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line 'sudo: 2 incorrect password attempts'
+advshellm,6,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,6,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,6,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,6,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,6,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,7,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,7,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,7,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,7,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,7,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,7,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,8,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,8,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,8,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,8,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,8,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,8,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,9,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,9,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,9,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,9,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,9,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,9,whoami_vs_id,id,False,direct state error,whoami='' id='admin'
+advshellm,10,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,10,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,10,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,10,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,10,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,10,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,11,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,11,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,11,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,11,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,11,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,11,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,12,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,12,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,12,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,12,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,12,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,12,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,13,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,13,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,13,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,13,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,13,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,13,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,14,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,14,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,14,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,14,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,14,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,14,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,15,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,15,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,15,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,15,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,15,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,15,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,16,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,16,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,16,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,16,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,16,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,16,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,17,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,17,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,17,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,17,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,17,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,17,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,18,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,18,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,18,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,18,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,18,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,18,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,19,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,19,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,19,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,19,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,19,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,19,whoami_vs_id,id,True,,whoami='admin' id='admin'
+advshellm,20,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+advshellm,20,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+advshellm,20,ls_tmp_1,state_ls_tmp_1,True,,ok
+advshellm,20,ls_tmp_2,state_ls_tmp_2,True,,ok
+advshellm,20,ls_tmp_3,state_ls_tmp_3,True,,ok
+advshellm,20,whoami_vs_id,id,False,direct state error,whoami='' id='admin'
+beelzebub,1,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,1,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,1,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,1,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,1,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,1,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,2,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,2,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,2,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,2,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,2,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,2,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,3,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,3,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,3,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,3,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,3,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,3,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,4,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,4,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,4,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,4,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,4,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,4,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,5,pwd_after_cd,state_pwd_after_cd,False,desync: output shifted one command,last line 'bash: test.txt: Permission denied'
+beelzebub,5,marker_readback,state_cat_marker,True,,read back 'benchmark_marker\n\nuser@devbox:/tmp$'
+beelzebub,5,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,5,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,5,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,5,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,6,pwd_after_cd,state_pwd_after_cd,False,direct state error,"last line ""I'll go with /tmp to be realistic going """
+beelzebub,6,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,6,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,6,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,6,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,6,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,7,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,7,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,7,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,7,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,7,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,7,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,8,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,8,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,8,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,8,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,8,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,8,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,9,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,9,marker_readback,state_cat_marker,True,,read back 'benchmark_marker\nuser@gamedev-ubuntu:/tm'
+beelzebub,9,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,9,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,9,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,9,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,10,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,10,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,10,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,10,ls_tmp_2,state_ls_tmp_2,False,direct state error,missing bm_dir
+beelzebub,10,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,10,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,11,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,11,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,11,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,11,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,11,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,11,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,12,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,12,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,12,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,12,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,12,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,12,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,13,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line '/home/user'
+beelzebub,13,marker_readback,state_cat_marker,False,cascade from sudo -l prompt,read back 'cat: /tmp/bm.txt: No such file or direct'
+beelzebub,13,ls_tmp_1,state_ls_tmp_1,False,cascade from sudo -l prompt,missing bm.txt
+beelzebub,13,ls_tmp_2,state_ls_tmp_2,False,cascade from sudo -l prompt,"missing bm.txt,bm_dir"
+beelzebub,13,ls_tmp_3,state_ls_tmp_3,False,cascade from sudo -l prompt,missing bm_dir
+beelzebub,13,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,14,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,14,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,14,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,14,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,14,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,14,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,15,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,15,marker_readback,state_cat_marker,True,,read back 'benchmark_marker\nuser@devbox:/tmp$'
+beelzebub,15,ls_tmp_1,state_ls_tmp_1,False,direct state error,missing bm.txt
+beelzebub,15,ls_tmp_2,state_ls_tmp_2,False,direct state error,"missing bm.txt,bm_dir"
+beelzebub,15,ls_tmp_3,state_ls_tmp_3,False,direct state error,missing bm_dir
+beelzebub,15,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,16,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,16,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,16,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,16,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,16,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,16,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,17,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line '/home/user'
+beelzebub,17,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,17,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,17,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,17,ls_tmp_3,state_ls_tmp_3,False,cascade from sudo -l prompt,still lists bm.txt
+beelzebub,17,whoami_vs_id,id,True,,whoami='dev' id='dev'
+beelzebub,18,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,18,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,18,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,18,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,18,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,18,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,19,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,19,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,19,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,19,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,19,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,19,whoami_vs_id,id,True,,whoami='user' id='user'
+beelzebub,20,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+beelzebub,20,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+beelzebub,20,ls_tmp_1,state_ls_tmp_1,True,,ok
+beelzebub,20,ls_tmp_2,state_ls_tmp_2,True,,ok
+beelzebub,20,ls_tmp_3,state_ls_tmp_3,True,,ok
+beelzebub,20,whoami_vs_id,id,True,,whoami='user' id='user'
+cowrie,1,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,1,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,1,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,1,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,1,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,1,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,2,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,2,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,2,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,2,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,2,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,2,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,3,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,3,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,3,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,3,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,3,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,3,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,4,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,4,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,4,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,4,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,4,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,4,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,5,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,5,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,5,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,5,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,5,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,5,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,6,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,6,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,6,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,6,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,6,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,6,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,7,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,7,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,7,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,7,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,7,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,7,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,8,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,8,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,8,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,8,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,8,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,8,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,9,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,9,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,9,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,9,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,9,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,9,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,10,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,10,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,10,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,10,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,10,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,10,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,11,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,11,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,11,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,11,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,11,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,11,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,12,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,12,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,12,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,12,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,12,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,12,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,13,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,13,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,13,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,13,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,13,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,13,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,14,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,14,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,14,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,14,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,14,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,14,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,15,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,15,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,15,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,15,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,15,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,15,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,16,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,16,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,16,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,16,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,16,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,16,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,17,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,17,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,17,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,17,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,17,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,17,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,18,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,18,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,18,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,18,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,18,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,18,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,19,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,19,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,19,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,19,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,19,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,19,whoami_vs_id,id,True,,whoami='root' id='root'
+cowrie,20,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+cowrie,20,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+cowrie,20,ls_tmp_1,state_ls_tmp_1,True,,ok
+cowrie,20,ls_tmp_2,state_ls_tmp_2,True,,ok
+cowrie,20,ls_tmp_3,state_ls_tmp_3,True,,ok
+cowrie,20,whoami_vs_id,id,True,,whoami='root' id='root'
+deceive,1,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line 'sudo: 2 incorrect password attempts'
+deceive,1,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,1,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,1,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,1,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,1,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,2,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,2,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,2,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,2,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,2,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,2,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,3,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,3,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,3,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,3,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,3,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,3,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,4,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line ''
+deceive,4,marker_readback,state_cat_marker,False,cascade from sudo -l prompt,read back ''
+deceive,4,ls_tmp_1,state_ls_tmp_1,False,cascade from sudo -l prompt,missing bm.txt
+deceive,4,ls_tmp_2,state_ls_tmp_2,False,cascade from sudo -l prompt,"missing bm.txt,bm_dir"
+deceive,4,ls_tmp_3,state_ls_tmp_3,False,cascade from sudo -l prompt,missing bm_dir
+deceive,4,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,5,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,5,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,5,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,5,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,5,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,5,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,6,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,6,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,6,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,6,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,6,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,6,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,7,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,7,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,7,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,7,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,7,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,7,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,8,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line ''
+deceive,8,marker_readback,state_cat_marker,False,cascade from sudo -l prompt,read back ''
+deceive,8,ls_tmp_1,state_ls_tmp_1,False,cascade from sudo -l prompt,missing bm.txt
+deceive,8,ls_tmp_2,state_ls_tmp_2,False,cascade from sudo -l prompt,"missing bm.txt,bm_dir"
+deceive,8,ls_tmp_3,state_ls_tmp_3,False,cascade from sudo -l prompt,missing bm_dir
+deceive,8,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,9,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,9,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,9,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,9,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,9,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,9,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,10,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,10,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,10,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,10,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,10,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,10,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,11,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,11,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,11,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,11,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,11,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,11,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,12,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,12,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,12,ls_tmp_1,state_ls_tmp_1,False,direct state error,missing bm.txt
+deceive,12,ls_tmp_2,state_ls_tmp_2,False,direct state error,missing bm.txt
+deceive,12,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,12,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,13,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,13,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,13,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,13,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,13,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,13,whoami_vs_id,id,True,,timeout
+deceive,14,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,14,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,14,ls_tmp_1,state_ls_tmp_1,False,direct state error,missing bm.txt
+deceive,14,ls_tmp_2,state_ls_tmp_2,False,direct state error,missing bm.txt
+deceive,14,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,14,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,15,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line ''
+deceive,15,marker_readback,state_cat_marker,False,cascade from sudo -l prompt,read back ''
+deceive,15,ls_tmp_1,state_ls_tmp_1,False,cascade from sudo -l prompt,missing bm.txt
+deceive,15,ls_tmp_2,state_ls_tmp_2,False,cascade from sudo -l prompt,"missing bm.txt,bm_dir"
+deceive,15,ls_tmp_3,state_ls_tmp_3,False,cascade from sudo -l prompt,missing bm_dir
+deceive,15,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,16,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+deceive,16,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+deceive,16,ls_tmp_1,state_ls_tmp_1,True,,ok
+deceive,16,ls_tmp_2,state_ls_tmp_2,True,,ok
+deceive,16,ls_tmp_3,state_ls_tmp_3,True,,ok
+deceive,16,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,17,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line ''
+deceive,17,marker_readback,state_cat_marker,False,cascade from sudo -l prompt,read back ''
+deceive,17,ls_tmp_1,state_ls_tmp_1,False,cascade from sudo -l prompt,missing bm.txt
+deceive,17,ls_tmp_2,state_ls_tmp_2,False,cascade from sudo -l prompt,"missing bm.txt,bm_dir"
+deceive,17,ls_tmp_3,state_ls_tmp_3,False,cascade from sudo -l prompt,missing bm_dir
+deceive,17,whoami_vs_id,id,True,,timeout
+deceive,18,pwd_after_cd,state_pwd_after_cd,False,cascade from sudo -l prompt,last line ''
+deceive,18,marker_readback,state_cat_marker,False,cascade from sudo -l prompt,read back ''
+deceive,18,ls_tmp_1,state_ls_tmp_1,False,cascade from sudo -l prompt,missing bm.txt
+deceive,18,ls_tmp_2,state_ls_tmp_2,False,cascade from sudo -l prompt,"missing bm.txt,bm_dir"
+deceive,18,ls_tmp_3,state_ls_tmp_3,False,cascade from sudo -l prompt,missing bm_dir
+deceive,18,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,19,pwd_after_cd,state_pwd_after_cd,False,timeout,timeout
+deceive,19,marker_readback,state_cat_marker,False,cascade from sudo -l prompt,read back 'cat: /tmp/bm.txt: No such file or direct'
+deceive,19,ls_tmp_1,state_ls_tmp_1,False,cascade from sudo -l prompt,missing bm.txt
+deceive,19,ls_tmp_2,state_ls_tmp_2,False,cascade from sudo -l prompt,"missing bm.txt,bm_dir"
+deceive,19,ls_tmp_3,state_ls_tmp_3,False,cascade from sudo -l prompt,missing bm_dir
+deceive,19,whoami_vs_id,id,True,,whoami='guest' id='guest'
+deceive,20,pwd_after_cd,state_pwd_after_cd,False,desync: output shifted one command,last line 'cat: /etc/shadow: Permission denied'
+deceive,20,marker_readback,state_cat_marker,False,desync: output shifted one command,read back ''
+deceive,20,ls_tmp_1,state_ls_tmp_1,False,desync: output shifted one command,missing bm.txt
+deceive,20,ls_tmp_2,state_ls_tmp_2,False,desync: output shifted one command,"missing bm.txt,bm_dir"
+deceive,20,ls_tmp_3,state_ls_tmp_3,False,desync: output shifted one command,missing bm_dir
+deceive,20,whoami_vs_id,id,False,timeout,timeout
+groundtruth_ssh,1,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,1,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,1,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,1,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,1,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,1,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,2,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,2,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,2,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,2,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,2,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,2,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,3,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,3,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,3,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,3,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,3,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,3,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,4,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,4,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,4,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,4,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,4,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,4,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,5,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,5,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,5,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,5,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,5,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,5,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,6,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,6,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,6,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,6,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,6,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,6,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,7,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,7,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,7,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,7,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,7,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,7,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,8,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,8,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,8,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,8,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,8,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,8,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,9,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,9,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,9,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,9,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,9,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,9,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,10,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,10,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,10,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,10,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,10,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,10,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,11,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,11,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,11,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,11,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,11,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,11,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,12,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,12,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,12,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,12,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,12,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,12,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,13,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,13,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,13,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,13,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,13,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,13,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,14,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,14,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,14,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,14,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,14,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,14,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,15,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,15,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,15,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,15,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,15,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,15,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,16,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,16,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,16,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,16,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,16,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,16,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,17,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,17,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,17,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,17,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,17,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,17,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,18,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,18,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,18,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,18,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,18,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,18,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,19,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,19,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,19,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,19,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,19,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,19,whoami_vs_id,id,True,,whoami='guest' id='guest'
+groundtruth_ssh,20,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+groundtruth_ssh,20,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+groundtruth_ssh,20,ls_tmp_1,state_ls_tmp_1,True,,ok
+groundtruth_ssh,20,ls_tmp_2,state_ls_tmp_2,True,,ok
+groundtruth_ssh,20,ls_tmp_3,state_ls_tmp_3,True,,ok
+groundtruth_ssh,20,whoami_vs_id,id,True,,whoami='guest' id='guest'
+vellmes,1,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,1,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,1,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,1,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,1,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,1,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,2,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,2,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,2,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,2,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,2,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,2,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,3,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,3,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,3,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,3,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,3,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,3,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,4,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,4,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,4,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,4,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,4,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,4,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,5,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,5,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,5,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,5,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,5,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,5,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,6,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,6,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,6,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,6,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,6,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,6,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,7,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,7,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,7,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,7,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,7,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,7,whoami_vs_id,id,False,direct state error,whoami='' id='user'
+vellmes,8,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,8,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,8,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,8,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,8,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,8,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,9,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,9,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,9,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,9,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,9,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,9,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,10,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,10,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,10,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,10,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,10,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,10,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,11,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,11,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,11,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,11,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,11,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,11,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,12,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,12,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,12,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,12,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,12,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,12,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,13,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,13,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,13,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,13,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,13,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,13,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,14,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,14,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,14,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,14,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,14,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,14,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,15,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,15,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,15,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,15,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,15,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,15,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,16,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,16,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,16,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,16,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,16,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,16,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,17,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,17,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,17,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,17,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,17,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,17,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,18,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,18,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,18,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,18,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,18,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,18,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,19,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,19,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,19,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,19,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,19,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,19,whoami_vs_id,id,True,,whoami='user' id='user'
+vellmes,20,pwd_after_cd,state_pwd_after_cd,True,,last line '/tmp'
+vellmes,20,marker_readback,state_cat_marker,True,,read back 'benchmark_marker'
+vellmes,20,ls_tmp_1,state_ls_tmp_1,True,,ok
+vellmes,20,ls_tmp_2,state_ls_tmp_2,True,,ok
+vellmes,20,ls_tmp_3,state_ls_tmp_3,True,,ok
+vellmes,20,whoami_vs_id,id,True,,whoami='user' id='user'

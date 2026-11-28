@@ -64,7 +64,7 @@ nine baseline/pilot galah bodies stay withheld for the reasons in
 
 | Tool | Status | Protocol | LLM-based | Host port | Notes |
 |---|---|---:|:---:|---:|---|
-| [DECEIVE](https://github.com/splunk/DECEIVE) | Done | SSH | Yes | 8022 | LangChain-based |
+| [DECEIVE](https://github.com/Cisco-Talos/DECEIVE) | Done | SSH | Yes | 8022 | LangChain-based; moved from `splunk/DECEIVE`, which now redirects here |
 | [Beelzebub](https://github.com/beelzebub-labs/beelzebub) | Done | SSH | Yes | 2222 | Go-based |
 | [shelLM / AdvancedshelLM](https://github.com/stratosphereips/shelLM) | Done | SSH | Yes | 2224 | Subprocess wrapper |
 | [VelLMes](https://github.com/stratosphereips/VelLMes-AI-Deception-Framework) | Done | SSH | Yes | 2228 | Commit `192fa5084df84b38a16f6581939fd3143c350181` |
@@ -115,7 +115,7 @@ OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
 ### 2. Clone dependencies
 
 ```powershell
-git clone https://github.com/splunk/DECEIVE DECEIVE
+git clone https://github.com/Cisco-Talos/DECEIVE DECEIVE
 git clone https://github.com/beelzebub-labs/beelzebub beelzebub
 git clone https://github.com/stratosphereips/shelLM shelLM
 git clone https://github.com/0x4D31/galah galah
